@@ -48,3 +48,30 @@ writeFileSync('bomba/syllables.json', JSON.stringify(out));
 console.log('sílabas:', Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.length])));
 console.log('ejemplos easy:', out.easy.slice(0, 15).join(' '));
 console.log('ejemplos hard:', out.hard.slice(0, 15).join(' '));
+
+// ---- Palabras de ejemplo (con tildes) para el resumen final ----
+// Candidatas: lemas del diccionario hunspell (dictionary-es) que también valen en el juego.
+// Orden: por tamaño de "familia" (cuántas formas de la palabra existen en el diccionario grande),
+// que favorece palabras de uso corriente frente a formas raras.
+const big = words; // ya ordenado
+const bigSet = new Set(big);
+const lowerBound = x => { let lo = 0, hi = big.length; while (lo < hi) { const m = (lo + hi) >> 1; if (big[m] < x) lo = m + 1; else hi = m; } return lo; };
+const family = p => lowerBound(p + '￿') - lowerBound(p);
+const lemmas = readFileSync('node_modules/dictionary-es/index.dic', 'utf8').split('\n').slice(1)
+  .map(l => l.split('/')[0].trim()).filter(w => /^[a-záéíóúüñ]{5,9}$/.test(w));
+const info = [];
+const seenN = new Set();
+for (const w of lemmas) {
+  const n = norm(w);
+  if (!bigSet.has(n) || seenN.has(n)) continue;
+  seenN.add(n);
+  const stem = n.replace(/(ar|er|ir)$/, '').replace(/[aeo]s?$/, '');
+  info.push({ w, n, score: family(stem) });
+}
+const examples = {};
+for (const s of [...out.easy, ...out.normal, ...out.hard]) {
+  const c = info.filter(x => x.n.includes(s)).sort((a, b) => b.score - a.score).slice(0, 6).map(x => x.w);
+  if (c.length) examples[s] = c;
+}
+writeFileSync('bomba/examples.json', JSON.stringify(examples));
+console.log('ejemplos para', Object.keys(examples).length, 'de', out.easy.length + out.normal.length + out.hard.length, 'sílabas');

@@ -6,9 +6,9 @@ Juegos: Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes d
 
 ## Multijugador
 
-WebRTC con PeerJS. Quien crea la sala es el anfitrión y lleva la partida (turnos, mecha, validación de palabras); los demás se conectan directamente a su navegador. El servidor público de PeerJS solo participa en el saludo inicial.
+Los mensajes pasan por brokers MQTT públicos (EMQX, HiveMQ y test.mosquitto.org) usando WebSocket seguro, así que no depende de la red de cada jugador. Quien crea la sala es el anfitrión y lleva la partida (turnos, mecha, validación de palabras); los demás le envían sus acciones. Cada cliente se conecta a todos los brokers a la vez y publica por todos; los mensajes duplicados se descartan, de modo que basta con que uno funcione. Hay latidos cada 3 s y se da por perdido a quien lleva 20 s sin responder.
 
-Limitaciones actuales: si el anfitrión cierra la pestaña la sala termina, y en redes muy restrictivas WebRTC puede no conectar al no haber servidor TURN propio. No hay cuentas ni lista de amigos.
+Limitaciones actuales: si el anfitrión cierra la pestaña la sala termina; quien pierde la conexión en plena partida queda eliminado; los brokers son gratuitos y compartidos, sin garantías de servicio ni privacidad (no se envía nada sensible, pero cualquiera que adivine el código de sala podría leer o entrar). No hay cuentas ni lista de amigos. El plan de salida es Supabase Realtime con un proyecto propio: solo habría que cambiar la capa de red (`netOpen`, `netPub`).
 
 ## Desarrollo
 
@@ -29,6 +29,7 @@ shared.css            fuente, colores, botones e inputs comunes
 bomba/index.html      el juego
 bomba/words.txt       diccionario normalizado (sin acentos)
 bomba/syllables.json  sílabas por dificultad
-vendor/               PeerJS y Bricolage Grotesque (licencia OFL)
+bomba/examples.json   palabras de ejemplo por sílaba (para el resumen final)
+vendor/               mqtt.js y Bricolage Grotesque (licencia OFL)
 tools/build-words.mjs genera diccionario y sílabas
 ```

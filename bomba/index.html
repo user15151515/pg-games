@@ -28,6 +28,7 @@
 /* fichas de jugador */
 .tok{width:50px;height:50px;border-radius:50%;border:var(--line);background:var(--bg);color:var(--fg);display:grid;place-items:center;
   font-weight:800;font-size:22px;flex:0 0 auto;transition:transform .2s,box-shadow .2s}
+.tok.sm{width:38px;height:38px;font-size:17px}
 
 /* paneles desplegables */
 details.panel{background:var(--white);border:var(--line);border-radius:16px;padding:0 16px;margin-top:14px}
@@ -52,6 +53,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .plist{display:grid;gap:10px;margin-bottom:24px}
 .prow{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:700}
 .prow .tag{font-size:15px;font-weight:600;margin-left:auto;opacity:.7}
+.prow.wait{opacity:.5}
 .set{display:grid;gap:6px;margin-bottom:16px}
 .set label,.set .lbl{font-size:15px;font-weight:700}
 .set.off{opacity:.4;pointer-events:none}
@@ -76,11 +78,11 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 @keyframes fl{from{opacity:.6}to{opacity:0}}
 #strip{position:relative;padding-top:56px;margin-top:6px}
 #players{display:flex;flex-wrap:wrap;justify-content:center;gap:56px 10px}
-.pl{display:flex;flex-direction:column;align-items:center;width:78px;text-align:center}
 #players.many{gap:50px 8px}
 #players.many .pl{width:62px}
 #players.many .tok{width:40px;height:40px;font-size:18px}
 #players.many .nm{max-width:62px;font-size:12px}
+.pl{display:flex;flex-direction:column;align-items:center;width:78px;text-align:center}
 .pl.turn .tok{transform:scale(1.22);box-shadow:var(--hard)}
 .pl .nm{font-size:14px;font-weight:700;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:6px}
 .pl.turn .nm{margin-top:9px}
@@ -122,10 +124,23 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #letters span{width:24px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:700;text-transform:uppercase;
   border:2px solid #17140f40;color:#17140f60}
 #letters span.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-#over{position:fixed;inset:0;background:#17140f99;display:grid;place-items:center;z-index:10;padding:20px}
-#over .box{background:var(--white);border:var(--line);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:28px 26px;max-width:380px;width:100%;transform:rotate(-1deg)}
-#over .display{font-size:clamp(54px,17vw,84px);margin-bottom:22px;word-break:break-word}
-#overHint{text-align:center;font-weight:600;margin:0}
+
+/* resultados */
+#over{position:fixed;inset:0;background:#17140f99;display:grid;place-items:center;z-index:10;padding:16px}
+#over .box{background:var(--white);border:var(--line);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:24px 22px;max-width:400px;width:100%;
+  max-height:92dvh;overflow:auto;transform:rotate(-.8deg)}
+#over .display{font-size:clamp(50px,15vw,76px);margin-bottom:18px;word-break:break-word}
+#rank{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:10px}
+#rank li{display:flex;align-items:center;gap:12px}
+#rank .n{width:16px;font-weight:800;font-size:18px;text-align:center}
+#rank b{display:block;font-size:19px;line-height:1.1}
+#rank small{display:block;font-size:15px;font-weight:500;line-height:1.2}
+#rank small em{font-style:normal;font-weight:700}
+#fails{margin:0 0 18px;display:grid;gap:8px}
+#fails h4{margin:0;font-size:15px;font-weight:700}
+.fail{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600}
+.chip{background:var(--pink);border:var(--line);border-radius:10px;padding:1px 10px;font-weight:800;font-size:18px;flex:0 0 auto}
+#overHint{text-align:center;font-weight:600;margin:12px 0 0}
 </style>
 </head>
 <body>
@@ -210,14 +225,16 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 <div id="over" hidden>
   <div class="box">
     <div class="display" id="overTitle"></div>
-    <button id="btnBack" class="big" hidden>Volver a la sala</button>
+    <ol id="rank"></ol>
+    <div id="fails"></div>
+    <button id="btnAgain" class="big">Jugar de nuevo</button>
     <p id="overHint"></p>
   </div>
 </div>
 
 </main>
 
-<script src="../vendor/peerjs.min.js"></script>
+<script src="../vendor/mqtt.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -226,12 +243,65 @@ const MAX_PLAYERS = 8, MAX_LIVES = 5, BONUS = 'abcdefghilmnopqrstuv';
 // [fondo, texto]
 const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'],['#ff8a3d','#17140f'],
                 ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
-const ICE = { iceServers: [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:global.stun.twilio.com:3478' }
-]};
-const PREFIX = 'jt-bomba-';
+
+// ---------- red ----------
+// Los mensajes pasan por brokers MQTT públicos (WebSocket seguro). No depende de la red de cada jugador.
+// Cada cliente se conecta a todos los brokers a la vez y publica por todos; los duplicados se descartan,
+// así que basta con que uno funcione para los dos lados.
+const BROKERS = window.PG_BROKERS || [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
+  'wss://test.mosquitto.org:8081'
+];
+const TOPIC = 'pg/bomba/v1/';
+const BEAT = 3000, DEAD = 20000;
+const uid = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
+const net = { clients: [], seq: 0, seen: new Set(), order: [], onMsg: null, timers: [] };
+
+function envelope(m, q) { return JSON.stringify({ f: myId, q: q === undefined ? ++net.seq : q, m }); }
+function netPub(suffix, m) {
+  const s = envelope(m);
+  for (const c of net.clients) if (c.connected) { try { c.publish(TOPIC + room + '/' + suffix, s, { qos: 0 }); } catch (e) {} }
+}
+function netRaw(buf) {
+  let e; try { e = JSON.parse(buf.toString()); } catch (x) { return; }
+  if (!e || typeof e !== 'object' || !e.m) return;
+  const key = e.f + ':' + e.q;
+  if (net.seen.has(key)) return;
+  net.seen.add(key); net.order.push(key);
+  if (net.order.length > 800) net.seen.delete(net.order.shift());
+  net.onMsg(e.m, e.f);
+}
+function netOpen(role) {
+  netClose();
+  const will = role === 'host'
+    ? { topic: TOPIC + room + '/all',  payload: JSON.stringify({ f: 'host', q: 'w', m: { t: 'closed' } }), qos: 0 }
+    : { topic: TOPIC + room + '/host', payload: JSON.stringify({ f: myId, q: 'w', m: { t: 'bye' } }), qos: 0 };
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const fin = ok => { if (done) return; done = true; clearTimeout(to); ok ? resolve() : reject(new Error('net')); };
+    const to = setTimeout(() => fin(false), 9000);
+    for (const url of BROKERS) {
+      let c;
+      try { c = mqtt.connect(url, { clientId: 'pg-' + uid(12), clean: true, keepalive: 20, reconnectPeriod: 2500, connectTimeout: 8000, will, ...(window.PG_MQTT_OPTS || {}) }); }
+      catch (e) { continue; }
+      net.clients.push(c);
+      c.on('connect', () => {
+        if (role === 'host') c.subscribe(TOPIC + room + '/host', { qos: 0 });
+        else { c.subscribe(TOPIC + room + '/all', { qos: 0 }); c.subscribe(TOPIC + room + '/to/' + myId, { qos: 0 }); }
+        fin(true);
+      });
+      c.on('message', (t, buf) => netRaw(buf));
+      c.on('error', () => {});
+    }
+  });
+}
+function netClose() {
+  for (const t of net.timers) clearInterval(t);
+  net.timers = [];
+  for (const c of net.clients) { try { c.end(true); } catch (e) {} }
+  net.clients = []; net.seen.clear(); net.order = [];
+}
 
 // ---------- ajustes ----------
 // vals + labels: selector de botones; min/max: contador numérico (segundos)
@@ -274,7 +344,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <dt>Segundos extra al acertar</dt><dd>Con mecha compartida, suma esos segundos a lo que quede al pasar la bomba.</dd>
 <dt>Mínimo al recibir la bomba</dt><dd>Con mecha compartida, a quien recibe la bomba le quedan siempre al menos esos segundos, aunque la mecha estuviera casi agotada.</dd>
 <dt>Orden de pase</dt><dd><b>Círculo</b>: la bomba sigue el orden de la sala y vuelve al primero. <b>Rebote</b>: va hasta el último jugador y rebota hacia atrás, y así de ida y vuelta. <b>Azar</b>: pasa a cualquier otro jugador que siga en juego.</dd>
-<dt>Tras explotar</dt><dd>La bomba pasa al siguiente según el orden de pase, o se queda con quien ha perdido la vida si sigue en juego.</dd>
+<dt>Tras explotar</dt><dd>La bomba pasa al siguiente según el orden de pase, o se queda con quien ha perdido la vida si sigue en juego. En ambos casos se enciende una mecha nueva.</dd>
 <dt>Vida extra con las 20 letras</dt><dd>Activa o desactiva el reto de las letras.</dd>
 <dt>Ver la mecha</dt><dd>Muestra una barra con el tiempo que queda. Sin ella solo ves cómo tiembla la bomba.</dd>
 </dl>
@@ -290,38 +360,38 @@ function norm(s) {
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const randCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += a[Math.random() * a.length | 0]; return c; };
 const rnd = (a, b) => a + Math.random() * (b - a);
-const tok = p => `<div class="tok" style="--bg:${COLORS[p.color][0]};--fg:${COLORS[p.color][1]}">${esc(p.name[0].toUpperCase())}</div>`;
+const tok = (p, cls) => `<div class="tok ${cls || ''}" style="--bg:${COLORS[p.color][0]};--fg:${COLORS[p.color][1]}">${esc(p.name[0].toUpperCase())}</div>`;
 
 // ---------- estado local ----------
-let peer = null, hostConn = null, isHost = false, room = '', myId = null, myName = '';
-let S = null, fuseEnd = 0, fuseTotal = 1, typed = '';
-let lastTurn = null, lastSyl = '';
-const conns = new Map();
+let isHost = false, room = '', myId = null, myName = '';
+let S = null, lastV = -1, fuseEnd = 0, fuseTotal = 1, typed = '';
+let lastTurn = null, lastSyl = '', lastHeard = 0, gotState = false;
+const lastSeen = {};    // solo anfitrión: id -> última vez que se supo de él
 
 // ---------- estado del anfitrión ----------
-let H = null, DICT = null, SYL = null, dictLoading = false;
+let H = null, DICT = null, SYL = null, EX = null, dictLoading = false;
 function newH() {
-  return { phase: 'lobby', players: [], turn: null, syl: '', fuseEnd: 0, fuseTotal: 1, used: new Set(), typing: '', recent: [], winner: null, tm: 0, dir: 1,
-           settings: { ...DEF } };
+  return { phase: 'lobby', players: [], turn: null, syl: '', fuseEnd: 0, fuseTotal: 1, used: new Set(), typing: '', recent: [], winner: null, tm: 0, dir: 1, v: 0,
+           fails: [], out: [], res: null, settings: { ...DEF } };
 }
 const byId = id => H.players.find(p => p.id === id);
 const now = () => performance.now();
 
 function pub() {
   return {
-    phase: H.phase, turn: H.turn, syl: H.syl, typing: H.typing, winner: H.winner, settings: H.settings,
+    v: ++H.v, phase: H.phase, turn: H.turn, syl: H.syl, typing: H.typing, winner: H.winner, settings: H.settings,
+    res: H.phase === 'ended' ? H.res : null,
     fuse: Math.max(0, Math.round(H.fuseEnd - now())), total: Math.round(H.fuseTotal),
-    players: H.players.map(p => ({ id: p.id, name: p.name, lives: p.lives, alive: p.alive, spec: p.spec, on: p.on, letters: p.letters, color: p.color }))
+    players: H.players.map(p => ({ id: p.id, name: p.name, lives: p.lives, alive: p.alive, spec: p.spec, on: p.on, back: p.back, letters: p.letters, color: p.color }))
   };
 }
-function send(c, m) { try { if (c && c.open) c.send(m); } catch (e) {} }
-function bcast(m) { for (const c of conns.values()) send(c, m); }
+function bcast(m) { netPub('all', m); }
 function push() { const s = pub(); applyState(s); bcast({ t: 'state', s }); }
 function evt(e) { showEvent(e); bcast({ t: 'evt', e }); }
-function reply(id, m) { if (id === 'host') onMsg(m); else send(conns.get(id), m); }
+function reply(id, m) { if (id === 'host') onMsg(m); else netPub('to/' + id, m); }
 
 function setSetting(k, v) {
-  const d = SCHEMA.find(x => x.k === k); if (!d || !H || H.phase !== 'lobby') return;
+  const d = SCHEMA.find(x => x.k === k); if (!d || !H || H.phase === 'playing') return;
   const c = H.settings;
   if (d.vals) { const ok = d.vals.find(x => x === v); if (ok === undefined) return; c[k] = ok; }
   else { v = Math.round(+v); if (!isFinite(v)) return; c[k] = Math.max(d.min, Math.min(d.max, v)); }
@@ -336,7 +406,7 @@ function addPlayer(id, name) {
   while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
   const used = new Set(H.players.map(p => p.color));
   let color = 0; while (used.has(color) && color < COLORS.length - 1) color++;
-  H.players.push({ id, name: n, lives: 0, alive: false, spec: H.phase !== 'lobby', on: true, letters: '', color });
+  H.players.push({ id, name: n, lives: 0, alive: false, spec: H.phase === 'playing', on: true, back: true, letters: '', color, words: 0, best: '' });
 }
 
 function pickSyl() {
@@ -388,21 +458,37 @@ function pickNext(kind) {
 }
 
 function startGame() {
-  if (!DICT || !SYL) return;
+  if (!DICT || !SYL || H.phase === 'playing') return;
   const ps = H.players.filter(p => p.on);
   if (ps.length < 2) return;
   H.players = ps;
-  for (const p of H.players) { p.lives = H.settings.lives; p.alive = true; p.spec = false; p.letters = ''; }
-  H.used = new Set(); H.recent = []; H.winner = null; H.phase = 'playing'; H.dir = 1;
+  for (const p of H.players) { p.lives = H.settings.lives; p.alive = true; p.spec = false; p.back = false; p.letters = ''; p.words = 0; p.best = ''; }
+  H.used = new Set(); H.recent = []; H.winner = null; H.res = null; H.fails = []; H.out = []; H.phase = 'playing'; H.dir = 1;
   H.turn = H.players[Math.random() * H.players.length | 0].id;
   H.syl = pickSyl(); H.typing = '';
   newFuse(); push();
+}
+
+// resumen final
+function examplesFor(s) {
+  const c = (EX && EX[s]) ? EX[s].slice(0, 5) : [];
+  for (let i = c.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [c[i], c[j]] = [c[j], c[i]]; }
+  return c.slice(0, 2);
+}
+function buildRes() {
+  const order = [];
+  if (H.winner) order.push(H.winner);
+  for (let i = H.out.length - 1; i >= 0; i--) if (!order.includes(H.out[i])) order.push(H.out[i]);
+  const rank = order.map(id => byId(id)).filter(Boolean).map(p => ({ id: p.id, words: p.words || 0, best: p.best || '' }));
+  const seen = new Set(), fails = [];
+  for (const s of H.fails) { if (seen.has(s)) continue; seen.add(s); fails.push({ s, ex: examplesFor(s) }); if (fails.length >= 3) break; }
+  return { rank, fails };
 }
 function checkEnd() {
   const alive = H.players.filter(p => p.alive && p.on);
   if (alive.length <= 1) {
     clearTimeout(H.tm); H.phase = 'ended'; H.turn = null; H.typing = '';
-    H.winner = alive[0] ? alive[0].id : null; push(); return true;
+    H.winner = alive[0] ? alive[0].id : null; H.res = buildRes(); push(); return true;
   }
   return false;
 }
@@ -416,7 +502,8 @@ function advance(kind) {
 function explode() {
   if (H.phase !== 'playing') return;
   const p = byId(H.turn);
-  if (p) { p.lives--; if (p.lives <= 0) p.alive = false; }
+  H.fails.push(H.syl);
+  if (p) { p.lives--; if (p.lives <= 0) { p.alive = false; H.out.push(p.id); } }
   evt({ k: 'boom', id: H.turn, name: p ? p.name : '', out: !!p && !p.alive });
   advance('boom');
 }
@@ -431,12 +518,14 @@ function submit(id, raw) {
   else if (!DICT.has(w)) err = 'No está en el diccionario';
   if (err) { reply(id, { t: 'bad', m: err }); return; }
   H.used.add(w);
+  const shown = String(raw).trim().toLowerCase().slice(0, 40);
+  p.words++; if (shown.length > p.best.length) p.best = shown;
   let bonus = false;
   if (c.letters) {
     for (const ch of w) if (BONUS.includes(ch) && !p.letters.includes(ch)) p.letters += ch;
     if (p.letters.length >= BONUS.length) { p.letters = ''; if (p.lives < MAX_LIVES) { p.lives++; bonus = true; } }
   }
-  evt({ k: 'ok', id, name: p.name, w, bonus });
+  evt({ k: 'ok', id, name: p.name, w: shown, bonus });
   advance('pass');
 }
 function fromPlayer(id, m) {
@@ -444,84 +533,99 @@ function fromPlayer(id, m) {
   if (m.t === 'typing') {
     if (H.phase === 'playing' && H.turn === id) { H.typing = String(m.text || '').slice(0, 40); setTyped(H.typing); bcast({ t: 'typing', text: H.typing }); }
   } else if (m.t === 'submit') submit(id, m.w);
+  else if (m.t === 'again') { const p = byId(id); if (p && H.phase !== 'playing') { p.back = true; push(); } }
 }
 function hostLeft(id) {
-  conns.delete(id);
+  delete lastSeen[id];
   const p = byId(id); if (!p) return;
   evt({ k: 'left', name: p.name });
   if (H.phase === 'lobby') { H.players = H.players.filter(x => x.id !== id); push(); return; }
+  if (p.alive && H.phase === 'playing') H.out.push(p.id);
   p.on = false; p.alive = false;
   if (H.phase === 'playing') { if (H.turn === id) advance('leave'); else if (!checkEnd()) push(); }
   else push();
 }
+function hostRecv(m, f) {
+  if (!m || typeof m !== 'object') return;
+  lastSeen[f] = now();
+  if (m.t === 'hello') {
+    const p = byId(f);
+    if (p) { netPub('to/' + f, { t: 'state', s: pub() }); return; }
+    if (H.players.filter(x => x.on).length >= MAX_PLAYERS) { netPub('to/' + f, { t: 'full' }); return; }
+    addPlayer(f, m.name); evt({ k: 'join', name: byId(f).name }); push();
+  } else if (m.t === 'bye') hostLeft(f);
+  else if (byId(f)) fromPlayer(f, m);
+}
 async function loadData() {
   if (DICT || dictLoading) return; dictLoading = true; renderLobby();
   try {
-    const [t, j] = await Promise.all([fetch('words.txt').then(r => r.text()), fetch('syllables.json').then(r => r.json())]);
-    DICT = new Set(t.split('\n')); SYL = j;
+    const [t, j, ex] = await Promise.all([
+      fetch('words.txt').then(r => r.text()),
+      fetch('syllables.json').then(r => r.json()),
+      fetch('examples.json').then(r => r.json()).catch(() => null)
+    ]);
+    DICT = new Set(t.split('\n')); SYL = j; EX = ex;
   } catch (e) { $('#lobbyHint').textContent = 'No se pudo cargar el diccionario. Recarga la página.'; }
   dictLoading = false; renderLobby();
 }
 
-// ---------- red ----------
+// ---------- conexión ----------
 function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
-function fail(msg) { setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
-function keepAlive() { peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} }); }
+function fail(msg) { netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
 
-function createRoom() {
-  room = randCode();
-  peer = new Peer(PREFIX + room, { config: ICE });
-  peer.on('open', () => {
-    isHost = true; myId = 'host'; H = newH(); addPlayer('host', myName);
-    history.replaceState(null, '', '?sala=' + room);
-    keepAlive(); push(); loadData();
-  });
-  peer.on('error', e => {
-    if (e.type === 'unavailable-id') { try { peer.destroy(); } catch (x) {} createRoom(); }
-    else fail('No se pudo crear la sala. Prueba de nuevo en unos segundos.');
-  });
-  peer.on('connection', c => {
-    c.on('data', m => {
-      if (m && m.t === 'hello') {
-        if (byId(c.peer)) return;
-        if (H.players.length >= MAX_PLAYERS) { send(c, { t: 'full' }); setTimeout(() => c.close(), 300); return; }
-        conns.set(c.peer, c); addPlayer(c.peer, m.name); evt({ k: 'join', name: byId(c.peer).name }); push();
-      } else if (byId(c.peer)) fromPlayer(c.peer, m);
-    });
-    c.on('close', () => hostLeft(c.peer));
-    c.on('error', () => hostLeft(c.peer));
-  });
+async function createRoom() {
+  room = randCode(); myId = 'host'; isHost = true;
+  net.onMsg = hostRecv;
+  try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
+  H = newH(); addPlayer('host', myName);
+  history.replaceState(null, '', '?sala=' + room);
+  net.timers.push(setInterval(() => {
+    bcast({ t: 'hb' });
+    const t = now();
+    for (const p of H.players.slice()) if (p.id !== 'host' && p.on && t - (lastSeen[p.id] || 0) > DEAD) hostLeft(p.id);
+  }, BEAT));
+  push(); loadData();
 }
 
-function joinRoom(code) {
-  room = code; isHost = false;
-  peer = new Peer({ config: ICE });
-  peer.on('open', id => {
-    myId = id; keepAlive();
-    hostConn = peer.connect(PREFIX + room, { reliable: true });
-    const to = setTimeout(() => fail('No se pudo conectar con la sala. Revisa el código o prueba con otra red.'), 12000);
-    hostConn.on('open', () => { clearTimeout(to); hostConn.send({ t: 'hello', name: myName }); });
-    hostConn.on('data', onMsg);
-    hostConn.on('close', hostGone);
-  });
-  peer.on('error', e => fail(e.type === 'peer-unavailable' ? 'Esa sala no existe o ya se cerró.' : 'No se pudo conectar. Prueba de nuevo.'));
+async function joinRoom(code) {
+  room = code; isHost = false; myId = uid(10); lastV = -1; gotState = false;
+  net.onMsg = onMsg;
+  try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
+  lastHeard = now();
+  const hello = () => netPub('host', { t: 'hello', name: myName });
+  hello(); let tries = 0;
+  const h = setInterval(() => {
+    if (gotState) { clearInterval(h); return; }
+    if (++tries > 6) { clearInterval(h); fail('No se encontró esa sala. Revisa el código.'); return; }
+    hello();
+  }, 1500);
+  net.timers.push(h);
+  net.timers.push(setInterval(() => {
+    netPub('host', { t: 'ping' });
+    if (gotState && now() - lastHeard > DEAD) hostGone('Se perdió la conexión con la sala.');
+  }, BEAT));
 }
-function hostGone() {
+function hostGone(why) {
   if (isHost) return;
-  S = null; $('#over').hidden = false; $('#overTitle').textContent = 'Sala cerrada';
-  const b = $('#btnBack'); b.hidden = false; b.textContent = 'Salir'; $('#overHint').textContent = '';
-  b.onclick = () => { location.href = location.pathname; };
+  netClose(); S = null;
+  $('#rank').innerHTML = ''; $('#fails').innerHTML = '';
+  $('#over').hidden = false; $('#overTitle').textContent = 'Sala cerrada'; $('#overHint').textContent = why || '';
+  const b = $('#btnAgain'); b.textContent = 'Salir'; b.onclick = () => { location.href = location.pathname; };
 }
 
 function onMsg(m) {
   if (!m) return;
-  if (m.t === 'state') applyState(m.s);
-  else if (m.t === 'typing') { if (!S || S.turn !== myId) setTyped(m.text); }
+  if (!isHost) lastHeard = now();
+  if (m.t === 'state') {
+    if (m.s.v <= lastV) return;
+    lastV = m.s.v; gotState = true; applyState(m.s);
+  } else if (m.t === 'typing') { if (!S || S.turn !== myId) setTyped(m.text); }
   else if (m.t === 'evt') showEvent(m.e);
   else if (m.t === 'bad') badInput(m.m);
   else if (m.t === 'full') fail('La sala está llena.');
+  else if (m.t === 'closed') hostGone('El anfitrión ha cerrado la sala.');
 }
-function act(m) { if (isHost) fromPlayer('host', m); else send(hostConn, m); }
+function act(m) { if (isHost) fromPlayer('host', m); else netPub('host', m); }
 
 // ---------- UI ----------
 function show(id) { for (const s of ['home', 'lobby', 'game']) $('#' + s).hidden = s !== id; }
@@ -529,7 +633,10 @@ function link() { const u = new URL(location.href); u.search = '?sala=' + room; 
 
 function applyState(s) {
   S = s; fuseEnd = now() + s.fuse; fuseTotal = Math.max(1, s.total || 1);
-  if (s.phase === 'lobby') { show('lobby'); $('#over').hidden = true; lastTurn = null; lastSyl = ''; renderLobby(); }
+  const me = s.players.find(p => p.id === myId);
+  const inLobby = s.phase === 'lobby' || (s.phase === 'ended' && me && me.back);
+  if (s.phase !== 'playing') { lastTurn = null; lastSyl = ''; }
+  if (inLobby) { show('lobby'); $('#over').hidden = true; renderLobby(); }
   else { show('game'); renderGame(); }
 }
 function setTyped(t) { typed = t || ''; renderTyped(); }
@@ -555,15 +662,19 @@ function cfgClick(e) {
 function renderLobby() {
   if (!S) return;
   $('#lobbyCode').textContent = room;
-  $('#plist').innerHTML = S.players.map(p =>
-    `<div class="prow">${tok(p)}<span>${esc(p.name)}</span><span class="tag">${p.id === 'host' ? 'anfitrión' : ''}${p.id === myId && p.id !== 'host' ? 'tú' : ''}</span></div>`).join('');
+  const ended = S.phase === 'ended';
+  $('#plist').innerHTML = S.players.filter(p => p.on || !ended).map(p => {
+    const wait = ended && !p.back;
+    const tag = wait ? 'viendo resultados' : p.id === 'host' ? 'anfitrión' : (p.id === myId ? 'tú' : '');
+    return `<div class="prow ${wait ? 'wait' : ''}">${tok(p)}<span>${esc(p.name)}</span><span class="tag">${tag}</span></div>`;
+  }).join('');
   $('#cfgBasic').innerHTML = cfgHtml(true);
   $('#cfgMoreBody').innerHTML = cfgHtml(false);
   $('#btnStart').hidden = !isHost;
   if (isHost) {
-    const ready = !!DICT && S.players.length >= 2;
+    const ready = !!DICT && S.players.filter(p => p.on).length >= 2;
     $('#btnStart').disabled = !ready;
-    $('#lobbyHint').textContent = dictLoading ? 'Cargando diccionario…' : !DICT ? '' : S.players.length < 2 ? 'Comparte el enlace para empezar.' : '';
+    $('#lobbyHint').textContent = dictLoading ? 'Cargando diccionario…' : !DICT ? '' : S.players.filter(p => p.on).length < 2 ? 'Comparte el enlace para empezar.' : '';
   } else $('#lobbyHint').textContent = 'Esperando al anfitrión…';
 }
 
@@ -574,6 +685,22 @@ function renderTyped() {
   for (let k = 0; k < typed.length; k++) h += `<span class="t${i >= 0 && k >= i && k < i + S.syl.length ? ' s' : ''}">${esc(typed[k])}</span>`;
   if (playing) h += '<span class="caret"></span>';
   const el = $('#tiles'); el.innerHTML = h; el.style.setProperty('--n', Math.max(7, typed.length + 1));
+}
+
+function renderResults(s) {
+  const r = s.res || { rank: [], fails: [] };
+  const wn = s.players.find(p => p.id === s.winner);
+  $('#overTitle').textContent = wn ? (wn.id === myId ? 'Has ganado' : 'Gana ' + wn.name) : 'Empate';
+  $('#rank').innerHTML = r.rank.map((x, i) => {
+    const p = s.players.find(q => q.id === x.id); if (!p) return '';
+    const line = x.words ? `${x.words} ${x.words === 1 ? 'palabra' : 'palabras'}` + (x.best ? ` · <em>${esc(x.best)}</em>` : '') : 'sin palabras';
+    return `<li><span class="n">${i + 1}</span>${tok(p, 'sm')}<div><b>${esc(p.name)}</b><small>${line}</small></div></li>`;
+  }).join('');
+  $('#fails').innerHTML = r.fails.length ? '<h4>Sin resolver</h4>' + r.fails.map(f =>
+    `<div class="fail"><span class="chip">${esc(f.s.toUpperCase())}</span><span>${f.ex.length ? esc(f.ex.join(', ')) : ''}</span></div>`).join('') : '';
+  const b = $('#btnAgain'); b.textContent = 'Jugar de nuevo';
+  b.onclick = () => { if (isHost) { const p = byId('host'); if (p) { p.back = true; push(); } } else act({ t: 'again' }); };
+  $('#overHint').textContent = '';
 }
 
 function renderGame() {
@@ -603,14 +730,8 @@ function renderGame() {
   const L = mine ? mine.letters : '';
   $('#letters').innerHTML = s.settings.letters && mine && mine.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
   const over = $('#over');
-  if (s.phase === 'ended') {
-    const wn = s.players.find(p => p.id === s.winner);
-    over.hidden = false;
-    $('#overTitle').textContent = wn ? (wn.id === myId ? 'Has ganado' : 'Gana ' + wn.name) : 'Empate';
-    const b = $('#btnBack'); b.hidden = !isHost; b.textContent = 'Volver a la sala';
-    b.onclick = () => { H.players = H.players.filter(p => p.on); for (const p of H.players) { p.spec = false; p.alive = false; p.lives = 0; p.letters = ''; } H.phase = 'lobby'; H.winner = null; H.turn = null; push(); };
-    $('#overHint').textContent = isHost ? '' : 'Esperando al anfitrión…';
-  } else over.hidden = true;
+  if (s.phase === 'ended') { over.hidden = false; renderResults(s); }
+  else over.hidden = true;
 }
 
 let msgTm = 0;
@@ -687,6 +808,7 @@ $('#form').addEventListener('submit', e => { e.preventDefault(); const v = $('#w
 addEventListener('keydown', e => {
   if (S && S.phase === 'playing' && S.turn === myId && document.activeElement !== $('#word') && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) $('#word').focus();
 });
+addEventListener('pagehide', () => { if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' }); });
 nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') (inviteCode.length === 4 ? $('#btnJoinInvite') : $('#btnCreate')).click(); });
 })();
 </script>
