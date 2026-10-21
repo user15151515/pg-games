@@ -6,9 +6,9 @@ Juegos: Teclazo (`teclazo/`), carrera de mecanografía en la que cada coche avan
 
 ## Multijugador
 
-Los mensajes pasan por brokers MQTT públicos (EMQX, HiveMQ y test.mosquitto.org) usando WebSocket seguro, así que no depende de la red de cada jugador. Quien crea la sala es el anfitrión y lleva la partida (turnos, mecha, validación de palabras); los demás le envían sus acciones. Cada cliente se conecta a todos los brokers a la vez y publica por todos; los mensajes duplicados se descartan, de modo que basta con que uno funcione. Hay latidos cada 3 s y se da por perdido a quien lleva 20 s sin responder.
+Los mensajes pasan por Supabase Realtime (solo broadcast: sin tablas ni base de datos) en un proyecto propio de pg games, independiente de cualquier otro. Quien crea la sala es el anfitrión y lleva la partida (turnos, mecha, validación de palabras); los demás le envían sus acciones. Hay un canal común por sala (lo que emite el anfitrión) y un canal por invitado (lo que se dicen ese invitado y el anfitrión), así que cada mensaje de un invitado lo recibe solo el anfitrión. Al crear sala se comprueba que el código esté libre, hay un tope de 40 mensajes por segundo por cliente y de 16 canales de invitado por sala. Hay latidos cada 3 s y se da por perdido a quien lleva 20 s sin responder. La clave `anon` del código es pública por diseño; no hay ninguna clave secreta en el cliente.
 
-Limitaciones actuales: si el anfitrión cierra la pestaña la sala termina; quien pierde la conexión en plena partida queda eliminado; los brokers son gratuitos y compartidos, sin garantías de servicio ni privacidad (no se envía nada sensible, pero cualquiera que adivine el código de sala podría leer o entrar). No hay cuentas ni lista de amigos. El plan de salida es Supabase Realtime con un proyecto propio: solo habría que cambiar la capa de red (`netOpen`, `netPub`).
+Limitaciones: si el anfitrión cierra la pestaña la sala termina; quien pierde la conexión en plena partida queda eliminado; los canales son públicos, así que cualquiera que adivine el código de sala podría leer o entrar; el anfitrión es quien manda y podría falsear una partida. No hay cuentas ni lista de amigos. El plan gratuito de Supabase Realtime tiene límites de conexiones y mensajes por segundo (ver su documentación oficial).
 
 ## Desarrollo
 
@@ -34,7 +34,7 @@ teclazo/palabras.json palabras comunes para el modo Palabras
 bomba/words.txt       diccionario normalizado (sin acentos)
 bomba/syllables.json  sílabas por dificultad
 bomba/examples.json   palabras de ejemplo por sílaba (para el resumen final)
-vendor/               mqtt.js y Bricolage Grotesque (licencia OFL)
+vendor/               supabase-js (UMD) y Bricolage Grotesque (licencia OFL)
 tools/build-words.mjs genera diccionario y sílabas
 ```
 

@@ -306,7 +306,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 
 </main>
 
-<script src="../vendor/mqtt.min.js"></script>
+<script src="../vendor/supabase.js"></script>
 <script>
 (() => {
 'use strict';
@@ -317,63 +317,98 @@ const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'
                 ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
 
 // ---------- red ----------
-// Los mensajes pasan por brokers MQTT públicos (WebSocket seguro). No depende de la red de cada jugador.
-// Cada cliente se conecta a todos los brokers a la vez y publica por todos; los duplicados se descartan,
-// así que basta con que uno funcione para los dos lados.
-const BROKERS = window.PG_BROKERS || [
-  'wss://broker.emqx.io:8084/mqtt',
-  'wss://broker.hivemq.com:8884/mqtt',
-  'wss://test.mosquitto.org:8081'
-];
-const TOPIC = 'pg/bomba/v1/';
+// Supabase Realtime, solo broadcast: no hay tablas ni base de datos y las salas existen mientras haya alguien conectado.
+// Canal «a» (todos): lo que emite el anfitrión. Canal «u:<id>» (uno por invitado): lo que se dicen ese invitado y el anfitrión.
+// Así cada mensaje de un invitado lo recibe solo el anfitrión, no el resto de jugadores.
+// La clave anon es pública por diseño; en el cliente no hay ninguna clave secreta.
+const SB_URL = window.PG_SB_URL || 'https://acsrnjowxvjamiybsjkx.supabase.co';
+const SB_KEY = window.PG_SB_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
+const TOPIC = 'pg:bomba:';
 const BEAT = 3000, DEAD = 20000;
+const MAX_CHANS = 16, MAX_RATE = 40;
 const uid = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
-const net = { clients: [], seq: 0, seen: new Set(), order: [], onMsg: null, timers: [] };
+const net = { clients: [], sb: null, a: null, u: {}, pend: {}, seq: 0, onMsg: null, timers: [], role: '', sent: [], probe: null };
 
-function envelope(m, q) { return JSON.stringify({ f: myId, q: q === undefined ? ++net.seq : q, m }); }
-function netPub(suffix, m) {
-  if (!net.clients.length) return;
-  const s = envelope(m);
-  for (const c of net.clients) if (c.connected) { try { c.publish(TOPIC + room + '/' + suffix, s, { qos: 0 }); } catch (e) {} }
+function netSend(ch, m) {
+  const t = Date.now();
+  net.sent = net.sent.filter(x => t - x < 1000);
+  if (net.sent.length >= MAX_RATE) return;   // válvula de seguridad: nunca más de MAX_RATE mensajes por segundo desde un cliente
+  net.sent.push(t);
+  try { const r = ch.send({ type: 'broadcast', event: 'm', payload: { f: myId, q: ++net.seq, m } }); if (r && r.catch) r.catch(() => {}); } catch (e) {}
 }
-function netRaw(buf) {
-  let e; try { e = JSON.parse(buf.toString()); } catch (x) { return; }
-  if (!e || typeof e !== 'object' || !e.m) return;
-  const key = e.f + ':' + e.q;
-  if (net.seen.has(key)) return;
-  net.seen.add(key); net.order.push(key);
-  if (net.order.length > 800) net.seen.delete(net.order.shift());
-  net.onMsg(e.m, e.f);
+function netPub(suffix, m) {
+  if (!net.sb) return;
+  let ch;
+  if (suffix === 'all') ch = net.a;
+  else if (suffix === 'host') ch = m && m.t === 'hello' ? net.a : net.u[myId];
+  else { const id = suffix.slice(3); ch = net.u[id]; if (m && m.t === 'kicked') setTimeout(() => netDrop(id), 800); }
+  if (ch) netSend(ch, m);
+}
+function netChan(name, onEnv) {
+  return new Promise((resolve, reject) => {
+    const ch = net.sb.channel(TOPIC + room + ':' + name, { config: { broadcast: { self: false, ack: false } } });
+    const to = setTimeout(() => reject(new Error('net')), 9000);
+    ch.on('broadcast', { event: 'm' }, p => { const e = p && p.payload; if (e && typeof e === 'object' && e.m && typeof e.m === 'object') onEnv(e); });
+    ch.subscribe(st => {
+      if (st === 'SUBSCRIBED') { clearTimeout(to); resolve(ch); }
+      else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); reject(new Error('net')); }
+    });
+  });
+}
+// El anfitrión se suscribe al canal de cada invitado cuando llega su «hello» por el canal común.
+async function netAttach(f, e) {
+  if (!net.u[f]) {
+    if (net.pend[f] || Object.keys(net.u).length >= MAX_CHANS) return;
+    net.pend[f] = 1;
+    try { net.u[f] = await netChan('u:' + f, x => { if (x.f === f) net.onMsg(x.m, f); }); }
+    catch (x) { delete net.pend[f]; return; }
+    delete net.pend[f];
+  }
+  net.onMsg(e.m, f);
+}
+function netDrop(id) {
+  const ch = net.u[id]; if (!ch) return;
+  delete net.u[id];
+  try { net.sb.removeChannel(ch); } catch (e) {}
 }
 function netOpen(role) {
   netClose();
-  const will = role === 'host'
-    ? { topic: TOPIC + room + '/all',  payload: JSON.stringify({ f: 'host', q: 'w', m: { t: 'closed' } }), qos: 0 }
-    : { topic: TOPIC + room + '/host', payload: JSON.stringify({ f: myId, q: 'w', m: { t: 'bye' } }), qos: 0 };
-  return new Promise((resolve, reject) => {
-    let done = false;
-    const fin = ok => { if (done) return; done = true; clearTimeout(to); ok ? resolve() : reject(new Error('net')); };
-    const to = setTimeout(() => fin(false), 9000);
-    for (const url of BROKERS) {
-      let c;
-      try { c = mqtt.connect(url, { clientId: 'pg-' + uid(12), clean: true, keepalive: 20, reconnectPeriod: 2500, connectTimeout: 8000, will, ...(window.PG_MQTT_OPTS || {}) }); }
-      catch (e) { continue; }
-      net.clients.push(c);
-      c.on('connect', () => {
-        if (role === 'host') c.subscribe(TOPIC + room + '/host', { qos: 0 });
-        else { c.subscribe(TOPIC + room + '/all', { qos: 0 }); c.subscribe(TOPIC + room + '/to/' + myId, { qos: 0 }); }
-        fin(true);
-      });
-      c.on('message', (t, buf) => netRaw(buf));
-      c.on('error', () => {});
-    }
+  net.role = role;
+  return new Promise(async (resolve, reject) => {
+    try {
+      net.sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+      net.clients = [net.sb];
+      if (role === 'host') {
+        for (let tries = 0; tries < 5; tries++) {
+          if (net.a) { try { net.sb.removeChannel(net.a); } catch (e) {} net.a = null; }
+          let taken = false;
+          net.probe = () => { taken = true; };
+          net.a = await netChan('a', e => {
+            if (e.m.t === 'probe') { if (!net.probe) netPub('all', { t: 'hb' }); return; }   // otro anfitrión comprueba si el código está libre
+            if (e.f === 'host') { if (net.probe) net.probe(); return; }   // ya hay un anfitrión en este código
+            if (e.m.t === 'hello') netAttach(e.f, e);
+          });
+          try { net.a.send({ type: 'broadcast', event: 'm', payload: { f: 'p' + uid(6), q: 0, m: { t: 'probe' } } }); } catch (e) {}
+          await new Promise(r => setTimeout(r, 900));
+          net.probe = null;
+          if (!taken) return resolve();
+          room = randCode();   // código ocupado: probamos con otro
+        }
+        throw new Error('net');
+      } else {
+        net.a = await netChan('a', e => { if (e.f === 'host') net.onMsg(e.m, e.f); });
+        net.u[myId] = await netChan('u:' + myId, e => { if (e.f === 'host') net.onMsg(e.m, e.f); });
+        resolve();
+      }
+    } catch (e) { reject(new Error('net')); }
   });
 }
 function netClose() {
   for (const t of net.timers) clearInterval(t);
   net.timers = [];
-  for (const c of net.clients) { try { c.end(true); } catch (e) {} }
-  net.clients = []; net.seen.clear(); net.order = [];
+  const sb = net.sb;
+  net.sb = null; net.a = null; net.u = {}; net.pend = {}; net.clients = []; net.sent = []; net.probe = null;
+  if (sb) { try { const r = sb.removeAllChannels(); if (r && r.then) r.then(() => sb.realtime.disconnect()).catch(() => {}); } catch (e) {} }
 }
 
 // ---------- ajustes ----------
@@ -685,7 +720,7 @@ function fromPlayer(id, m) {
   else if (m.t === 'again') { const p = byId(id); if (p && H.phase !== 'playing') { p.back = true; push(); } }
 }
 function hostLeft(id, kicked) {
-  delete lastSeen[id];
+  delete lastSeen[id]; netDrop(id);
   const p = byId(id); if (!p) return;
   evt({ k: 'left', name: p.name, kicked: !!kicked });
   if (H.phase === 'lobby') { H.players = H.players.filter(x => x.id !== id); push(); return; }
@@ -1087,8 +1122,15 @@ $('#cfgMoreBody').addEventListener('click', cfgClick);
 $('#plist').addEventListener('click', e => { const b = e.target.closest('[data-kick]'); if (b && isHost) kick(b.dataset.kick); });
 $('#word').addEventListener('input', e => {
   if (!S || S.turn !== myId) { e.target.value = ''; typed = ''; renderTyped(); return; }   // fuera de tu turno no se escribe
-  typed = e.target.value; renderTyped(); act({ t: 'typing', text: typed });
+  typed = e.target.value; renderTyped(); sendTyping();
 });
+let typAt = 0, typTm = 0;
+function sendTyping() {   // como mucho cuatro avisos por segundo: el resto de jugadores solo ve el texto en vivo
+  const t = now();
+  clearTimeout(typTm);
+  if (t - typAt >= 250) { typAt = t; act({ t: 'typing', text: typed }); }
+  else typTm = setTimeout(() => { typAt = now(); act({ t: 'typing', text: typed }); }, 260);
+}
 $('#form').addEventListener('submit', e => { e.preventDefault(); const v = $('#word').value.trim(); if (v && S && S.turn === myId) act({ t: 'submit', w: v }); });
 // un toque en cualquier sitio de la partida devuelve el foco al campo (y el teclado)
 $('#word').addEventListener('focus', renderTyped);
