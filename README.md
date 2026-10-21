@@ -37,3 +37,7 @@ bomba/examples.json   palabras de ejemplo por sílaba (para el resumen final)
 vendor/               mqtt.js y Bricolage Grotesque (licencia OFL)
 tools/build-words.mjs genera diccionario y sílabas
 ```
+
+## Publicación
+
+Sitio estático sin build: se sirve tal cual desde la raíz del repo, con rutas relativas, así que funciona igual en `/` (dominio propio) que en un subdirectorio (GitHub Pages). Destino previsto: `https://games.pgfantasy.cat`, como proyecto de Vercel propio conectado solo a este repo (Framework Preset: Other, sin build command, output directory vacío). No comparte repo, proyecto, base de datos ni claves con ningún otro producto; del dominio raíz solo usa el subdominio. No usa cookies ni claves: el multijugador va por brokers MQTT públicos y los datos locales viven en `localStorage` del propio origen.
