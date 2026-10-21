@@ -2,7 +2,7 @@
 
 Juegos cortos multijugador para jugar con amigos. Web estática, sin registro: se juega compartiendo un enlace.
 
-Juegos: Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba.
+Juegos: Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega».
 
 ## Multijugador
 
@@ -14,7 +14,7 @@ Limitaciones actuales: si el anfitrión cierra la pestaña la sala termina, y en
 
 Servir por HTTP, no abrir el archivo directamente: `python3 -m http.server 8000`.
 
-Regenerar diccionario y sílabas (`bomba/words.txt`, `bomba/syllables.json`):
+Regenerar diccionario y sílabas (`bomba/words.txt`, `bomba/syllables.json`). Si cambias los umbrales de dificultad en `tools/build-words.mjs`, actualiza también el texto de «Dificultad» en `bomba/index.html` (constante `HOW`):
 
 ```
 npm install

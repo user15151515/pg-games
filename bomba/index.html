@@ -22,13 +22,28 @@
 #codeIn{text-transform:uppercase;letter-spacing:.2em;font-weight:800;text-align:center;max-width:150px}
 #homeMsg{min-height:30px;margin:14px 0 0;font-weight:600}
 #homeMsg.bad{width:fit-content;background:var(--pink);padding:2px 12px;border-radius:99px}
-
 .spark{transform-origin:170px 32px;animation:flick .3s infinite alternate}
 @keyframes flick{to{transform:scale(.7) rotate(20deg)}}
 
-/* tokens de jugador */
+/* fichas de jugador */
 .tok{width:50px;height:50px;border-radius:50%;border:var(--line);background:var(--bg);color:var(--fg);display:grid;place-items:center;
   font-weight:800;font-size:22px;flex:0 0 auto;transition:transform .2s,box-shadow .2s}
+
+/* paneles desplegables */
+details.panel{background:var(--white);border:var(--line);border-radius:16px;padding:0 16px;margin-top:14px}
+details.panel summary{cursor:pointer;font-weight:700;padding:13px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;border-radius:10px}
+details.panel summary::-webkit-details-marker{display:none}
+details.panel summary::after{content:"+";font-weight:800;font-size:24px;line-height:1}
+details.panel[open] summary::after{content:"−"}
+details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.body{padding:0 0 16px;font-size:16px;line-height:1.45}
+.body h3{font-size:17px;margin:18px 0 6px;font-weight:800}
+.body h3:first-child{margin-top:2px}
+.body p{margin:0 0 8px}
+.body dl{margin:0}
+.body dt{font-weight:700;margin-top:10px}
+.body dd{margin:2px 0 0}
+.ex{font-weight:700;background:var(--paper);border-radius:6px;padding:0 5px;white-space:nowrap}
 
 /* sala */
 .codecard{background:var(--white);border:var(--line);border-radius:20px;box-shadow:var(--hard);padding:18px 20px 20px;transform:rotate(-1.2deg);margin-bottom:22px}
@@ -37,34 +52,37 @@
 .plist{display:grid;gap:10px;margin-bottom:24px}
 .prow{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:700}
 .prow .tag{font-size:15px;font-weight:600;margin-left:auto;opacity:.7}
-.cfg{display:grid;gap:14px;margin-bottom:24px}
-.cfg label{display:block;font-size:15px;font-weight:700;margin-bottom:6px}
+.set{display:grid;gap:6px;margin-bottom:16px}
+.set label,.set .lbl{font-size:15px;font-weight:700}
+.set.off{opacity:.4;pointer-events:none}
 .seg{display:flex;gap:6px}
-.seg button{flex:1;padding:9px 6px;box-shadow:none;background:transparent;color:var(--ink);border-width:3px;font-size:17px}
+.seg button{flex:1;padding:9px 6px;box-shadow:none;background:transparent;color:var(--ink);font-size:16px;white-space:nowrap}
 .seg button.on{background:var(--ink);color:var(--paper)}
 .seg button:hover:not(:disabled),.seg button:active:not(:disabled){transform:none;box-shadow:none}
 .seg button:disabled{opacity:1;cursor:default}
 .seg button:disabled:not(.on){opacity:.4}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:44px;padding:6px 0;box-shadow:none;background:transparent;color:var(--ink);font-size:22px;line-height:1}
+.stepper button:hover:not(:disabled),.stepper button:active:not(:disabled){transform:none;box-shadow:none}
+.stepper button:disabled{opacity:.35;cursor:default}
+.stepper b{min-width:64px;text-align:center;font-size:20px}
+#cfgMore .body{padding-top:4px}
 #lobbyHint{text-align:center;font-weight:600;margin:14px 0 0;min-height:24px}
 
 /* partida */
 #game .top{display:flex;justify-content:space-between;font-weight:700;font-size:15px}
-#table{position:relative;width:min(100%,460px,52dvh);aspect-ratio:1;margin:10px auto 0}
-#table.boom{animation:tshake .45s}
-@keyframes tshake{20%{transform:translate(-8px,3px)}40%{transform:translate(8px,-3px)}60%{transform:translate(-5px,2px)}80%{transform:translate(4px,-2px)}}
 #flash{position:fixed;inset:0;background:var(--pink);opacity:0;pointer-events:none;z-index:5}
 #flash.go{animation:fl .55s ease-out}
 @keyframes fl{from{opacity:.6}to{opacity:0}}
-#bomb{position:absolute;left:50%;top:50%;width:42%;transform:translate(-50%,-50%);z-index:2;container-type:inline-size}
-#bomb svg{display:block;width:100%;height:auto}
-#syl{position:absolute;left:0;right:0;top:58%;transform:translateY(-52%);text-align:center;color:var(--white);
-  font-weight:800;font-stretch:75%;font-size:40cqw;line-height:1;letter-spacing:.01em;text-transform:uppercase}
-#arrow{position:absolute;left:50%;top:50%;width:7px;height:32%;margin-left:-3.5px;transform-origin:50% 0;z-index:1;
-  background:var(--ink);border-radius:4px;transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
-#arrow::after{content:"";position:absolute;left:50%;bottom:-10px;margin-left:-11px;border:11px solid transparent;border-top:15px solid var(--ink);border-bottom:0}
-.pl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:84px;text-align:center}
-.pl.turn .tok{transform:scale(1.28);box-shadow:var(--hard)}
-.pl .nm{font-size:14px;font-weight:700;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px}
+#strip{position:relative;padding-top:56px;margin-top:6px}
+#players{display:flex;flex-wrap:wrap;justify-content:center;gap:56px 10px}
+.pl{display:flex;flex-direction:column;align-items:center;width:78px;text-align:center}
+#players.many{gap:50px 8px}
+#players.many .pl{width:62px}
+#players.many .tok{width:40px;height:40px;font-size:18px}
+#players.many .nm{max-width:62px;font-size:12px}
+.pl.turn .tok{transform:scale(1.22);box-shadow:var(--hard)}
+.pl .nm{font-size:14px;font-weight:700;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:6px}
 .pl.turn .nm{margin-top:9px}
 .dots{display:flex;gap:3px;min-height:9px;margin-top:3px;font-size:12px;font-weight:600}
 .dots i{width:9px;height:9px;border-radius:50%;background:var(--ink)}
@@ -73,15 +91,33 @@
 .pl.off{opacity:.5}
 .pl.hit .tok{animation:hit .5s}
 @keyframes hit{25%{transform:rotate(-14deg) scale(1.2)}60%{transform:rotate(14deg) scale(1.2)}}
-#typed{min-height:1.1em;text-align:center;font-weight:800;font-stretch:75%;font-size:clamp(40px,13vw,68px);line-height:1;margin:14px 0 0;word-break:break-all;letter-spacing:.01em}
-#typed mark{background:var(--pink);color:var(--ink);border-radius:8px;padding:0 4px}
-#msg{display:block;width:fit-content;min-height:30px;margin:8px auto 10px;padding:2px 14px;border-radius:99px;font-weight:700;font-size:17px}
+#bomb{position:absolute;left:0;top:0;width:46px;z-index:3;pointer-events:none;opacity:0}
+#bomb svg{display:block;width:100%;height:auto}
+#bomb.boom svg{animation:boom .5s ease-out}
+@keyframes boom{40%{transform:scale(2.4) rotate(12deg)}100%{transform:scale(1)}}
+
+#stage{container-type:inline-size;background:var(--white);border:var(--line);border-radius:26px;box-shadow:var(--hard);
+  padding:14px 14px 18px;margin-top:10px;text-align:center;transform:rotate(-.6deg)}
+#stage.shake{animation:sshake .4s}
+@keyframes sshake{20%{transform:rotate(-.6deg) translateX(-9px)}40%{transform:rotate(-.6deg) translateX(9px)}60%{transform:rotate(-.6deg) translateX(-5px)}80%{transform:rotate(-.6deg) translateX(5px)}}
+#syl{font-weight:800;font-stretch:75%;font-size:min(36cqw,160px);line-height:.95;text-transform:uppercase;letter-spacing:.01em;min-height:.95em}
+#syl.pop{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.7) rotate(-4deg)}to{transform:none}}
+#entry{position:relative;margin-top:12px;min-height:1.4em}
+#tiles{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;font-size:min(44px,calc(88cqw / (var(--n,7) * 1.2)));min-height:1.35em}
+.t{width:1.05em;height:1.3em;display:grid;place-items:center;border:3px solid var(--ink);border-radius:.2em;background:var(--white);
+  font-weight:800;text-transform:uppercase;line-height:1}
+.t.s{background:var(--pink)}
+.caret{width:.1em;height:1.3em;background:var(--ink);align-self:center;margin:0 2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+#word{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;background:none;box-shadow:none;font-size:16px;padding:0;cursor:text}
+#word:disabled{pointer-events:none}
+#fuse{height:14px;border:var(--line);border-radius:99px;margin-top:16px;overflow:hidden}
+#fuse i{display:block;height:100%;width:100%;background:var(--pink)}
+#send{margin-top:14px}
+#msg{display:block;width:fit-content;min-height:30px;margin:14px auto 0;padding:2px 14px;border-radius:99px;font-weight:700;font-size:17px}
 #msg.ok{background:var(--mint)}
 #msg.bad{background:var(--pink)}
-#form{display:flex;gap:10px}
-#form input{flex:1;min-width:0;font-size:22px;text-transform:lowercase}
-#word.shake{animation:ishake .35s}
-@keyframes ishake{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 #letters{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:16px}
 #letters span{width:24px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:700;text-transform:uppercase;
   border:2px solid #17140f40;color:#17140f60}
@@ -123,6 +159,7 @@
     </div>
   </div>
   <p id="homeMsg" role="status"></p>
+  <details class="panel" id="howHome"></details>
 </section>
 
 <section id="lobby" hidden>
@@ -134,18 +171,16 @@
     </div>
   </div>
   <div class="plist" id="plist"></div>
-  <div class="cfg">
-    <div><label id="lblLives">Vidas</label><div class="seg" id="segLives" role="group" aria-labelledby="lblLives"></div></div>
-    <div><label id="lblDiff">Dificultad</label><div class="seg" id="segDiff" role="group" aria-labelledby="lblDiff"></div></div>
-  </div>
+  <div id="cfgBasic"></div>
   <button id="btnStart" class="big" hidden>Empezar</button>
   <p id="lobbyHint" role="status"></p>
+  <details class="panel" id="cfgMore"><summary>Más ajustes</summary><div class="body" id="cfgMoreBody"></div></details>
+  <details class="panel" id="howLobby"></details>
 </section>
 
 <section id="game" hidden>
   <div class="top"><span id="gCode"></span><span id="gInfo"></span></div>
-  <div id="table">
-    <div id="arrow"></div>
+  <div id="strip">
     <div id="bomb">
       <svg viewBox="0 0 200 220" aria-hidden="true">
         <path d="M122 58C132 36 150 30 166 34" fill="none" stroke="#17140f" stroke-width="9" stroke-linecap="round"/>
@@ -154,16 +189,21 @@
         <path d="M58 108C62 90 76 78 92 74" fill="none" stroke="#fffef8" stroke-opacity=".3" stroke-width="9" stroke-linecap="round"/>
         <g class="spark"><polygon transform="translate(170 32)" points="0,-18 5,-6 18,0 5,6 0,18 -5,6 -18,0 -5,-6" fill="#ff5c8a"/></g>
       </svg>
-      <div id="syl"></div>
     </div>
     <div id="players"></div>
   </div>
-  <div id="typed" aria-live="off"></div>
-  <span id="msg" role="status"></span>
-  <form id="form" autocomplete="off" hidden>
-    <input id="word" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Tu palabra" placeholder="Tu palabra">
-    <button type="submit">Enviar</button>
+  <form id="form" autocomplete="off">
+    <div id="stage">
+      <div id="syl"></div>
+      <div id="entry">
+        <div id="tiles" aria-live="off"></div>
+        <input id="word" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Tu palabra" disabled>
+      </div>
+      <div id="fuse" hidden><i></i></div>
+    </div>
+    <button id="send" class="big" type="submit" hidden>Enviar</button>
   </form>
+  <span id="msg" role="status"></span>
   <div id="letters"></div>
 </section>
 
@@ -186,13 +226,60 @@ const MAX_PLAYERS = 8, MAX_LIVES = 5, BONUS = 'abcdefghilmnopqrstuv';
 // [fondo, texto]
 const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'],['#ff8a3d','#17140f'],
                 ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
-const DIFFS = ['Fácil', 'Normal', 'Difícil'];
 const ICE = { iceServers: [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:global.stun.twilio.com:3478' }
 ]};
 const PREFIX = 'jt-bomba-';
+
+// ---------- ajustes ----------
+// vals + labels: selector de botones; min/max: contador numérico (segundos)
+const SCHEMA = [
+  { k: 'lives',   basic: 1, label: 'Vidas',                          vals: [1, 2, 3, 4, 5], labels: ['1', '2', '3', '4', '5'] },
+  { k: 'diff',    basic: 1, label: 'Dificultad',                     vals: [0, 1, 2], labels: ['Fácil', 'Normal', 'Difícil'] },
+  { k: 'len',               label: 'Letras de la sílaba',            vals: [0, 2, 3], labels: ['Mixto', '2', '3'] },
+  { k: 'minWord',           label: 'Letras mínimas de la palabra',   vals: [2, 3, 4, 5, 6], labels: ['2', '3', '4', '5', '6'] },
+  { k: 'mode',              label: 'Mecha',                          vals: ['shared', 'turn'], labels: ['Compartida', 'Por turno'] },
+  { k: 'min',               label: 'Tiempo mínimo',                  min: 3, max: 30 },
+  { k: 'max',               label: 'Tiempo máximo',                  min: 3, max: 40 },
+  { k: 'bonusSec',          label: 'Segundos extra al acertar',      vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
+  { k: 'floor',             label: 'Mínimo al recibir la bomba',     vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
+  { k: 'order',             label: 'Orden de pase',                  vals: ['ring', 'bounce', 'random'], labels: ['Círculo', 'Rebote', 'Azar'] },
+  { k: 'after',             label: 'Tras explotar',                  vals: ['next', 'same'], labels: ['Pasa al siguiente', 'Repite el mismo'] },
+  { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'] },
+  { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
+];
+const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 2, order: 'ring', after: 'next', letters: 1, show: 0 };
+
+const HOW = `<summary>Cómo se juega</summary><div class="body">
+<h3>La partida</h3>
+<p>En cada turno aparece una sílaba de 2 o 3 letras. Quien tiene la bomba escribe una palabra en castellano que contenga esas letras seguidas, en cualquier posición: con <span class="ex">ent</span> valen <span class="ex">gente</span>, <span class="ex">entrada</span> o <span class="ex">cliente</span>.</p>
+<p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida; sin vidas quedas eliminado y gana quien se queda en pie.</p>
+<p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS].join(' ').toUpperCase()}</b>.</p>
+<p>El diccionario tiene unas 636.000 formas, con plurales y conjugaciones, aunque puede que alguna palabra falte.</p>
+<h3>Dificultad</h3>
+<p>Las sílabas se sacan del propio diccionario y se agrupan por lo comunes que son, según en cuántas palabras aparecen. Una sílaba no se repite hasta que han salido otras 8.</p>
+<dl>
+<dt>Fácil</dt><dd>Solo sílabas comunes, las que aparecen en 3.000 palabras o más: <span class="ex">ar</span> <span class="ex">con</span> <span class="ex">ent</span> <span class="ex">cia</span> <span class="ex">tr</span>.</dd>
+<dt>Normal</dt><dd>55 % comunes y 45 % intermedias, de entre 800 y 3.000 palabras: <span class="ex">gui</span> <span class="ex">ues</span> <span class="ex">jam</span>.</dd>
+<dt>Difícil</dt><dd>20 % comunes, 50 % intermedias y 30 % raras, de entre 150 y 800 palabras: <span class="ex">abs</span> <span class="ex">ugr</span> <span class="ex">vot</span>.</dd>
+</dl>
+<h3>Ajustes</h3>
+<dl>
+<dt>Letras de la sílaba</dt><dd>Mixto mezcla sílabas de 2 y 3 letras. Si eliges solo 2, salen sílabas más cortas y en general más fáciles; solo 3, más variedad.</dd>
+<dt>Letras mínimas de la palabra</dt><dd>Las palabras más cortas no valen.</dd>
+<dt>Mecha compartida</dt><dd>La bomba tiene una mecha de duración aleatoria entre el tiempo mínimo y el máximo, y no se reinicia al pasarla: quien la recibe hereda lo que quede. Al explotar se enciende otra nueva.</dd>
+<dt>Mecha por turno</dt><dd>Cada jugador recibe una mecha nueva, aleatoria entre el mínimo y el máximo. Si pones los dos iguales, todos tienen el mismo tiempo.</dd>
+<dt>Segundos extra al acertar</dt><dd>Con mecha compartida, suma esos segundos a lo que quede al pasar la bomba.</dd>
+<dt>Mínimo al recibir la bomba</dt><dd>Con mecha compartida, a quien recibe la bomba le quedan siempre al menos esos segundos, aunque la mecha estuviera casi agotada.</dd>
+<dt>Orden de pase</dt><dd><b>Círculo</b>: la bomba sigue el orden de la sala y vuelve al primero. <b>Rebote</b>: va hasta el último jugador y rebota hacia atrás, y así de ida y vuelta. <b>Azar</b>: pasa a cualquier otro jugador que siga en juego.</dd>
+<dt>Tras explotar</dt><dd>La bomba pasa al siguiente según el orden de pase, o se queda con quien ha perdido la vida si sigue en juego.</dd>
+<dt>Vida extra con las 20 letras</dt><dd>Activa o desactiva el reto de las letras.</dd>
+<dt>Ver la mecha</dt><dd>Muestra una barra con el tiempo que queda. Sin ella solo ves cómo tiembla la bomba.</dd>
+</dl>
+<p>Solo el anfitrión cambia los ajustes; el resto los ve en la sala.</p>
+</div>`;
 
 // Minúsculas sin acentos, conserva la ñ. Conserva la longitud para alinear el resaltado.
 function norm(s) {
@@ -202,19 +289,20 @@ function norm(s) {
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const randCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += a[Math.random() * a.length | 0]; return c; };
-const tok = (p, extra) => `<div class="tok" style="--bg:${COLORS[p.color][0]};--fg:${COLORS[p.color][1]}">${esc(p.name[0].toUpperCase())}</div>`;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const tok = p => `<div class="tok" style="--bg:${COLORS[p.color][0]};--fg:${COLORS[p.color][1]}">${esc(p.name[0].toUpperCase())}</div>`;
 
 // ---------- estado local ----------
 let peer = null, hostConn = null, isHost = false, room = '', myId = null, myName = '';
-let S = null, fuseEnd = 0, typed = '';
-let lastTurn = null, arrowAngle = 0;
+let S = null, fuseEnd = 0, fuseTotal = 1, typed = '';
+let lastTurn = null, lastSyl = '';
 const conns = new Map();
 
 // ---------- estado del anfitrión ----------
 let H = null, DICT = null, SYL = null, dictLoading = false;
 function newH() {
-  return { phase: 'lobby', players: [], turn: null, syl: '', fuseEnd: 0, used: new Set(), typing: '', recent: [], winner: null, tm: 0,
-           settings: { lives: 2, diff: 1 } };
+  return { phase: 'lobby', players: [], turn: null, syl: '', fuseEnd: 0, fuseTotal: 1, used: new Set(), typing: '', recent: [], winner: null, tm: 0, dir: 1,
+           settings: { ...DEF } };
 }
 const byId = id => H.players.find(p => p.id === id);
 const now = () => performance.now();
@@ -222,7 +310,7 @@ const now = () => performance.now();
 function pub() {
   return {
     phase: H.phase, turn: H.turn, syl: H.syl, typing: H.typing, winner: H.winner, settings: H.settings,
-    fuse: Math.max(0, Math.round(H.fuseEnd - now())),
+    fuse: Math.max(0, Math.round(H.fuseEnd - now())), total: Math.round(H.fuseTotal),
     players: H.players.map(p => ({ id: p.id, name: p.name, lives: p.lives, alive: p.alive, spec: p.spec, on: p.on, letters: p.letters, color: p.color }))
   };
 }
@@ -231,6 +319,16 @@ function bcast(m) { for (const c of conns.values()) send(c, m); }
 function push() { const s = pub(); applyState(s); bcast({ t: 'state', s }); }
 function evt(e) { showEvent(e); bcast({ t: 'evt', e }); }
 function reply(id, m) { if (id === 'host') onMsg(m); else send(conns.get(id), m); }
+
+function setSetting(k, v) {
+  const d = SCHEMA.find(x => x.k === k); if (!d || !H || H.phase !== 'lobby') return;
+  const c = H.settings;
+  if (d.vals) { const ok = d.vals.find(x => x === v); if (ok === undefined) return; c[k] = ok; }
+  else { v = Math.round(+v); if (!isFinite(v)) return; c[k] = Math.max(d.min, Math.min(d.max, v)); }
+  if (k === 'min' && c.min > c.max) c.max = c.min;
+  if (k === 'max' && c.max < c.min) c.min = c.max;
+  push();
+}
 
 function addPlayer(id, name) {
   name = (name || 'Jugador').trim().slice(0, 14) || 'Jugador';
@@ -242,9 +340,10 @@ function addPlayer(id, name) {
 }
 
 function pickSyl() {
-  const w = [[1,0,0],[.55,.45,0],[.2,.5,.3]][H.settings.diff] || [1,0,0];
-  const r = Math.random();
-  let pool = r < w[0] ? SYL.easy : r < w[0] + w[1] ? SYL.normal : SYL.hard;
+  const c = H.settings, w = [[1,0,0],[.55,.45,0],[.2,.5,.3]][c.diff] || [1,0,0], r = Math.random();
+  const filt = a => c.len ? a.filter(s => s.length === c.len) : a;
+  let pool = filt(r < w[0] ? SYL.easy : r < w[0] + w[1] ? SYL.normal : SYL.hard);
+  if (!pool.length) pool = filt(SYL.easy);
   if (!pool.length) pool = SYL.easy;
   for (let k = 0; k < 25; k++) {
     const s = pool[Math.random() * pool.length | 0];
@@ -252,8 +351,41 @@ function pickSyl() {
   }
   return pool[0];
 }
+
+// mecha
 function schedule() { clearTimeout(H.tm); H.tm = setTimeout(explode, Math.max(0, H.fuseEnd - now())); }
-function newFuse() { H.fuseEnd = now() + (6 + Math.random() * 8) * 1000; schedule(); }
+function setFuse(ms) { H.fuseTotal = ms; H.fuseEnd = now() + ms; schedule(); }
+function newFuse() { const c = H.settings; setFuse(rnd(c.min, c.max) * 1000); }
+function passFuse(bonus) {
+  const c = H.settings;
+  if (c.mode === 'turn') { newFuse(); return; }
+  let rem = H.fuseEnd - now() + (bonus ? c.bonusSec * 1000 : 0);
+  rem = Math.max(rem, c.floor * 1000);
+  H.fuseEnd = now() + rem; H.fuseTotal = Math.max(H.fuseTotal, rem); schedule();
+}
+
+// a quién le toca
+function stepFrom(pos, dir) {
+  for (let i = pos + dir; i >= 0 && i < H.players.length; i += dir) { const p = H.players[i]; if (p.alive && p.on) return p.id; }
+  return null;
+}
+function pickNext(kind) {
+  const c = H.settings, cur = H.turn, alive = H.players.filter(p => p.alive && p.on);
+  if (kind === 'boom' && c.after === 'same') { const p = byId(cur); if (p && p.alive && p.on) return cur; }
+  if (c.order === 'random') {
+    const o = alive.filter(p => p.id !== cur), pool = o.length ? o : alive;
+    return pool[Math.random() * pool.length | 0].id;
+  }
+  const pos = H.players.findIndex(p => p.id === cur);
+  if (c.order === 'bounce') {
+    let id = stepFrom(pos, H.dir);
+    if (!id) { H.dir = -H.dir; id = stepFrom(pos, H.dir); }
+    return id || alive[0].id;
+  }
+  const n = H.players.length;
+  for (let i = 1; i <= n; i++) { const p = H.players[(Math.max(0, pos) + i) % n]; if (p.alive && p.on) return p.id; }
+  return alive[0].id;
+}
 
 function startGame() {
   if (!DICT || !SYL) return;
@@ -261,15 +393,10 @@ function startGame() {
   if (ps.length < 2) return;
   H.players = ps;
   for (const p of H.players) { p.lives = H.settings.lives; p.alive = true; p.spec = false; p.letters = ''; }
-  H.used = new Set(); H.recent = []; H.winner = null; H.phase = 'playing';
+  H.used = new Set(); H.recent = []; H.winner = null; H.phase = 'playing'; H.dir = 1;
   H.turn = H.players[Math.random() * H.players.length | 0].id;
   H.syl = pickSyl(); H.typing = '';
   newFuse(); push();
-}
-function nextAlive(fromId) {
-  const n = H.players.length, i0 = Math.max(0, H.players.findIndex(p => p.id === fromId));
-  for (let i = 1; i <= n; i++) { const p = H.players[(i0 + i) % n]; if (p.alive && p.on) return p.id; }
-  return null;
 }
 function checkEnd() {
   const alive = H.players.filter(p => p.alive && p.on);
@@ -279,11 +406,11 @@ function checkEnd() {
   }
   return false;
 }
-function advance(fresh) {
+// kind: 'pass' (palabra correcta), 'boom' (explota), 'leave' (se va el que tenía la bomba)
+function advance(kind) {
   if (checkEnd()) return;
-  H.turn = nextAlive(H.turn); H.syl = pickSyl(); H.typing = '';
-  if (fresh) newFuse();
-  else { if (H.fuseEnd - now() < 2500) H.fuseEnd = now() + 2500; schedule(); }
+  H.turn = pickNext(kind); H.syl = pickSyl(); H.typing = '';
+  if (kind === 'boom') newFuse(); else passFuse(kind === 'pass');
   push();
 }
 function explode() {
@@ -291,23 +418,26 @@ function explode() {
   const p = byId(H.turn);
   if (p) { p.lives--; if (p.lives <= 0) p.alive = false; }
   evt({ k: 'boom', id: H.turn, name: p ? p.name : '', out: !!p && !p.alive });
-  advance(true);
+  advance('boom');
 }
 function submit(id, raw) {
   if (H.phase !== 'playing' || H.turn !== id) return;
-  const w = norm(String(raw).trim()), p = byId(id);
+  const c = H.settings, w = norm(String(raw).trim()), p = byId(id);
   let err = null;
-  if (!/^[a-zñ]{2,40}$/.test(w)) err = 'Eso no es una palabra';
+  if (!/^[a-zñ]{1,40}$/.test(w)) err = 'Eso no es una palabra';
+  else if (w.length < c.minWord) err = 'Mínimo ' + c.minWord + ' letras';
   else if (!w.includes(H.syl)) err = 'Falta «' + H.syl.toUpperCase() + '»';
   else if (H.used.has(w)) err = 'Ya se ha usado';
   else if (!DICT.has(w)) err = 'No está en el diccionario';
   if (err) { reply(id, { t: 'bad', m: err }); return; }
   H.used.add(w);
-  for (const c of w) if (BONUS.includes(c) && !p.letters.includes(c)) p.letters += c;
   let bonus = false;
-  if (p.letters.length >= BONUS.length) { p.letters = ''; if (p.lives < MAX_LIVES) { p.lives++; bonus = true; } }
+  if (c.letters) {
+    for (const ch of w) if (BONUS.includes(ch) && !p.letters.includes(ch)) p.letters += ch;
+    if (p.letters.length >= BONUS.length) { p.letters = ''; if (p.lives < MAX_LIVES) { p.lives++; bonus = true; } }
+  }
   evt({ k: 'ok', id, name: p.name, w, bonus });
-  advance(false);
+  advance('pass');
 }
 function fromPlayer(id, m) {
   if (!m || typeof m !== 'object') return;
@@ -321,7 +451,7 @@ function hostLeft(id) {
   evt({ k: 'left', name: p.name });
   if (H.phase === 'lobby') { H.players = H.players.filter(x => x.id !== id); push(); return; }
   p.on = false; p.alive = false;
-  if (H.phase === 'playing') { if (H.turn === id) advance(false); else if (!checkEnd()) push(); }
+  if (H.phase === 'playing') { if (H.turn === id) advance('leave'); else if (!checkEnd()) push(); }
   else push();
 }
 async function loadData() {
@@ -386,7 +516,7 @@ function hostGone() {
 function onMsg(m) {
   if (!m) return;
   if (m.t === 'state') applyState(m.s);
-  else if (m.t === 'typing') setTyped(m.text);
+  else if (m.t === 'typing') { if (!S || S.turn !== myId) setTyped(m.text); }
   else if (m.t === 'evt') showEvent(m.e);
   else if (m.t === 'bad') badInput(m.m);
   else if (m.t === 'full') fail('La sala está llena.');
@@ -398,23 +528,37 @@ function show(id) { for (const s of ['home', 'lobby', 'game']) $('#' + s).hidden
 function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
 
 function applyState(s) {
-  S = s; fuseEnd = now() + s.fuse;
-  if (s.phase === 'lobby') { show('lobby'); $('#over').hidden = true; lastTurn = null; renderLobby(); }
+  S = s; fuseEnd = now() + s.fuse; fuseTotal = Math.max(1, s.total || 1);
+  if (s.phase === 'lobby') { show('lobby'); $('#over').hidden = true; lastTurn = null; lastSyl = ''; renderLobby(); }
   else { show('game'); renderGame(); }
 }
 function setTyped(t) { typed = t || ''; renderTyped(); }
 
-function seg(el, values, labels, current, onPick) {
-  el.innerHTML = values.map((v, i) => `<button type="button" data-v="${v}" class="${v === current ? 'on' : ''}" ${isHost ? '' : 'disabled'} aria-pressed="${v === current}">${labels[i]}</button>`).join('');
-  el.onclick = e => { const b = e.target.closest('button'); if (b && isHost) onPick(+b.dataset.v); };
+function ctl(d, val) {
+  if (d.vals) return `<div class="seg" role="group" aria-label="${esc(d.label)}">` +
+    d.vals.map((v, i) => `<button type="button" data-k="${d.k}" data-i="${i}" class="${v === val ? 'on' : ''}" ${isHost ? '' : 'disabled'} aria-pressed="${v === val}">${esc(d.labels[i])}</button>`).join('') + '</div>';
+  return `<div class="stepper"><button type="button" data-k="${d.k}" data-d="-1" ${isHost && val > d.min ? '' : 'disabled'} aria-label="Menos">−</button>` +
+    `<b>${val} s</b><button type="button" data-k="${d.k}" data-d="1" ${isHost && val < d.max ? '' : 'disabled'} aria-label="Más">+</button></div>`;
 }
+function cfgHtml(basic) {
+  const c = S.settings;
+  return SCHEMA.filter(d => !!d.basic === basic).map(d =>
+    `<div class="set ${d.off && d.off(c) ? 'off' : ''}"><span class="lbl">${esc(d.label)}</span>${ctl(d, c[d.k])}</div>`).join('');
+}
+function cfgClick(e) {
+  const b = e.target.closest('button[data-k]'); if (!b || !isHost) return;
+  const d = SCHEMA.find(x => x.k === b.dataset.k);
+  if (d.vals) setSetting(d.k, d.vals[+b.dataset.i]);
+  else setSetting(d.k, H.settings[d.k] + (+b.dataset.d));
+}
+
 function renderLobby() {
   if (!S) return;
   $('#lobbyCode').textContent = room;
   $('#plist').innerHTML = S.players.map(p =>
     `<div class="prow">${tok(p)}<span>${esc(p.name)}</span><span class="tag">${p.id === 'host' ? 'anfitrión' : ''}${p.id === myId && p.id !== 'host' ? 'tú' : ''}</span></div>`).join('');
-  seg($('#segLives'), [1, 2, 3, 4, 5], ['1', '2', '3', '4', '5'], S.settings.lives, v => { H.settings.lives = v; push(); });
-  seg($('#segDiff'), [0, 1, 2], DIFFS, S.settings.diff, v => { H.settings.diff = v; push(); });
+  $('#cfgBasic').innerHTML = cfgHtml(true);
+  $('#cfgMoreBody').innerHTML = cfgHtml(false);
   $('#btnStart').hidden = !isHost;
   if (isHost) {
     const ready = !!DICT && S.players.length >= 2;
@@ -425,46 +569,44 @@ function renderLobby() {
 
 function renderTyped() {
   if (!S) return;
-  const el = $('#typed');
-  if (S.phase !== 'playing' || !typed) { el.innerHTML = ''; return; }
-  const n = norm(typed), i = n.indexOf(S.syl);
-  el.innerHTML = i < 0 ? esc(typed) : esc(typed.slice(0, i)) + '<mark>' + esc(typed.slice(i, i + S.syl.length)) + '</mark>' + esc(typed.slice(i + S.syl.length));
+  const playing = S.phase === 'playing', n = norm(typed), i = playing ? n.indexOf(S.syl) : -1;
+  let h = '';
+  for (let k = 0; k < typed.length; k++) h += `<span class="t${i >= 0 && k >= i && k < i + S.syl.length ? ' s' : ''}">${esc(typed[k])}</span>`;
+  if (playing) h += '<span class="caret"></span>';
+  const el = $('#tiles'); el.innerHTML = h; el.style.setProperty('--n', Math.max(7, typed.length + 1));
 }
 
 function renderGame() {
   const s = S, n = s.players.length;
   $('#gCode').textContent = room;
-  $('#syl').textContent = s.phase === 'playing' ? s.syl : '';
   const alive = s.players.filter(p => p.alive).length;
   $('#gInfo').textContent = s.phase === 'playing' ? alive + ' en juego' : '';
-  $('#players').innerHTML = s.players.map((p, i) => {
-    const a = (-90 + 360 * i / n) * Math.PI / 180, x = 50 + 41 * Math.cos(a), y = 50 + 41 * Math.sin(a);
+  const sylEl = $('#syl'), nsyl = s.phase === 'playing' ? s.syl : '';
+  sylEl.textContent = nsyl;
+  if (nsyl && nsyl !== lastSyl) { sylEl.classList.remove('pop'); void sylEl.offsetWidth; sylEl.classList.add('pop'); }
+  lastSyl = nsyl;
+  $('#players').className = n > 5 ? 'many' : '';
+  $('#players').innerHTML = s.players.map(p => {
     const hp = p.alive ? '<i></i>'.repeat(p.lives) : (p.spec ? 'espera' : '');
-    return `<div class="pl ${p.id === s.turn ? 'turn' : ''} ${!p.alive && !p.spec ? 'out' : ''} ${!p.on ? 'off' : ''}" data-id="${esc(p.id)}" style="left:${x}%;top:${y}%">` +
+    return `<div class="pl ${p.id === s.turn ? 'turn' : ''} ${!p.alive && !p.spec ? 'out' : ''} ${!p.on ? 'off' : ''}" data-id="${esc(p.id)}">` +
       `${tok(p)}<div class="nm">${esc(p.name)}</div><div class="dots">${hp}</div></div>`;
   }).join('');
-  const ti = s.players.findIndex(p => p.id === s.turn), arrow = $('#arrow');
-  if (ti >= 0 && s.phase === 'playing') {
-    arrow.hidden = false;
-    const target = -90 + 360 * ti / n - 90;
-    arrowAngle += ((target - arrowAngle) % 360 + 540) % 360 - 180;
-    arrow.style.transform = `rotate(${arrowAngle}deg)`;
-  } else arrow.hidden = true;
   const mine = s.players.find(p => p.id === myId), myTurn = s.phase === 'playing' && s.turn === myId;
-  $('#form').hidden = !myTurn;
+  const w = $('#word'); w.disabled = !myTurn; $('#send').hidden = !myTurn;
+  $('#fuse').hidden = !(s.phase === 'playing' && s.settings.show);
   if (s.turn !== lastTurn) {
-    typed = ''; renderTyped();
-    if (myTurn) { const w = $('#word'); w.value = ''; setTimeout(() => w.focus(), 30); }
+    typed = '';
+    if (myTurn) { w.value = ''; setTimeout(() => w.focus(), 30); }
     lastTurn = s.turn;
   }
-  const L = mine ? mine.letters : '';
-  $('#letters').innerHTML = mine && mine.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
   renderTyped();
+  const L = mine ? mine.letters : '';
+  $('#letters').innerHTML = s.settings.letters && mine && mine.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
   const over = $('#over');
   if (s.phase === 'ended') {
-    const w = s.players.find(p => p.id === s.winner);
+    const wn = s.players.find(p => p.id === s.winner);
     over.hidden = false;
-    $('#overTitle').textContent = w ? (w.id === myId ? 'Has ganado' : 'Gana ' + w.name) : 'Empate';
+    $('#overTitle').textContent = wn ? (wn.id === myId ? 'Has ganado' : 'Gana ' + wn.name) : 'Empate';
     const b = $('#btnBack'); b.hidden = !isHost; b.textContent = 'Volver a la sala';
     b.onclick = () => { H.players = H.players.filter(p => p.on); for (const p of H.players) { p.spec = false; p.alive = false; p.lives = 0; p.letters = ''; } H.phase = 'lobby'; H.winner = null; H.turn = null; push(); };
     $('#overHint').textContent = isHost ? '' : 'Esperando al anfitrión…';
@@ -476,30 +618,42 @@ function say(text, cls) { const m = $('#msg'); m.textContent = text; m.className
 function showEvent(e) {
   if (e.k === 'ok') {
     say(e.name + ': ' + e.w + (e.bonus ? ' (+1 vida)' : ''), 'ok');
-    if (e.id === myId) $('#word').value = '';
+    if (e.id === myId) { $('#word').value = ''; typed = ''; }
   } else if (e.k === 'boom') {
     say(e.out ? e.name + ' eliminado' : e.name + ' pierde una vida', 'bad');
-    const t = $('#table'), f = $('#flash');
-    t.classList.remove('boom'); f.classList.remove('go'); void t.offsetWidth; t.classList.add('boom'); f.classList.add('go');
+    const f = $('#flash'), b = $('#bomb');
+    f.classList.remove('go'); b.classList.remove('boom'); void f.offsetWidth; f.classList.add('go'); b.classList.add('boom');
     setTimeout(() => { const el = document.querySelector('.pl[data-id="' + CSS.escape(String(e.id)) + '"]'); if (el) el.classList.add('hit'); }, 30);
   } else if (e.k === 'join') say(e.name + ' entra');
   else if (e.k === 'left') say(e.name + ' se va');
 }
 function badInput(m) {
-  say(m, 'bad'); const w = $('#word'); w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake'); w.select();
+  say(m, 'bad'); const st = $('#stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake'); $('#word').select();
 }
 
-// la bomba tiembla más cuanto menos mecha queda
+// la bomba salta de ficha en ficha y tiembla más cuanto menos mecha queda
+let bx = null, by = 0;
 (function loop() {
   requestAnimationFrame(loop);
   const b = $('#bomb'); if (!b) return;
-  if (!S || S.phase !== 'playing') { b.style.transform = 'translate(-50%,-50%)'; return; }
-  const r = Math.max(0, (fuseEnd - now()) / 1000);
-  const amp = r < 8 ? (8 - r) / 8 * 5 : 0, sc = r < 3 ? 1 + (3 - r) / 3 * 0.08 : 1;
-  b.style.transform = `translate(-50%,-50%) translate(${(Math.random() - .5) * amp}px,${(Math.random() - .5) * amp}px) scale(${sc})`;
+  if (!S || S.phase !== 'playing') { b.style.opacity = 0; bx = null; return; }
+  const t = document.querySelector('.pl.turn .tok');
+  if (!t) { b.style.opacity = 0; return; }
+  const r = t.getBoundingClientRect(), st = $('#strip').getBoundingClientRect();
+  const tx = r.left - st.left + r.width / 2 - b.offsetWidth / 2, ty = r.top - st.top - b.offsetHeight + 2;
+  if (bx === null) { bx = tx; by = ty; }
+  bx += (tx - bx) * 0.2; by += (ty - by) * 0.2;
+  const dist = Math.hypot(tx - bx, ty - by), hop = Math.min(dist, 140) * 0.35;
+  const rem = Math.max(0, (fuseEnd - now()) / 1000), T = Math.min(8, fuseTotal / 1000 * 0.7);
+  const amp = rem < T ? (T - rem) / T * 5 : 0;
+  b.style.opacity = 1;
+  b.style.transform = `translate(${bx + (Math.random() - .5) * amp}px,${by - hop + (Math.random() - .5) * amp}px)`;
+  const fz = $('#fuse');
+  if (!fz.hidden) fz.firstElementChild.style.width = Math.max(0, Math.min(100, rem * 1000 / fuseTotal * 100)) + '%';
 })();
 
 // ---------- eventos de la interfaz ----------
+for (const id of ['#howHome', '#howLobby']) $(id).innerHTML = HOW;
 const nameIn = $('#name');
 nameIn.value = localStorage.getItem('jt_name') || '';
 const params = new URLSearchParams(location.search);
@@ -526,8 +680,13 @@ $('#btnCopy').onclick = async () => {
 };
 if (navigator.share) { $('#btnShare').hidden = false; $('#btnShare').onclick = () => navigator.share({ title: 'Bomba', url: link() }).catch(() => {}); }
 $('#btnStart').onclick = startGame;
-$('#word').addEventListener('input', e => act({ t: 'typing', text: e.target.value }));
+$('#cfgBasic').addEventListener('click', cfgClick);
+$('#cfgMoreBody').addEventListener('click', cfgClick);
+$('#word').addEventListener('input', e => { typed = e.target.value; renderTyped(); act({ t: 'typing', text: typed }); });
 $('#form').addEventListener('submit', e => { e.preventDefault(); const v = $('#word').value.trim(); if (v) act({ t: 'submit', w: v }); });
+addEventListener('keydown', e => {
+  if (S && S.phase === 'playing' && S.turn === myId && document.activeElement !== $('#word') && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) $('#word').focus();
+});
 nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') (inviteCode.length === 4 ? $('#btnJoinInvite') : $('#btnCreate')).click(); });
 })();
 </script>
