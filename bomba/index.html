@@ -18,8 +18,29 @@
 .stack{display:grid;gap:14px}
 .row{display:flex;gap:12px}
 .row input{flex:1;min-width:0}
-.or{font-weight:600;margin:10px 0 0}
-#codeIn{text-transform:uppercase;letter-spacing:.2em;font-weight:800;text-align:center;max-width:150px}
+.topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.topline .back{margin:0}
+.cta{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+.cta button{font-size:clamp(28px,9vw,38px);font-weight:800;font-stretch:75%;letter-spacing:-.01em;line-height:1;padding:30px 8px;border-radius:20px}
+.cta .primary{box-shadow:5px 5px 0 var(--pink)}
+.cta .primary:hover:not(:disabled){box-shadow:7px 7px 0 var(--pink)}
+.solo{display:flex;justify-content:space-between;align-items:baseline;gap:10px;text-align:left;background:var(--pink);color:var(--ink);
+  padding:18px 20px;border-radius:20px;transform:rotate(-.7deg);margin-top:10px}
+.solo b{font-size:34px;font-weight:800;font-stretch:75%;line-height:1}
+.solo small{font-size:15px;font-weight:600}
+.subrow{display:flex;justify-content:center;margin-top:6px}
+#codeIn{text-transform:uppercase;letter-spacing:.25em;font-weight:800;text-align:center;font-size:44px;font-stretch:75%;padding:14px 10px}
+.rech{font-size:clamp(60px,20vw,96px);margin:0 0 18px}
+.rec{display:flex;align-items:center;gap:14px;background:var(--white);border:var(--line);border-radius:16px;padding:10px 14px;margin-bottom:10px}
+.rec .rn{min-width:58px;text-align:center}
+.rec .rn b{display:block;font-size:40px;font-weight:800;font-stretch:75%;line-height:1}
+.rec .rn small{font-size:12px;font-weight:600}
+.rec .ri{flex:1;min-width:0;font-weight:700;line-height:1.2}
+.rec .ri small{display:block;font-weight:500;font-size:14px}
+.rec button{padding:8px 14px;font-size:16px;box-shadow:none}
+.emp{font-weight:600}
+.bar .snd,.topline .snd{margin-left:auto}
+.snd[aria-pressed=false]{text-decoration-line:line-through}
 #homeMsg{min-height:30px;margin:14px 0 0;font-weight:600}
 #homeMsg.bad{width:fit-content;background:var(--pink);padding:2px 12px;border-radius:99px}
 .spark{transform-origin:170px 32px;animation:flick .3s infinite alternate}
@@ -172,10 +193,11 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 <div class="bar" id="bar" hidden>
   <button type="button" class="linkbtn" id="btnLeave">← Salir</button>
   <a href="../">pg games</a>
+  <button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button>
 </div>
 
 <section id="home">
-  <a class="back" href="../">pg games</a>
+  <div class="topline"><a class="back" href="../">pg games</a><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
   <div class="hero">
     <h1 class="display">Bomba</h1>
     <svg viewBox="0 0 200 220" aria-hidden="true">
@@ -188,14 +210,18 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   </div>
   <div class="stack">
     <input id="name" type="text" maxlength="14" autocomplete="off" aria-label="Tu nombre" placeholder="Tu nombre">
-    <div id="homeCreate" class="stack">
-      <button id="btnCreate" class="big">Crear sala</button>
-      <button id="btnSolo" class="big alt">Individual</button>
-      <div class="or">o entra con un código</div>
-      <div class="row">
-        <input id="codeIn" type="text" maxlength="4" autocomplete="off" aria-label="Código de sala" placeholder="ABCD">
-        <button id="btnJoin" class="alt">Entrar</button>
+    <div id="homeCreate">
+      <div class="cta">
+        <button id="btnCreate" class="primary">Crear sala</button>
+        <button id="btnJoinOpen" class="alt">Unirse</button>
       </div>
+      <button id="btnSolo" class="solo"><b>Individual</b><small>tú contra la mecha</small></button>
+      <div class="subrow"><button id="btnRecords" type="button" class="linkbtn">Ver récords</button></div>
+    </div>
+    <div id="homeJoin" class="stack" hidden>
+      <input id="codeIn" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" aria-label="Código de sala" placeholder="ABCD">
+      <button id="btnJoin" class="big">Entrar</button>
+      <div class="subrow"><button id="btnJoinBack" type="button" class="linkbtn">← Volver</button></div>
     </div>
     <div id="homeInvite" hidden>
       <button id="btnJoinInvite" class="big">Entrar a <span id="inviteCode"></span></button>
@@ -216,6 +242,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   <div class="plist" id="plist"></div>
   <div id="cfgBasic"></div>
   <p id="soloRec" hidden></p>
+  <button type="button" class="linkbtn" id="btnRecLobby" hidden style="margin:-6px 0 16px">Ver todos los récords</button>
   <button id="btnStart" class="big" hidden>Empezar</button>
   <p id="lobbyHint" role="status"></p>
   <details class="panel" id="cfgMore"><summary>Más ajustes</summary><div class="body" id="cfgMoreBody"></div></details>
@@ -249,6 +276,14 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   </form>
   <span id="msg" role="status"></span>
   <div id="letters"></div>
+</section>
+
+<section id="records" hidden>
+  <div class="topline"><button type="button" class="linkbtn" id="btnRecBack">← Volver</button><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
+  <h2 class="display rech">Récords</h2>
+  <div class="set"><span class="lbl">Dificultad</span><div class="seg" id="recDiff"></div></div>
+  <div class="set"><span class="lbl">Vidas</span><div class="seg" id="recLives"></div></div>
+  <div id="recList"></div>
 </section>
 
 <div id="over" hidden>
@@ -346,16 +381,16 @@ const SCHEMA = [
   { k: 'len',               label: 'Letras de la sílaba',            vals: [0, 2, 3], labels: ['Mixto', '2', '3'] },
   { k: 'minWord',           label: 'Letras mínimas de la palabra',   vals: [2, 3, 4, 5, 6], labels: ['2', '3', '4', '5', '6'] },
   { k: 'mode',    ctx: 'multi', label: 'Mecha',                      vals: ['shared', 'turn'], labels: ['Compartida', 'Por turno'] },
-  { k: 'min',     ctx: 'multi', label: 'Tiempo mínimo',              min: 3, max: 30 },
-  { k: 'max',     ctx: 'multi', label: 'Tiempo máximo',              min: 3, max: 40 },
+  { k: 'min',     ctx: 'multi', label: 'Tiempo mínimo',              min: 4, max: 30 },
+  { k: 'max',     ctx: 'multi', label: 'Tiempo máximo',              min: 4, max: 40 },
   { k: 'bonusSec', ctx: 'multi', label: 'Segundos extra al acertar', vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
-  { k: 'floor',   ctx: 'multi', label: 'Mínimo al recibir la bomba', vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
+  { k: 'floor',   ctx: 'multi', label: 'Mínimo al recibir la bomba', vals: [4, 5, 6, 8], labels: ['4', '5', '6', '8'], off: c => c.mode === 'turn' },
   { k: 'order',   ctx: 'multi', label: 'Orden de pase',              vals: ['ring', 'bounce', 'random'], labels: ['Círculo', 'Rebote', 'Azar'] },
   { k: 'after',   ctx: 'multi', label: 'Tras explotar',              vals: ['next', 'same'], labels: ['Pasa al siguiente', 'Repite el mismo'] },
   { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'] },
   { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
 ];
-const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 2, order: 'ring', after: 'next', letters: 1, show: 0 };
+const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 4, order: 'ring', after: 'next', letters: 1, show: 0 };
 const DEF_SOLO = { ...DEF, lives: 3, mode: 'turn', min: 10, max: 10, show: 1 };
 const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 
@@ -366,7 +401,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS].join(' ').toUpperCase()}</b>.</p>
 <p>El diccionario tiene unas 636.000 formas, con plurales y conjugaciones, aunque puede que alguna palabra falte.</p>
 <h3>Individual</h3>
-<p>Juegas solo contra la mecha, que se reinicia en cada palabra. Se cuentan los aciertos y la racha, que son las palabras seguidas sin que explote la bomba. La partida acaba al quedarte sin vidas. El récord se guarda en este navegador, por separado para cada combinación de ajustes (dificultad, vidas, tiempo y longitudes de sílaba y de palabra).</p>
+<p>Juegas solo contra la mecha, que se reinicia en cada palabra. Se cuentan los aciertos y la racha, que son las palabras seguidas sin que explote la bomba. La partida acaba al quedarte sin vidas. El récord se guarda en este navegador, por separado para cada combinación de ajustes (dificultad, vidas, tiempo y longitudes de sílaba y de palabra). En «Ver récords» salen todos, se pueden filtrar y desde ahí puedes jugar con la misma configuración.</p>
 <h3>Dificultad</h3>
 <p>Las sílabas se sacan del propio diccionario y se agrupan por lo comunes que son, según en cuántas palabras aparecen. Una sílaba no se repite hasta que han salido otras 8.</p>
 <dl>
@@ -381,7 +416,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <dt>Mecha compartida</dt><dd>La bomba tiene una mecha de duración aleatoria entre el tiempo mínimo y el máximo, y no se reinicia al pasarla: quien la recibe hereda lo que quede. Al explotar se enciende otra nueva.</dd>
 <dt>Mecha por turno</dt><dd>Cada jugador recibe una mecha nueva, aleatoria entre el mínimo y el máximo. Si pones los dos iguales, todos tienen el mismo tiempo.</dd>
 <dt>Segundos extra al acertar</dt><dd>Con mecha compartida, suma esos segundos a lo que quede al pasar la bomba.</dd>
-<dt>Mínimo al recibir la bomba</dt><dd>Con mecha compartida, a quien recibe la bomba le quedan siempre al menos esos segundos, aunque la mecha estuviera casi agotada.</dd>
+<dt>Mínimo al recibir la bomba</dt><dd>Con mecha compartida, a quien recibe la bomba le quedan siempre al menos esos segundos (mínimo 4), aunque la mecha estuviera casi agotada.</dd>
 <dt>Orden de pase</dt><dd><b>Círculo</b>: la bomba sigue el orden de la sala y vuelve al primero. <b>Rebote</b>: va hasta el último jugador y rebota hacia atrás, y así de ida y vuelta. <b>Azar</b>: pasa a cualquier otro jugador que siga en juego.</dd>
 <dt>Tras explotar</dt><dd>La bomba pasa al siguiente según el orden de pase, o se queda con quien ha perdido la vida si sigue en juego. En ambos casos se enciende una mecha nueva.</dd>
 <dt>Vida extra con las 20 letras</dt><dd>Activa o desactiva el reto de las letras.</dd>
@@ -407,6 +442,50 @@ const REC_KEY = 'jt_solo_v1';
 const loadRec = () => { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } };
 const saveRec = r => { try { localStorage.setItem(REC_KEY, JSON.stringify(r)); } catch (e) {} };
 const soloKey = c => [c.diff, c.lives, c.min, c.len, c.minWord].join('.');
+const cfgOfKey = k => { const [diff, lives, min, len, minWord] = k.split('.').map(Number); return { diff, lives, min, max: min, len, minWord }; };
+const DIFFN = ['Fácil', 'Normal', 'Difícil'];
+const cfgTitle = c => `${DIFFN[c.diff]} · ${c.lives} ${c.lives === 1 ? 'vida' : 'vidas'} · ${c.min} s`;
+const cfgSub = c => `sílaba ${c.len ? c.len + ' letras' : 'mixta'} · palabra de ${c.minWord}+ letras`;
+
+// ---------- sonido (sintetizado, sin archivos) ----------
+const SND = { ctx: null, mute: false };
+try { SND.mute = localStorage.getItem('jt_mute') === '1'; } catch (e) {}
+function unlock() {
+  if (SND.ctx) { if (SND.ctx.state === 'suspended') SND.ctx.resume(); return; }
+  try { const A = window.AudioContext || window.webkitAudioContext; if (A) SND.ctx = new A(); } catch (e) {}
+}
+function tone(f, d, o = {}) {
+  const c = SND.ctx; if (!c || SND.mute || c.state !== 'running') return;
+  const t = c.currentTime + (o.at || 0), osc = c.createOscillator(), g = c.createGain();
+  osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(f, t);
+  if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + d);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.v || .15, t + .008); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  osc.connect(g); g.connect(c.destination); osc.start(t); osc.stop(t + d + .03);
+}
+function noise(d, o) {
+  const c = SND.ctx; if (!c || SND.mute || c.state !== 'running') return;
+  const n = c.sampleRate * d | 0, b = c.createBuffer(1, n, c.sampleRate), a = b.getChannelData(0);
+  for (let i = 0; i < n; i++) a[i] = Math.random() * 2 - 1;
+  const s = c.createBufferSource(); s.buffer = b;
+  const f = c.createBiquadFilter(); f.type = 'lowpass'; const t = c.currentTime;
+  f.frequency.setValueAtTime(o.from, t); f.frequency.exponentialRampToValueAtTime(o.to, t + d);
+  const g = c.createGain(); g.gain.setValueAtTime(o.v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  s.connect(f); f.connect(g); g.connect(c.destination); s.start(t);
+}
+const sfx = {
+  tick: loud => tone(loud ? 1500 : 1100, .035, { type: 'square', v: loud ? .07 : .03 }),
+  ok: () => { tone(660, .09, { type: 'triangle', v: .16 }); tone(990, .14, { type: 'triangle', v: .16, at: .08 }); },
+  bonus: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .16, { type: 'triangle', v: .16, at: i * .07 })),
+  bad: () => tone(190, .22, { type: 'sawtooth', v: .12, to: 110 }),
+  turn: () => tone(520, .09, { v: .14 }),
+  boom: () => { noise(.7, { v: .55, from: 2200, to: 100 }); tone(150, .5, { v: .4, to: 40 }); },
+  join: () => tone(620, .07, { v: .1 }),
+  left: () => tone(340, .12, { v: .1, to: 220 }),
+  win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .2, { type: 'triangle', v: .16, at: i * .09 })),
+  lose: () => [392, 330, 262].forEach((f, i) => tone(f, .26, { type: 'triangle', v: .15, at: i * .16 }))
+};
+const play = (n, a) => { try { sfx[n](a); } catch (e) {} };
+function paintSnd() { for (const b of document.querySelectorAll('.snd')) { b.textContent = 'Sonido'; b.setAttribute('aria-pressed', String(!SND.mute)); } }
 
 // ---------- estado local ----------
 let isHost = false, solo = false, room = '', myId = null, myName = '';
@@ -649,15 +728,34 @@ async function createRoom() {
   push(); loadData();
 }
 
-function startSolo() {
+async function startSolo(cfg, auto) {
   myName = nameIn.value.trim() || 'Tú';
   if (nameIn.value.trim()) localStorage.setItem('jt_name', myName);
   solo = true; isHost = true; myId = 'host'; room = '';
-  H = newH(); H.solo = true; H.settings = { ...DEF_SOLO };
+  H = newH(); H.solo = true; H.settings = { ...DEF_SOLO, ...(cfg || {}) };
   addPlayer('host', myName);
   history.replaceState(null, '', location.pathname);
-  push(); loadData();
+  push();
+  await loadData();
+  if (auto) startGame();
 }
+
+// ---------- pantalla de récords ----------
+const recF = { diff: -1, lives: 0 };
+function renderRecords() {
+  const seg = (id, key, vals, labels) => { $(id).innerHTML = vals.map((v, i) => `<button type="button" data-f="${key}" data-v="${v}" class="${recF[key] === v ? 'on' : ''}" aria-pressed="${recF[key] === v}">${labels[i]}</button>`).join(''); };
+  seg('#recDiff', 'diff', [-1, 0, 1, 2], ['Todas', ...DIFFN]);
+  seg('#recLives', 'lives', [0, 1, 2, 3, 4, 5], ['Todas', '1', '2', '3', '4', '5']);
+  const all = Object.entries(loadRec()).filter(([k, r]) => r && r.words > 0).map(([k, r]) => ({ k, c: cfgOfKey(k), r }));
+  const rows = all.filter(x => (recF.diff < 0 || x.c.diff === recF.diff) && (!recF.lives || x.c.lives === recF.lives))
+    .sort((a, b) => b.r.words - a.r.words || b.r.streak - a.r.streak);
+  $('#recList').innerHTML = rows.length ? rows.map(x =>
+    `<div class="rec"><div class="rn"><b>${x.r.words}</b><small>palabras</small></div>` +
+    `<div class="ri">${esc(cfgTitle(x.c))}<small>racha ${x.r.streak} · ${esc(cfgSub(x.c))}</small></div>` +
+    `<button type="button" data-play="${esc(x.k)}">Jugar</button></div>`).join('')
+    : `<p class="emp">${all.length ? 'Ningún récord con ese filtro.' : 'Aún no hay récords. Juega una partida individual.'}</p>`;
+}
+function openRecords() { show('records'); renderRecords(); }
 
 async function joinRoom(code) {
   room = code; isHost = false; solo = false; myId = uid(10); lastV = -1; gotState = false;
@@ -707,11 +805,16 @@ function onMsg(m) {
 function act(m) { if (isHost) fromPlayer('host', m); else netPub('host', m); }
 
 // ---------- UI ----------
-function show(id) { for (const s of ['home', 'lobby', 'game']) $('#' + s).hidden = s !== id; $('#bar').hidden = id === 'home'; }
+function show(id) { for (const s of ['home', 'lobby', 'game', 'records']) $('#' + s).hidden = s !== id; $('#bar').hidden = id === 'home' || id === 'records'; }
 function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
 
 function applyState(s) {
-  S = s; fuseEnd = now() + s.fuse; fuseTotal = Math.max(1, s.total || 1);
+  const prevPhase = S ? S.phase : null;
+  S = s;
+  if (s.phase === 'ended' && prevPhase !== 'ended') {
+    const k = s.res && s.res.solo;
+    play((s.solo ? k && (k.newWords || k.newStreak) : s.winner === myId) ? 'win' : 'lose');
+  } fuseEnd = now() + s.fuse; fuseTotal = Math.max(1, s.total || 1);
   const me = s.players.find(p => p.id === myId);
   const inLobby = s.phase === 'lobby' || (s.phase === 'ended' && me && me.back);
   if (s.phase !== 'playing') { lastTurn = null; lastSyl = ''; }
@@ -742,7 +845,7 @@ function renderLobby() {
   if (!S) return;
   const sl = !!S.solo, ended = S.phase === 'ended';
   $('#lobbyCode').textContent = room;
-  $('#codecard').hidden = sl; $('#plist').hidden = sl; $('#soloRec').hidden = !sl;
+  $('#codecard').hidden = sl; $('#plist').hidden = sl; $('#soloRec').hidden = !sl; $('#btnRecLobby').hidden = !sl;
   $('#plist').innerHTML = S.players.filter(p => p.on || !ended).map(p => {
     const wait = ended && !p.back;
     const tag = wait ? 'viendo resultados' : p.id === 'host' ? 'anfitrión' : (p.id === myId ? 'tú' : '');
@@ -834,7 +937,7 @@ function renderGame() {
   $('#fuse').hidden = !(s.phase === 'playing' && s.settings.show);
   if (s.turn !== lastTurn) {
     typed = '';
-    if (myTurn) { w.value = ''; setTimeout(() => w.focus(), 30); }
+    if (myTurn) { w.value = ''; setTimeout(() => w.focus(), 30); if (!s.solo) play('turn'); }
     lastTurn = s.turn;
   }
   renderTyped();
@@ -849,22 +952,24 @@ let msgTm = 0;
 function say(text, cls) { const m = $('#msg'); m.textContent = text; m.className = cls || ''; clearTimeout(msgTm); msgTm = setTimeout(() => { m.textContent = ''; m.className = ''; }, 3200); }
 function showEvent(e) {
   if (e.k === 'ok') {
+    play(e.bonus ? 'bonus' : 'ok');
     say(e.name + ': ' + e.w + (e.bonus ? ' (+1 vida)' : ''), 'ok');
     if (e.id === myId) { $('#word').value = ''; typed = ''; }
   } else if (e.k === 'boom') {
+    play('boom');
     say(e.out ? e.name + ' eliminado' : e.name + ' pierde una vida', 'bad');
     const f = $('#flash'), b = $('#bomb');
     f.classList.remove('go'); b.classList.remove('boom'); void f.offsetWidth; f.classList.add('go'); b.classList.add('boom');
     setTimeout(() => { const el = document.querySelector('.pl[data-id="' + CSS.escape(String(e.id)) + '"]'); if (el) el.classList.add('hit'); }, 30);
-  } else if (e.k === 'join') say(e.name + ' entra');
-  else if (e.k === 'left') say(e.name + (e.kicked ? ' expulsado' : ' se va'));
+  } else if (e.k === 'join') { play('join'); say(e.name + ' entra'); }
+  else if (e.k === 'left') { play('left'); say(e.name + (e.kicked ? ' expulsado' : ' se va')); }
 }
 function badInput(m) {
-  say(m, 'bad'); const st = $('#stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake'); $('#word').select();
+  play('bad'); say(m, 'bad'); const st = $('#stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake'); $('#word').select();
 }
 
 // la bomba salta de ficha en ficha y tiembla más cuanto menos mecha queda
-let bx = null, by = 0;
+let bx = null, by = 0, nextTick = 0;
 (function loop() {
   requestAnimationFrame(loop);
   const b = $('#bomb'); if (!b) return;
@@ -880,6 +985,7 @@ let bx = null, by = 0;
   const amp = rem < T ? (T - rem) / T * 5 : 0;
   b.style.opacity = 1;
   b.style.transform = `translate(${bx + (Math.random() - .5) * amp}px,${by - hop + (Math.random() - .5) * amp}px)`;
+  if (rem > 0 && now() >= nextTick) { play('tick', S.turn === myId); nextTick = now() + (rem > 6 ? 1000 : rem > 3 ? 500 : rem > 1.5 ? 250 : 125); }
   const fz = $('#fuse');
   if (!fz.hidden) fz.firstElementChild.style.width = Math.max(0, Math.min(100, rem * 1000 / fuseTotal * 100)) + '%';
 })();
@@ -900,7 +1006,25 @@ function getName() {
 }
 function busy() { for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome('Conectando…'); }
 $('#btnCreate').onclick = () => { if (getName()) { busy(); createRoom(); } };
-$('#btnSolo').onclick = startSolo;
+$('#btnSolo').onclick = () => startSolo();
+$('#btnJoinOpen').onclick = () => { $('#homeCreate').hidden = true; $('#homeJoin').hidden = false; setHome(''); $('#codeIn').focus(); };
+$('#btnJoinBack').onclick = () => { $('#homeJoin').hidden = true; $('#homeCreate').hidden = false; setHome(''); };
+$('#btnRecords').onclick = openRecords;
+$('#btnRecLobby').onclick = openRecords;
+$('#btnRecBack').onclick = () => { if (solo && S) applyState(S); else show('home'); };
+$('#records').addEventListener('click', e => {
+  const f = e.target.closest('[data-f]'), p = e.target.closest('[data-play]');
+  if (f) { recF[f.dataset.f] = +f.dataset.v; renderRecords(); }
+  else if (p) startSolo(cfgOfKey(p.dataset.play), true);
+});
+for (const b of document.querySelectorAll('.snd')) b.onclick = () => {
+  unlock(); SND.mute = !SND.mute;
+  try { localStorage.setItem('jt_mute', SND.mute ? '1' : '0'); } catch (e) {}
+  paintSnd(); play('join');
+};
+addEventListener('pointerdown', unlock, true);
+addEventListener('keydown', unlock, true);
+paintSnd();
 $('#btnJoin').onclick = () => {
   const c = $('#codeIn').value.toUpperCase().replace(/[^A-Z]/g, '');
   if (c.length !== 4) { setHome('El código tiene 4 letras.', 'bad'); return; }
@@ -925,6 +1049,7 @@ addEventListener('keydown', e => {
   if (S && S.phase === 'playing' && S.turn === myId && document.activeElement !== $('#word') && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) $('#word').focus();
 });
 addEventListener('pagehide', () => { if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' }); });
+$('#codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnJoin').click(); });
 nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') (inviteCode.length === 4 ? $('#btnJoinInvite') : $('#btnCreate')).click(); });
 })();
 </script>
