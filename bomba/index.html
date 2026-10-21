@@ -100,6 +100,8 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #cfgMore .body{padding-top:4px}
 #lobbyHint{text-align:center;font-weight:600;margin:14px 0 0;min-height:24px}
 #soloRec{font-weight:600;margin:0 0 16px}
+#cfgSum{font-weight:600;margin:0 0 18px;opacity:.75}
+#cfgBasic:empty{display:none}
 
 /* partida */
 #game .top{display:flex;justify-content:space-between;font-weight:700;font-size:15px}
@@ -240,11 +242,12 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   </div>
   <div class="plist" id="plist"></div>
   <div id="cfgBasic"></div>
+  <p id="cfgSum"></p>
   <p id="soloRec" hidden></p>
   <button type="button" class="linkbtn" id="btnRecLobby" hidden style="margin:-6px 0 16px">Ver todos los récords</button>
   <button id="btnStart" class="big" hidden>Empezar</button>
   <p id="lobbyHint" role="status"></p>
-  <details class="panel" id="cfgMore"><summary>Más ajustes</summary><div class="body" id="cfgMoreBody"></div></details>
+  <details class="panel" id="cfgMore"><summary>Ajustes</summary><div class="body" id="cfgMoreBody"></div></details>
   <details class="panel" id="howLobby"></details>
 </section>
 
@@ -375,11 +378,11 @@ function netClose() {
 // vals + labels: selector de botones; min/max: contador numérico (segundos)
 // ctx: 'solo' o 'multi' si solo aplica a un modo
 const SCHEMA = [
-  { k: 'smode',   basic: 1, ctx: 'solo', label: 'Modo',              vals: ['word', 'rush'], labels: ['Mecha por palabra', 'Contrarreloj'] },
-  { k: 'lives',   basic: 1, label: 'Vidas',                          vals: [1, 2, 3, 4, 5], labels: ['1', '2', '3', '4', '5'], hide: c => c.smode === 'rush' },
-  { k: 'diff',    basic: 1, label: 'Dificultad',                     vals: [0, 1, 2], labels: ['Fácil', 'Normal', 'Difícil'] },
-  { k: 'time',    basic: 1, ctx: 'solo', label: 'Tiempo por palabra', min: 4, max: 30, hide: c => c.smode === 'rush' },
-  { k: 'total',   basic: 1, ctx: 'solo', label: 'Tiempo total',      vals: [15, 30, 60, 120], labels: ['15 s', '30 s', '1 min', '2 min'], hide: c => c.smode !== 'rush' },
+  { k: 'smode',   top: 1, ctx: 'solo', label: 'Modo',              vals: ['word', 'rush'], labels: ['Mecha por palabra', 'Contrarreloj'] },
+  { k: 'lives',   label: 'Vidas',                          vals: [1, 2, 3, 4, 5], labels: ['1', '2', '3', '4', '5'], hide: c => c.smode === 'rush' },
+  { k: 'diff',    label: 'Dificultad',                     vals: [0, 1, 2], labels: ['Fácil', 'Normal', 'Difícil'] },
+  { k: 'time',    ctx: 'solo', label: 'Tiempo por palabra', min: 4, max: 30, hide: c => c.smode === 'rush' },
+  { k: 'total',   ctx: 'solo', label: 'Tiempo total',      vals: [15, 30, 60, 120], labels: ['15 s', '30 s', '1 min', '2 min'], hide: c => c.smode !== 'rush' },
   { k: 'len',               label: 'Letras de la sílaba',            vals: [0, 2, 3], labels: ['Mixto', '2', '3'] },
   { k: 'minWord',           label: 'Letras mínimas de la palabra',   vals: [2, 3, 4, 5, 6], labels: ['2', '3', '4', '5', '6'] },
   { k: 'mode',    ctx: 'multi', label: 'Mecha',                      vals: ['shared', 'turn'], labels: ['Compartida', 'Por turno'] },
@@ -408,7 +411,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <p>Las sílabas se sacan del propio diccionario y se agrupan por lo comunes que son, según en cuántas palabras aparecen. Una sílaba no se repite hasta que han salido otras 8.</p>
 <dl>
 <dt>Fácil</dt><dd>Solo sílabas comunes, las que aparecen en 3.000 palabras o más: <span class="ex">ar</span> <span class="ex">con</span> <span class="ex">ent</span> <span class="ex">cia</span> <span class="ex">tr</span>.</dd>
-<dt>Normal</dt><dd>55 % comunes y 45 % intermedias, de entre 800 y 3.000 palabras: <span class="ex">gui</span> <span class="ex">ues</span> <span class="ex">jam</span>.</dd>
+<dt>Normal</dt><dd>70 % comunes y 30 % intermedias, de entre 800 y 3.000 palabras: <span class="ex">gui</span> <span class="ex">ues</span> <span class="ex">jam</span>.</dd>
 <dt>Difícil</dt><dd>20 % comunes, 50 % intermedias y 30 % raras, de entre 150 y 800 palabras: <span class="ex">abs</span> <span class="ex">ugr</span> <span class="ex">vot</span>.</dd>
 </dl>
 <h3>Ajustes</h3>
@@ -542,7 +545,7 @@ function addPlayer(id, name) {
 }
 
 function pickSyl() {
-  const c = H.settings, w = [[1,0,0],[.55,.45,0],[.2,.5,.3]][c.diff] || [1,0,0], r = Math.random();
+  const c = H.settings, w = [[1,0,0],[.7,.3,0],[.2,.5,.3]][c.diff] || [1,0,0], r = Math.random();
   const filt = a => c.len ? a.filter(s => s.length === c.len) : a;
   let pool = filt(r < w[0] ? SYL.easy : r < w[0] + w[1] ? SYL.normal : SYL.hard);
   if (!pool.length) pool = filt(SYL.easy);
@@ -838,9 +841,9 @@ function ctl(d, val) {
   return `<div class="stepper"><button type="button" data-k="${d.k}" data-d="-1" ${isHost && val > d.min ? '' : 'disabled'} aria-label="Menos">−</button>` +
     `<b>${val} s</b><button type="button" data-k="${d.k}" data-d="1" ${isHost && val < d.max ? '' : 'disabled'} aria-label="Más">+</button></div>`;
 }
-function cfgHtml(basic) {
+function cfgHtml(top) {
   const c = S.settings, ctx = S.solo ? 'solo' : 'multi';
-  return SCHEMA.filter(d => !!d.basic === basic && (!d.ctx || d.ctx === ctx) && !(d.hide && d.hide(c))).map(d =>
+  return SCHEMA.filter(d => !!d.top === top && (!d.ctx || d.ctx === ctx) && !(d.hide && d.hide(c))).map(d =>
     `<div class="set ${d.off && d.off(c) ? 'off' : ''}"><span class="lbl">${esc(d.label)}</span>${ctl(d, getVal(d, c))}</div>`).join('');
 }
 function cfgClick(e) {
@@ -850,6 +853,12 @@ function cfgClick(e) {
   else setSetting(d.k, getVal(d, H.settings) + (+b.dataset.d));
 }
 
+function cfgSummary(s) {
+  const c = s.settings, pl = n => n + (n === 1 ? ' vida' : ' vidas'), p = [DIFFN[c.diff]];
+  if (s.solo) { if (isRush(c)) p.push(c.total >= 60 ? c.total / 60 + ' min' : c.total + ' s'); else p.push(pl(c.lives), c.min + ' s por palabra'); }
+  else p.push(pl(c.lives), c.mode === 'shared' ? 'mecha compartida' : 'mecha por turno', { ring: 'círculo', bounce: 'rebote', random: 'azar' }[c.order]);
+  return p.join(' · ');
+}
 function renderLobby() {
   if (!S) return;
   const sl = !!S.solo, ended = S.phase === 'ended';
@@ -863,6 +872,7 @@ function renderLobby() {
   }).join('');
   $('#cfgBasic').innerHTML = cfgHtml(true);
   $('#cfgMoreBody').innerHTML = cfgHtml(false);
+  $('#cfgSum').textContent = cfgSummary(S);
   if (sl) {
     const r = loadRec()[soloKey(S.settings)];
     const pw = r && `${r.words} ${r.words === 1 ? 'palabra' : 'palabras'}`;
