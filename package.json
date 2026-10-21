@@ -1,0 +1,7 @@
+{
+  "name": "pg-games",
+  "private": true,
+  "description": "Juegos cortos multijugador para jugar con amigos",
+  "scripts": { "words": "node tools/build-words.mjs" },
+  "devDependencies": { "an-array-of-spanish-words": "^2.0.0" }
+}

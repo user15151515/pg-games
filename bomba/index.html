@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffd93d">
+<title>Bomba · pg games</title>
+<meta property="og:title" content="Bomba">
+<meta property="og:description" content="Te toca una sílaba. Escribe una palabra antes de que explote.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ffd93d'/%3E%3Ccircle cx='30' cy='37' r='20' fill='%2317140f'/%3E%3Ccircle cx='50' cy='13' r='6' fill='%23ff5c8a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../shared.css">
+<style>
+.back{display:inline-block;font-weight:700;text-decoration:none;margin-bottom:18px}
+.back:hover{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:3px}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:28px}
+.hero h1{font-size:clamp(84px,28vw,150px)}
+.hero svg{width:clamp(70px,22vw,110px);height:auto;flex:0 0 auto;margin-bottom:8px;transform:rotate(8deg)}
+.stack{display:grid;gap:14px}
+.row{display:flex;gap:12px}
+.row input{flex:1;min-width:0}
+.or{font-weight:600;margin:10px 0 0}
+#codeIn{text-transform:uppercase;letter-spacing:.2em;font-weight:800;text-align:center;max-width:150px}
+#homeMsg{min-height:30px;margin:14px 0 0;font-weight:600}
+#homeMsg.bad{width:fit-content;background:var(--pink);padding:2px 12px;border-radius:99px}
+
+.spark{transform-origin:170px 32px;animation:flick .3s infinite alternate}
+@keyframes flick{to{transform:scale(.7) rotate(20deg)}}
+
+/* tokens de jugador */
+.tok{width:50px;height:50px;border-radius:50%;border:var(--line);background:var(--bg);color:var(--fg);display:grid;place-items:center;
+  font-weight:800;font-size:22px;flex:0 0 auto;transition:transform .2s,box-shadow .2s}
+
+/* sala */
+.codecard{background:var(--white);border:var(--line);border-radius:20px;box-shadow:var(--hard);padding:18px 20px 20px;transform:rotate(-1.2deg);margin-bottom:22px}
+.codecard .display{font-size:clamp(76px,26vw,120px);letter-spacing:.06em;margin-bottom:14px}
+.codecard .row button{flex:1;padding:12px 10px}
+.plist{display:grid;gap:10px;margin-bottom:24px}
+.prow{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:700}
+.prow .tag{font-size:15px;font-weight:600;margin-left:auto;opacity:.7}
+.cfg{display:grid;gap:14px;margin-bottom:24px}
+.cfg label{display:block;font-size:15px;font-weight:700;margin-bottom:6px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:9px 6px;box-shadow:none;background:transparent;color:var(--ink);border-width:3px;font-size:17px}
+.seg button.on{background:var(--ink);color:var(--paper)}
+.seg button:hover:not(:disabled),.seg button:active:not(:disabled){transform:none;box-shadow:none}
+.seg button:disabled{opacity:1;cursor:default}
+.seg button:disabled:not(.on){opacity:.4}
+#lobbyHint{text-align:center;font-weight:600;margin:14px 0 0;min-height:24px}
+
+/* partida */
+#game .top{display:flex;justify-content:space-between;font-weight:700;font-size:15px}
+#table{position:relative;width:min(100%,460px,52dvh);aspect-ratio:1;margin:10px auto 0}
+#table.boom{animation:tshake .45s}
+@keyframes tshake{20%{transform:translate(-8px,3px)}40%{transform:translate(8px,-3px)}60%{transform:translate(-5px,2px)}80%{transform:translate(4px,-2px)}}
+#flash{position:fixed;inset:0;background:var(--pink);opacity:0;pointer-events:none;z-index:5}
+#flash.go{animation:fl .55s ease-out}
+@keyframes fl{from{opacity:.6}to{opacity:0}}
+#bomb{position:absolute;left:50%;top:50%;width:42%;transform:translate(-50%,-50%);z-index:2;container-type:inline-size}
+#bomb svg{display:block;width:100%;height:auto}
+#syl{position:absolute;left:0;right:0;top:58%;transform:translateY(-52%);text-align:center;color:var(--white);
+  font-weight:800;font-stretch:75%;font-size:40cqw;line-height:1;letter-spacing:.01em;text-transform:uppercase}
+#arrow{position:absolute;left:50%;top:50%;width:7px;height:32%;margin-left:-3.5px;transform-origin:50% 0;z-index:1;
+  background:var(--ink);border-radius:4px;transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
+#arrow::after{content:"";position:absolute;left:50%;bottom:-10px;margin-left:-11px;border:11px solid transparent;border-top:15px solid var(--ink);border-bottom:0}
+.pl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:84px;text-align:center}
+.pl.turn .tok{transform:scale(1.28);box-shadow:var(--hard)}
+.pl .nm{font-size:14px;font-weight:700;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px}
+.pl.turn .nm{margin-top:9px}
+.dots{display:flex;gap:3px;min-height:9px;margin-top:3px;font-size:12px;font-weight:600}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.pl.out{opacity:.35}
+.pl.out .nm{text-decoration:line-through}
+.pl.off{opacity:.5}
+.pl.hit .tok{animation:hit .5s}
+@keyframes hit{25%{transform:rotate(-14deg) scale(1.2)}60%{transform:rotate(14deg) scale(1.2)}}
+#typed{min-height:1.1em;text-align:center;font-weight:800;font-stretch:75%;font-size:clamp(40px,13vw,68px);line-height:1;margin:14px 0 0;word-break:break-all;letter-spacing:.01em}
+#typed mark{background:var(--pink);color:var(--ink);border-radius:8px;padding:0 4px}
+#msg{display:block;width:fit-content;min-height:30px;margin:8px auto 10px;padding:2px 14px;border-radius:99px;font-weight:700;font-size:17px}
+#msg.ok{background:var(--mint)}
+#msg.bad{background:var(--pink)}
+#form{display:flex;gap:10px}
+#form input{flex:1;min-width:0;font-size:22px;text-transform:lowercase}
+#word.shake{animation:ishake .35s}
+@keyframes ishake{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+#letters{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:16px}
+#letters span{width:24px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:700;text-transform:uppercase;
+  border:2px solid #17140f40;color:#17140f60}
+#letters span.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+#over{position:fixed;inset:0;background:#17140f99;display:grid;place-items:center;z-index:10;padding:20px}
+#over .box{background:var(--white);border:var(--line);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:28px 26px;max-width:380px;width:100%;transform:rotate(-1deg)}
+#over .display{font-size:clamp(54px,17vw,84px);margin-bottom:22px;word-break:break-word}
+#overHint{text-align:center;font-weight:600;margin:0}
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<main class="wrap">
+
+<section id="home">
+  <a class="back" href="../">pg games</a>
+  <div class="hero">
+    <h1 class="display">Bomba</h1>
+    <svg viewBox="0 0 200 220" aria-hidden="true">
+      <path d="M122 58C132 36 150 30 166 34" fill="none" stroke="#17140f" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="100" cy="128" r="76" fill="#17140f"/>
+      <rect x="84" y="46" width="40" height="26" rx="6" fill="#17140f"/>
+      <path d="M58 108C62 90 76 78 92 74" fill="none" stroke="#fffef8" stroke-opacity=".35" stroke-width="9" stroke-linecap="round"/>
+      <g class="spark"><polygon transform="translate(170 32)" points="0,-18 5,-6 18,0 5,6 0,18 -5,6 -18,0 -5,-6" fill="#ff5c8a"/></g>
+    </svg>
+  </div>
+  <div class="stack">
+    <input id="name" type="text" maxlength="14" autocomplete="off" aria-label="Tu nombre" placeholder="Tu nombre">
+    <div id="homeCreate" class="stack">
+      <button id="btnCreate" class="big">Crear sala</button>
+      <div class="or">o entra con un código</div>
+      <div class="row">
+        <input id="codeIn" type="text" maxlength="4" autocomplete="off" aria-label="Código de sala" placeholder="ABCD">
+        <button id="btnJoin" class="alt">Entrar</button>
+      </div>
+    </div>
+    <div id="homeInvite" hidden>
+      <button id="btnJoinInvite" class="big">Entrar a <span id="inviteCode"></span></button>
+    </div>
+  </div>
+  <p id="homeMsg" role="status"></p>
+</section>
+
+<section id="lobby" hidden>
+  <div class="codecard">
+    <div class="display" id="lobbyCode">----</div>
+    <div class="row">
+      <button id="btnCopy">Copiar enlace</button>
+      <button id="btnShare" class="alt" hidden>Compartir</button>
+    </div>
+  </div>
+  <div class="plist" id="plist"></div>
+  <div class="cfg">
+    <div><label id="lblLives">Vidas</label><div class="seg" id="segLives" role="group" aria-labelledby="lblLives"></div></div>
+    <div><label id="lblDiff">Dificultad</label><div class="seg" id="segDiff" role="group" aria-labelledby="lblDiff"></div></div>
+  </div>
+  <button id="btnStart" class="big" hidden>Empezar</button>
+  <p id="lobbyHint" role="status"></p>
+</section>
+
+<section id="game" hidden>
+  <div class="top"><span id="gCode"></span><span id="gInfo"></span></div>
+  <div id="table">
+    <div id="arrow"></div>
+    <div id="bomb">
+      <svg viewBox="0 0 200 220" aria-hidden="true">
+        <path d="M122 58C132 36 150 30 166 34" fill="none" stroke="#17140f" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="100" cy="128" r="76" fill="#17140f"/>
+        <rect x="84" y="46" width="40" height="26" rx="6" fill="#17140f"/>
+        <path d="M58 108C62 90 76 78 92 74" fill="none" stroke="#fffef8" stroke-opacity=".3" stroke-width="9" stroke-linecap="round"/>
+        <g class="spark"><polygon transform="translate(170 32)" points="0,-18 5,-6 18,0 5,6 0,18 -5,6 -18,0 -5,-6" fill="#ff5c8a"/></g>
+      </svg>
+      <div id="syl"></div>
+    </div>
+    <div id="players"></div>
+  </div>
+  <div id="typed" aria-live="off"></div>
+  <span id="msg" role="status"></span>
+  <form id="form" autocomplete="off" hidden>
+    <input id="word" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Tu palabra" placeholder="Tu palabra">
+    <button type="submit">Enviar</button>
+  </form>
+  <div id="letters"></div>
+</section>
+
+<div id="over" hidden>
+  <div class="box">
+    <div class="display" id="overTitle"></div>
+    <button id="btnBack" class="big" hidden>Volver a la sala</button>
+    <p id="overHint"></p>
+  </div>
+</div>
+
+</main>
+
+<script src="../vendor/peerjs.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const MAX_PLAYERS = 8, MAX_LIVES = 5, BONUS = 'abcdefghilmnopqrstuv';
+// [fondo, texto]
+const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'],['#ff8a3d','#17140f'],
+                ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
+const DIFFS = ['Fácil', 'Normal', 'Difícil'];
+const ICE = { iceServers: [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:global.stun.twilio.com:3478' }
+]};
+const PREFIX = 'jt-bomba-';
+
+// Minúsculas sin acentos, conserva la ñ. Conserva la longitud para alinear el resaltado.
+function norm(s) {
+  s = String(s).toLowerCase(); let o = '';
+  for (let i = 0; i < s.length; i++) { const ch = s[i]; o += ch === 'ñ' ? 'ñ' : ch.normalize('NFD')[0]; }
+  return o;
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const randCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += a[Math.random() * a.length | 0]; return c; };
+const tok = (p, extra) => `<div class="tok" style="--bg:${COLORS[p.color][0]};--fg:${COLORS[p.color][1]}">${esc(p.name[0].toUpperCase())}</div>`;
+
+// ---------- estado local ----------
+let peer = null, hostConn = null, isHost = false, room = '', myId = null, myName = '';
+let S = null, fuseEnd = 0, typed = '';
+let lastTurn = null, arrowAngle = 0;
+const conns = new Map();
+
+// ---------- estado del anfitrión ----------
+let H = null, DICT = null, SYL = null, dictLoading = false;
+function newH() {
+  return { phase: 'lobby', players: [], turn: null, syl: '', fuseEnd: 0, used: new Set(), typing: '', recent: [], winner: null, tm: 0,
+           settings: { lives: 2, diff: 1 } };
+}
+const byId = id => H.players.find(p => p.id === id);
+const now = () => performance.now();
+
+function pub() {
+  return {
+    phase: H.phase, turn: H.turn, syl: H.syl, typing: H.typing, winner: H.winner, settings: H.settings,
+    fuse: Math.max(0, Math.round(H.fuseEnd - now())),
+    players: H.players.map(p => ({ id: p.id, name: p.name, lives: p.lives, alive: p.alive, spec: p.spec, on: p.on, letters: p.letters, color: p.color }))
+  };
+}
+function send(c, m) { try { if (c && c.open) c.send(m); } catch (e) {} }
+function bcast(m) { for (const c of conns.values()) send(c, m); }
+function push() { const s = pub(); applyState(s); bcast({ t: 'state', s }); }
+function evt(e) { showEvent(e); bcast({ t: 'evt', e }); }
+function reply(id, m) { if (id === 'host') onMsg(m); else send(conns.get(id), m); }
+
+function addPlayer(id, name) {
+  name = (name || 'Jugador').trim().slice(0, 14) || 'Jugador';
+  let n = name, k = 2;
+  while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
+  const used = new Set(H.players.map(p => p.color));
+  let color = 0; while (used.has(color) && color < COLORS.length - 1) color++;
+  H.players.push({ id, name: n, lives: 0, alive: false, spec: H.phase !== 'lobby', on: true, letters: '', color });
+}
+
+function pickSyl() {
+  const w = [[1,0,0],[.55,.45,0],[.2,.5,.3]][H.settings.diff] || [1,0,0];
+  const r = Math.random();
+  let pool = r < w[0] ? SYL.easy : r < w[0] + w[1] ? SYL.normal : SYL.hard;
+  if (!pool.length) pool = SYL.easy;
+  for (let k = 0; k < 25; k++) {
+    const s = pool[Math.random() * pool.length | 0];
+    if (!H.recent.includes(s)) { H.recent.push(s); if (H.recent.length > 8) H.recent.shift(); return s; }
+  }
+  return pool[0];
+}
+function schedule() { clearTimeout(H.tm); H.tm = setTimeout(explode, Math.max(0, H.fuseEnd - now())); }
+function newFuse() { H.fuseEnd = now() + (6 + Math.random() * 8) * 1000; schedule(); }
+
+function startGame() {
+  if (!DICT || !SYL) return;
+  const ps = H.players.filter(p => p.on);
+  if (ps.length < 2) return;
+  H.players = ps;
+  for (const p of H.players) { p.lives = H.settings.lives; p.alive = true; p.spec = false; p.letters = ''; }
+  H.used = new Set(); H.recent = []; H.winner = null; H.phase = 'playing';
+  H.turn = H.players[Math.random() * H.players.length | 0].id;
+  H.syl = pickSyl(); H.typing = '';
+  newFuse(); push();
+}
+function nextAlive(fromId) {
+  const n = H.players.length, i0 = Math.max(0, H.players.findIndex(p => p.id === fromId));
+  for (let i = 1; i <= n; i++) { const p = H.players[(i0 + i) % n]; if (p.alive && p.on) return p.id; }
+  return null;
+}
+function checkEnd() {
+  const alive = H.players.filter(p => p.alive && p.on);
+  if (alive.length <= 1) {
+    clearTimeout(H.tm); H.phase = 'ended'; H.turn = null; H.typing = '';
+    H.winner = alive[0] ? alive[0].id : null; push(); return true;
+  }
+  return false;
+}
+function advance(fresh) {
+  if (checkEnd()) return;
+  H.turn = nextAlive(H.turn); H.syl = pickSyl(); H.typing = '';
+  if (fresh) newFuse();
+  else { if (H.fuseEnd - now() < 2500) H.fuseEnd = now() + 2500; schedule(); }
+  push();
+}
+function explode() {
+  if (H.phase !== 'playing') return;
+  const p = byId(H.turn);
+  if (p) { p.lives--; if (p.lives <= 0) p.alive = false; }
+  evt({ k: 'boom', id: H.turn, name: p ? p.name : '', out: !!p && !p.alive });
+  advance(true);
+}
+function submit(id, raw) {
+  if (H.phase !== 'playing' || H.turn !== id) return;
+  const w = norm(String(raw).trim()), p = byId(id);
+  let err = null;
+  if (!/^[a-zñ]{2,40}$/.test(w)) err = 'Eso no es una palabra';
+  else if (!w.includes(H.syl)) err = 'Falta «' + H.syl.toUpperCase() + '»';
+  else if (H.used.has(w)) err = 'Ya se ha usado';
+  else if (!DICT.has(w)) err = 'No está en el diccionario';
+  if (err) { reply(id, { t: 'bad', m: err }); return; }
+  H.used.add(w);
+  for (const c of w) if (BONUS.includes(c) && !p.letters.includes(c)) p.letters += c;
+  let bonus = false;
+  if (p.letters.length >= BONUS.length) { p.letters = ''; if (p.lives < MAX_LIVES) { p.lives++; bonus = true; } }
+  evt({ k: 'ok', id, name: p.name, w, bonus });
+  advance(false);
+}
+function fromPlayer(id, m) {
+  if (!m || typeof m !== 'object') return;
+  if (m.t === 'typing') {
+    if (H.phase === 'playing' && H.turn === id) { H.typing = String(m.text || '').slice(0, 40); setTyped(H.typing); bcast({ t: 'typing', text: H.typing }); }
+  } else if (m.t === 'submit') submit(id, m.w);
+}
+function hostLeft(id) {
+  conns.delete(id);
+  const p = byId(id); if (!p) return;
+  evt({ k: 'left', name: p.name });
+  if (H.phase === 'lobby') { H.players = H.players.filter(x => x.id !== id); push(); return; }
+  p.on = false; p.alive = false;
+  if (H.phase === 'playing') { if (H.turn === id) advance(false); else if (!checkEnd()) push(); }
+  else push();
+}
+async function loadData() {
+  if (DICT || dictLoading) return; dictLoading = true; renderLobby();
+  try {
+    const [t, j] = await Promise.all([fetch('words.txt').then(r => r.text()), fetch('syllables.json').then(r => r.json())]);
+    DICT = new Set(t.split('\n')); SYL = j;
+  } catch (e) { $('#lobbyHint').textContent = 'No se pudo cargar el diccionario. Recarga la página.'; }
+  dictLoading = false; renderLobby();
+}
+
+// ---------- red ----------
+function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
+function fail(msg) { setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
+function keepAlive() { peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} }); }
+
+function createRoom() {
+  room = randCode();
+  peer = new Peer(PREFIX + room, { config: ICE });
+  peer.on('open', () => {
+    isHost = true; myId = 'host'; H = newH(); addPlayer('host', myName);
+    history.replaceState(null, '', '?sala=' + room);
+    keepAlive(); push(); loadData();
+  });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id') { try { peer.destroy(); } catch (x) {} createRoom(); }
+    else fail('No se pudo crear la sala. Prueba de nuevo en unos segundos.');
+  });
+  peer.on('connection', c => {
+    c.on('data', m => {
+      if (m && m.t === 'hello') {
+        if (byId(c.peer)) return;
+        if (H.players.length >= MAX_PLAYERS) { send(c, { t: 'full' }); setTimeout(() => c.close(), 300); return; }
+        conns.set(c.peer, c); addPlayer(c.peer, m.name); evt({ k: 'join', name: byId(c.peer).name }); push();
+      } else if (byId(c.peer)) fromPlayer(c.peer, m);
+    });
+    c.on('close', () => hostLeft(c.peer));
+    c.on('error', () => hostLeft(c.peer));
+  });
+}
+
+function joinRoom(code) {
+  room = code; isHost = false;
+  peer = new Peer({ config: ICE });
+  peer.on('open', id => {
+    myId = id; keepAlive();
+    hostConn = peer.connect(PREFIX + room, { reliable: true });
+    const to = setTimeout(() => fail('No se pudo conectar con la sala. Revisa el código o prueba con otra red.'), 12000);
+    hostConn.on('open', () => { clearTimeout(to); hostConn.send({ t: 'hello', name: myName }); });
+    hostConn.on('data', onMsg);
+    hostConn.on('close', hostGone);
+  });
+  peer.on('error', e => fail(e.type === 'peer-unavailable' ? 'Esa sala no existe o ya se cerró.' : 'No se pudo conectar. Prueba de nuevo.'));
+}
+function hostGone() {
+  if (isHost) return;
+  S = null; $('#over').hidden = false; $('#overTitle').textContent = 'Sala cerrada';
+  const b = $('#btnBack'); b.hidden = false; b.textContent = 'Salir'; $('#overHint').textContent = '';
+  b.onclick = () => { location.href = location.pathname; };
+}
+
+function onMsg(m) {
+  if (!m) return;
+  if (m.t === 'state') applyState(m.s);
+  else if (m.t === 'typing') setTyped(m.text);
+  else if (m.t === 'evt') showEvent(m.e);
+  else if (m.t === 'bad') badInput(m.m);
+  else if (m.t === 'full') fail('La sala está llena.');
+}
+function act(m) { if (isHost) fromPlayer('host', m); else send(hostConn, m); }
+
+// ---------- UI ----------
+function show(id) { for (const s of ['home', 'lobby', 'game']) $('#' + s).hidden = s !== id; }
+function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
+
+function applyState(s) {
+  S = s; fuseEnd = now() + s.fuse;
+  if (s.phase === 'lobby') { show('lobby'); $('#over').hidden = true; lastTurn = null; renderLobby(); }
+  else { show('game'); renderGame(); }
+}
+function setTyped(t) { typed = t || ''; renderTyped(); }
+
+function seg(el, values, labels, current, onPick) {
+  el.innerHTML = values.map((v, i) => `<button type="button" data-v="${v}" class="${v === current ? 'on' : ''}" ${isHost ? '' : 'disabled'} aria-pressed="${v === current}">${labels[i]}</button>`).join('');
+  el.onclick = e => { const b = e.target.closest('button'); if (b && isHost) onPick(+b.dataset.v); };
+}
+function renderLobby() {
+  if (!S) return;
+  $('#lobbyCode').textContent = room;
+  $('#plist').innerHTML = S.players.map(p =>
+    `<div class="prow">${tok(p)}<span>${esc(p.name)}</span><span class="tag">${p.id === 'host' ? 'anfitrión' : ''}${p.id === myId && p.id !== 'host' ? 'tú' : ''}</span></div>`).join('');
+  seg($('#segLives'), [1, 2, 3, 4, 5], ['1', '2', '3', '4', '5'], S.settings.lives, v => { H.settings.lives = v; push(); });
+  seg($('#segDiff'), [0, 1, 2], DIFFS, S.settings.diff, v => { H.settings.diff = v; push(); });
+  $('#btnStart').hidden = !isHost;
+  if (isHost) {
+    const ready = !!DICT && S.players.length >= 2;
+    $('#btnStart').disabled = !ready;
+    $('#lobbyHint').textContent = dictLoading ? 'Cargando diccionario…' : !DICT ? '' : S.players.length < 2 ? 'Comparte el enlace para empezar.' : '';
+  } else $('#lobbyHint').textContent = 'Esperando al anfitrión…';
+}
+
+function renderTyped() {
+  if (!S) return;
+  const el = $('#typed');
+  if (S.phase !== 'playing' || !typed) { el.innerHTML = ''; return; }
+  const n = norm(typed), i = n.indexOf(S.syl);
+  el.innerHTML = i < 0 ? esc(typed) : esc(typed.slice(0, i)) + '<mark>' + esc(typed.slice(i, i + S.syl.length)) + '</mark>' + esc(typed.slice(i + S.syl.length));
+}
+
+function renderGame() {
+  const s = S, n = s.players.length;
+  $('#gCode').textContent = room;
+  $('#syl').textContent = s.phase === 'playing' ? s.syl : '';
+  const alive = s.players.filter(p => p.alive).length;
+  $('#gInfo').textContent = s.phase === 'playing' ? alive + ' en juego' : '';
+  $('#players').innerHTML = s.players.map((p, i) => {
+    const a = (-90 + 360 * i / n) * Math.PI / 180, x = 50 + 41 * Math.cos(a), y = 50 + 41 * Math.sin(a);
+    const hp = p.alive ? '<i></i>'.repeat(p.lives) : (p.spec ? 'espera' : '');
+    return `<div class="pl ${p.id === s.turn ? 'turn' : ''} ${!p.alive && !p.spec ? 'out' : ''} ${!p.on ? 'off' : ''}" data-id="${esc(p.id)}" style="left:${x}%;top:${y}%">` +
+      `${tok(p)}<div class="nm">${esc(p.name)}</div><div class="dots">${hp}</div></div>`;
+  }).join('');
+  const ti = s.players.findIndex(p => p.id === s.turn), arrow = $('#arrow');
+  if (ti >= 0 && s.phase === 'playing') {
+    arrow.hidden = false;
+    const target = -90 + 360 * ti / n - 90;
+    arrowAngle += ((target - arrowAngle) % 360 + 540) % 360 - 180;
+    arrow.style.transform = `rotate(${arrowAngle}deg)`;
+  } else arrow.hidden = true;
+  const mine = s.players.find(p => p.id === myId), myTurn = s.phase === 'playing' && s.turn === myId;
+  $('#form').hidden = !myTurn;
+  if (s.turn !== lastTurn) {
+    typed = ''; renderTyped();
+    if (myTurn) { const w = $('#word'); w.value = ''; setTimeout(() => w.focus(), 30); }
+    lastTurn = s.turn;
+  }
+  const L = mine ? mine.letters : '';
+  $('#letters').innerHTML = mine && mine.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
+  renderTyped();
+  const over = $('#over');
+  if (s.phase === 'ended') {
+    const w = s.players.find(p => p.id === s.winner);
+    over.hidden = false;
+    $('#overTitle').textContent = w ? (w.id === myId ? 'Has ganado' : 'Gana ' + w.name) : 'Empate';
+    const b = $('#btnBack'); b.hidden = !isHost; b.textContent = 'Volver a la sala';
+    b.onclick = () => { H.players = H.players.filter(p => p.on); for (const p of H.players) { p.spec = false; p.alive = false; p.lives = 0; p.letters = ''; } H.phase = 'lobby'; H.winner = null; H.turn = null; push(); };
+    $('#overHint').textContent = isHost ? '' : 'Esperando al anfitrión…';
+  } else over.hidden = true;
+}
+
+let msgTm = 0;
+function say(text, cls) { const m = $('#msg'); m.textContent = text; m.className = cls || ''; clearTimeout(msgTm); msgTm = setTimeout(() => { m.textContent = ''; m.className = ''; }, 3200); }
+function showEvent(e) {
+  if (e.k === 'ok') {
+    say(e.name + ': ' + e.w + (e.bonus ? ' (+1 vida)' : ''), 'ok');
+    if (e.id === myId) $('#word').value = '';
+  } else if (e.k === 'boom') {
+    say(e.out ? e.name + ' eliminado' : e.name + ' pierde una vida', 'bad');
+    const t = $('#table'), f = $('#flash');
+    t.classList.remove('boom'); f.classList.remove('go'); void t.offsetWidth; t.classList.add('boom'); f.classList.add('go');
+    setTimeout(() => { const el = document.querySelector('.pl[data-id="' + CSS.escape(String(e.id)) + '"]'); if (el) el.classList.add('hit'); }, 30);
+  } else if (e.k === 'join') say(e.name + ' entra');
+  else if (e.k === 'left') say(e.name + ' se va');
+}
+function badInput(m) {
+  say(m, 'bad'); const w = $('#word'); w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake'); w.select();
+}
+
+// la bomba tiembla más cuanto menos mecha queda
+(function loop() {
+  requestAnimationFrame(loop);
+  const b = $('#bomb'); if (!b) return;
+  if (!S || S.phase !== 'playing') { b.style.transform = 'translate(-50%,-50%)'; return; }
+  const r = Math.max(0, (fuseEnd - now()) / 1000);
+  const amp = r < 8 ? (8 - r) / 8 * 5 : 0, sc = r < 3 ? 1 + (3 - r) / 3 * 0.08 : 1;
+  b.style.transform = `translate(-50%,-50%) translate(${(Math.random() - .5) * amp}px,${(Math.random() - .5) * amp}px) scale(${sc})`;
+})();
+
+// ---------- eventos de la interfaz ----------
+const nameIn = $('#name');
+nameIn.value = localStorage.getItem('jt_name') || '';
+const params = new URLSearchParams(location.search);
+const inviteCode = (params.get('sala') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+if (inviteCode.length === 4) { $('#homeCreate').hidden = true; $('#homeInvite').hidden = false; $('#inviteCode').textContent = inviteCode; }
+
+function getName() {
+  const n = nameIn.value.trim();
+  if (!n) { setHome('Escribe tu nombre.', 'bad'); nameIn.focus(); return null; }
+  localStorage.setItem('jt_name', n); myName = n; setHome(''); return n;
+}
+function busy() { for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome('Conectando…'); }
+$('#btnCreate').onclick = () => { if (getName()) { busy(); createRoom(); } };
+$('#btnJoin').onclick = () => {
+  const c = $('#codeIn').value.toUpperCase().replace(/[^A-Z]/g, '');
+  if (c.length !== 4) { setHome('El código tiene 4 letras.', 'bad'); return; }
+  if (getName()) { busy(); joinRoom(c); }
+};
+$('#btnJoinInvite').onclick = () => { if (getName()) { busy(); joinRoom(inviteCode); } };
+$('#btnCopy').onclick = async () => {
+  const b = $('#btnCopy');
+  try { await navigator.clipboard.writeText(link()); b.textContent = 'Copiado'; } catch (e) { prompt('Copia el enlace:', link()); }
+  setTimeout(() => b.textContent = 'Copiar enlace', 1500);
+};
+if (navigator.share) { $('#btnShare').hidden = false; $('#btnShare').onclick = () => navigator.share({ title: 'Bomba', url: link() }).catch(() => {}); }
+$('#btnStart').onclick = startGame;
+$('#word').addEventListener('input', e => act({ t: 'typing', text: e.target.value }));
+$('#form').addEventListener('submit', e => { e.preventDefault(); const v = $('#word').value.trim(); if (v) act({ t: 'submit', w: v }); });
+nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') (inviteCode.length === 4 ? $('#btnJoinInvite') : $('#btnCreate')).click(); });
+})();
+</script>
+</body>
+</html>
