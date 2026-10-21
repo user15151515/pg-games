@@ -24,7 +24,7 @@
 .cta button{font-size:clamp(28px,9vw,38px);font-weight:800;font-stretch:75%;letter-spacing:-.01em;line-height:1;padding:30px 8px;border-radius:20px}
 .cta .primary{box-shadow:5px 5px 0 var(--pink)}
 .cta .primary:hover:not(:disabled){box-shadow:7px 7px 0 var(--pink)}
-.solo{display:flex;justify-content:space-between;align-items:baseline;gap:10px;text-align:left;background:var(--pink);color:var(--ink);
+.solo{display:flex;width:100%;justify-content:space-between;align-items:baseline;gap:10px;text-align:left;background:var(--pink);color:var(--ink);
   padding:18px 20px;border-radius:20px;transform:rotate(-.7deg);margin-top:10px}
 .solo b{font-size:34px;font-weight:800;font-stretch:75%;line-height:1}
 .solo small{font-size:15px;font-weight:600}
@@ -216,7 +216,6 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
         <button id="btnJoinOpen" class="alt">Unirse</button>
       </div>
       <button id="btnSolo" class="solo"><b>Individual</b><small>tú contra la mecha</small></button>
-      <div class="subrow"><button id="btnRecords" type="button" class="linkbtn">Ver récords</button></div>
     </div>
     <div id="homeJoin" class="stack" hidden>
       <input id="codeIn" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" aria-label="Código de sala" placeholder="ABCD">
@@ -281,6 +280,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 <section id="records" hidden>
   <div class="topline"><button type="button" class="linkbtn" id="btnRecBack">← Volver</button><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
   <h2 class="display rech">Récords</h2>
+  <div class="set"><span class="lbl">Modo</span><div class="seg" id="recMode"></div></div>
   <div class="set"><span class="lbl">Dificultad</span><div class="seg" id="recDiff"></div></div>
   <div class="set"><span class="lbl">Vidas</span><div class="seg" id="recLives"></div></div>
   <div id="recList"></div>
@@ -375,9 +375,11 @@ function netClose() {
 // vals + labels: selector de botones; min/max: contador numérico (segundos)
 // ctx: 'solo' o 'multi' si solo aplica a un modo
 const SCHEMA = [
-  { k: 'lives',   basic: 1, label: 'Vidas',                          vals: [1, 2, 3, 4, 5], labels: ['1', '2', '3', '4', '5'] },
+  { k: 'smode',   basic: 1, ctx: 'solo', label: 'Modo',              vals: ['word', 'rush'], labels: ['Mecha por palabra', 'Contrarreloj'] },
+  { k: 'lives',   basic: 1, label: 'Vidas',                          vals: [1, 2, 3, 4, 5], labels: ['1', '2', '3', '4', '5'], hide: c => c.smode === 'rush' },
   { k: 'diff',    basic: 1, label: 'Dificultad',                     vals: [0, 1, 2], labels: ['Fácil', 'Normal', 'Difícil'] },
-  { k: 'time',    basic: 1, ctx: 'solo', label: 'Tiempo por palabra', min: 4, max: 30 },
+  { k: 'time',    basic: 1, ctx: 'solo', label: 'Tiempo por palabra', min: 4, max: 30, hide: c => c.smode === 'rush' },
+  { k: 'total',   basic: 1, ctx: 'solo', label: 'Tiempo total',      vals: [15, 30, 60, 120], labels: ['15 s', '30 s', '1 min', '2 min'], hide: c => c.smode !== 'rush' },
   { k: 'len',               label: 'Letras de la sílaba',            vals: [0, 2, 3], labels: ['Mixto', '2', '3'] },
   { k: 'minWord',           label: 'Letras mínimas de la palabra',   vals: [2, 3, 4, 5, 6], labels: ['2', '3', '4', '5', '6'] },
   { k: 'mode',    ctx: 'multi', label: 'Mecha',                      vals: ['shared', 'turn'], labels: ['Compartida', 'Por turno'] },
@@ -387,10 +389,10 @@ const SCHEMA = [
   { k: 'floor',   ctx: 'multi', label: 'Mínimo al recibir la bomba', vals: [4, 5, 6, 8], labels: ['4', '5', '6', '8'], off: c => c.mode === 'turn' },
   { k: 'order',   ctx: 'multi', label: 'Orden de pase',              vals: ['ring', 'bounce', 'random'], labels: ['Círculo', 'Rebote', 'Azar'] },
   { k: 'after',   ctx: 'multi', label: 'Tras explotar',              vals: ['next', 'same'], labels: ['Pasa al siguiente', 'Repite el mismo'] },
-  { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'] },
+  { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'], hide: c => c.smode === 'rush' },
   { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
 ];
-const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 4, order: 'ring', after: 'next', letters: 1, show: 0 };
+const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 4, order: 'ring', after: 'next', letters: 1, show: 0, smode: 'word', total: 30 };
 const DEF_SOLO = { ...DEF, lives: 3, mode: 'turn', min: 10, max: 10, show: 1 };
 const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 
@@ -401,7 +403,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS].join(' ').toUpperCase()}</b>.</p>
 <p>El diccionario tiene unas 636.000 formas, con plurales y conjugaciones, aunque puede que alguna palabra falte.</p>
 <h3>Individual</h3>
-<p>Juegas solo contra la mecha, que se reinicia en cada palabra. Se cuentan los aciertos y la racha, que son las palabras seguidas sin que explote la bomba. La partida acaba al quedarte sin vidas. El récord se guarda en este navegador, por separado para cada combinación de ajustes (dificultad, vidas, tiempo y longitudes de sílaba y de palabra). En «Ver récords» salen todos, se pueden filtrar y desde ahí puedes jugar con la misma configuración.</p>
+<p>Hay dos modos. <b>Mecha por palabra</b>: juegas solo contra la mecha, que se reinicia en cada palabra. Se cuentan los aciertos y la racha, que son las palabras seguidas sin que explote la bomba. La partida acaba al quedarte sin vidas. <b>Contrarreloj</b>: tienes un tiempo total (15 s, 30 s, 1 o 2 minutos) y la mecha no se reinicia; escribe todas las palabras que puedas antes de que explote. Aquí no hay vidas y el récord es el total de palabras. El récord se guarda en este navegador, por separado para cada combinación de ajustes (dificultad, vidas, tiempo y longitudes de sílaba y de palabra). En «Ver récords» salen todos, se pueden filtrar y desde ahí puedes jugar con la misma configuración.</p>
 <h3>Dificultad</h3>
 <p>Las sílabas se sacan del propio diccionario y se agrupan por lo comunes que son, según en cuántas palabras aparecen. Una sílaba no se repite hasta que han salido otras 8.</p>
 <dl>
@@ -441,10 +443,14 @@ const pairs = log => (log || []).map(([s, w]) => `<span class="pair"><span class
 const REC_KEY = 'jt_solo_v1';
 const loadRec = () => { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } };
 const saveRec = r => { try { localStorage.setItem(REC_KEY, JSON.stringify(r)); } catch (e) {} };
-const soloKey = c => [c.diff, c.lives, c.min, c.len, c.minWord].join('.');
-const cfgOfKey = k => { const [diff, lives, min, len, minWord] = k.split('.').map(Number); return { diff, lives, min, max: min, len, minWord }; };
+const isRush = c => c.smode === 'rush';
+const soloKey = c => isRush(c) ? ['r', c.diff, c.total, c.len, c.minWord].join('.') : [c.diff, c.lives, c.min, c.len, c.minWord].join('.');
+const cfgOfKey = k => {
+  if (k[0] === 'r') { const [, diff, total, len, minWord] = k.split('.').map(Number); return { smode: 'rush', diff, total, lives: 1, len, minWord }; }
+  const [diff, lives, min, len, minWord] = k.split('.').map(Number); return { smode: 'word', diff, lives, min, max: min, len, minWord };
+};
 const DIFFN = ['Fácil', 'Normal', 'Difícil'];
-const cfgTitle = c => `${DIFFN[c.diff]} · ${c.lives} ${c.lives === 1 ? 'vida' : 'vidas'} · ${c.min} s`;
+const cfgTitle = c => isRush(c) ? `${DIFFN[c.diff]} · Contrarreloj ${c.total >= 60 ? c.total / 60 + ' min' : c.total + ' s'}` : `${DIFFN[c.diff]} · ${c.lives} ${c.lives === 1 ? 'vida' : 'vidas'} · ${c.min} s por palabra`;
 const cfgSub = c => `sílaba ${c.len ? c.len + ' letras' : 'mixta'} · palabra de ${c.minWord}+ letras`;
 
 // ---------- sonido (sintetizado, sin archivos) ----------
@@ -593,7 +599,8 @@ function startGame() {
   H.used = new Set(); H.recent = []; H.winner = null; H.res = null; H.fails = []; H.out = []; H.phase = 'playing'; H.dir = 1;
   H.turn = H.players[Math.random() * H.players.length | 0].id;
   H.syl = pickSyl(); H.typing = '';
-  newFuse(); push();
+  if (H.solo && isRush(H.settings)) { for (const p of H.players) p.lives = 1; setFuse(H.settings.total * 1000); } else newFuse();
+  push();
 }
 
 // resumen final
@@ -612,11 +619,12 @@ function buildRes() {
   const res = { rank, fails };
   if (H.solo) {
     const p = H.players[0], rec = loadRec(), key = soloKey(H.settings), prev = rec[key] || { words: 0, streak: 0 };
-    rec[key] = { words: Math.max(prev.words, p.words), streak: Math.max(prev.streak, p.bestStreak) };
+    const rush = isRush(H.settings), bs = rush ? p.words : p.bestStreak;
+    rec[key] = { words: Math.max(prev.words, p.words), streak: Math.max(prev.streak, bs) };
     saveRec(rec);
     res.rank = [{ id: p.id, words: p.words, log: p.log }];
-    res.solo = { words: p.words, streak: p.bestStreak, recWords: rec[key].words, recStreak: rec[key].streak,
-                 newWords: p.words > prev.words && p.words > 0, newStreak: p.bestStreak > prev.streak && p.bestStreak > 0 };
+    res.solo = { rush, words: p.words, streak: bs, recWords: rec[key].words, recStreak: rec[key].streak,
+                 newWords: p.words > prev.words && p.words > 0, newStreak: !rush && bs > prev.streak && bs > 0 };
   }
   return res;
 }
@@ -631,7 +639,7 @@ function checkEnd() {
 function advance(kind) {
   if (checkEnd()) return;
   H.turn = pickNext(kind); H.syl = pickSyl(); H.typing = '';
-  if (kind === 'boom') newFuse(); else passFuse(kind === 'pass');
+  if (kind === 'boom') newFuse(); else if (!(H.solo && isRush(H.settings))) passFuse(kind === 'pass');
   push();
 }
 function explode() {
@@ -657,7 +665,7 @@ function submit(id, raw) {
   p.words++; p.streak++; if (p.streak > p.bestStreak) p.bestStreak = p.streak;
   p.log.push([H.syl, shown]);
   let bonus = false;
-  if (c.letters) {
+  if (c.letters && !(H.solo && isRush(c))) {
     for (const ch of w) if (BONUS.includes(ch) && !p.letters.includes(ch)) p.letters += ch;
     if (p.letters.length >= BONUS.length) { p.letters = ''; if (p.lives < MAX_LIVES) { p.lives++; bonus = true; } }
   }
@@ -741,17 +749,18 @@ async function startSolo(cfg, auto) {
 }
 
 // ---------- pantalla de récords ----------
-const recF = { diff: -1, lives: 0 };
+const recF = { mode: '', diff: -1, lives: 0 };
 function renderRecords() {
   const seg = (id, key, vals, labels) => { $(id).innerHTML = vals.map((v, i) => `<button type="button" data-f="${key}" data-v="${v}" class="${recF[key] === v ? 'on' : ''}" aria-pressed="${recF[key] === v}">${labels[i]}</button>`).join(''); };
+  seg('#recMode', 'mode', ['', 'word', 'rush'], ['Todos', 'Por palabra', 'Contrarreloj']);
   seg('#recDiff', 'diff', [-1, 0, 1, 2], ['Todas', ...DIFFN]);
   seg('#recLives', 'lives', [0, 1, 2, 3, 4, 5], ['Todas', '1', '2', '3', '4', '5']);
   const all = Object.entries(loadRec()).filter(([k, r]) => r && r.words > 0).map(([k, r]) => ({ k, c: cfgOfKey(k), r }));
-  const rows = all.filter(x => (recF.diff < 0 || x.c.diff === recF.diff) && (!recF.lives || x.c.lives === recF.lives))
+  const rows = all.filter(x => (!recF.mode || x.c.smode === recF.mode) && (recF.diff < 0 || x.c.diff === recF.diff) && (!recF.lives || (!isRush(x.c) && x.c.lives === recF.lives)))
     .sort((a, b) => b.r.words - a.r.words || b.r.streak - a.r.streak);
   $('#recList').innerHTML = rows.length ? rows.map(x =>
     `<div class="rec"><div class="rn"><b>${x.r.words}</b><small>palabras</small></div>` +
-    `<div class="ri">${esc(cfgTitle(x.c))}<small>racha ${x.r.streak} · ${esc(cfgSub(x.c))}</small></div>` +
+    `<div class="ri">${esc(cfgTitle(x.c))}<small>${isRush(x.c) ? '' : 'racha ' + x.r.streak + ' · '}${esc(cfgSub(x.c))}</small></div>` +
     `<button type="button" data-play="${esc(x.k)}">Jugar</button></div>`).join('')
     : `<p class="emp">${all.length ? 'Ningún récord con ese filtro.' : 'Aún no hay récords. Juega una partida individual.'}</p>`;
 }
@@ -831,7 +840,7 @@ function ctl(d, val) {
 }
 function cfgHtml(basic) {
   const c = S.settings, ctx = S.solo ? 'solo' : 'multi';
-  return SCHEMA.filter(d => !!d.basic === basic && (!d.ctx || d.ctx === ctx)).map(d =>
+  return SCHEMA.filter(d => !!d.basic === basic && (!d.ctx || d.ctx === ctx) && !(d.hide && d.hide(c))).map(d =>
     `<div class="set ${d.off && d.off(c) ? 'off' : ''}"><span class="lbl">${esc(d.label)}</span>${ctl(d, getVal(d, c))}</div>`).join('');
 }
 function cfgClick(e) {
@@ -856,7 +865,8 @@ function renderLobby() {
   $('#cfgMoreBody').innerHTML = cfgHtml(false);
   if (sl) {
     const r = loadRec()[soloKey(S.settings)];
-    $('#soloRec').textContent = r ? `Tu récord con estos ajustes: ${r.words} ${r.words === 1 ? 'palabra' : 'palabras'}, racha de ${r.streak}.` : 'Aún no hay récord con estos ajustes.';
+    const pw = r && `${r.words} ${r.words === 1 ? 'palabra' : 'palabras'}`;
+    $('#soloRec').textContent = r ? `Tu récord con estos ajustes: ${pw}${isRush(S.settings) ? '' : ', racha de ' + r.streak}.` : 'Aún no hay récord con estos ajustes.';
   }
   $('#btnStart').hidden = !isHost;
   if (isHost) {
@@ -882,8 +892,9 @@ function renderResults(s) {
     const k = r.solo;
     $('#overTitle').textContent = (k.newWords || k.newStreak) ? 'Nuevo récord' : 'Fin';
     soloBox.hidden = false;
+    soloBox.style.gridTemplateColumns = k.rush ? 'repeat(2,1fr)' : '';
     soloBox.innerHTML = `<div class="${k.newWords ? 'new' : ''}"><b>${k.words}</b><small>palabras</small></div>` +
-      `<div class="${k.newStreak ? 'new' : ''}"><b>${k.streak}</b><small>mejor racha</small></div>` +
+      (k.rush ? '' : `<div class="${k.newStreak ? 'new' : ''}"><b>${k.streak}</b><small>mejor racha</small></div>`) +
       `<div><b>${k.recWords}</b><small>récord</small></div>`;
     const log = (r.rank[0] || {}).log || [];
     $('#rank').innerHTML = log.length ? `<li><details class="who"><summary><div><b>Tus palabras</b><small>${log.length}</small></div></summary><div class="log" style="margin-left:0">${pairs(log)}</div></details></li>` : '';
@@ -920,7 +931,7 @@ function renderGame() {
   $('#gCode').textContent = s.solo ? 'Individual' : room;
   if (s.solo && me) {
     const rec = (loadRec()[soloKey(s.settings)] || { words: 0 }).words;
-    $('#gInfo').textContent = `Aciertos ${me.words} · Racha ${me.streak} · Récord ${Math.max(rec, me.words)}`;
+    $('#gInfo').textContent = isRush(s.settings) ? `Palabras ${me.words} · Récord ${Math.max(rec, me.words)}` : `Aciertos ${me.words} · Racha ${me.streak} · Récord ${Math.max(rec, me.words)}`;
   } else $('#gInfo').textContent = s.phase === 'playing' ? s.players.filter(p => p.alive).length + ' en juego' : '';
   const sylEl = $('#syl'), nsyl = s.phase === 'playing' ? s.syl : '';
   sylEl.textContent = nsyl;
@@ -942,7 +953,7 @@ function renderGame() {
   }
   renderTyped();
   const L = me ? me.letters : '';
-  $('#letters').innerHTML = s.settings.letters && me && me.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
+  $('#letters').innerHTML = s.settings.letters && !(s.solo && isRush(s.settings)) && me && me.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
   const over = $('#over');
   if (s.phase === 'ended') { over.hidden = false; renderResults(s); }
   else over.hidden = true;
@@ -1009,12 +1020,11 @@ $('#btnCreate').onclick = () => { if (getName()) { busy(); createRoom(); } };
 $('#btnSolo').onclick = () => startSolo();
 $('#btnJoinOpen').onclick = () => { $('#homeCreate').hidden = true; $('#homeJoin').hidden = false; setHome(''); $('#codeIn').focus(); };
 $('#btnJoinBack').onclick = () => { $('#homeJoin').hidden = true; $('#homeCreate').hidden = false; setHome(''); };
-$('#btnRecords').onclick = openRecords;
 $('#btnRecLobby').onclick = openRecords;
 $('#btnRecBack').onclick = () => { if (solo && S) applyState(S); else show('home'); };
 $('#records').addEventListener('click', e => {
   const f = e.target.closest('[data-f]'), p = e.target.closest('[data-play]');
-  if (f) { recF[f.dataset.f] = +f.dataset.v; renderRecords(); }
+  if (f) { recF[f.dataset.f] = f.dataset.f === 'mode' ? f.dataset.v : +f.dataset.v; renderRecords(); }
   else if (p) startSolo(cfgOfKey(p.dataset.play), true);
 });
 for (const b of document.querySelectorAll('.snd')) b.onclick = () => {
