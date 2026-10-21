@@ -138,6 +138,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #syl.pop{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
 @keyframes pop{from{transform:scale(.7) rotate(-4deg)}to{transform:none}}
 #entry{position:relative;margin-top:12px;min-height:1.4em}
+.hint{font-size:.5em;font-weight:600;opacity:.5;align-self:center}
 #tiles{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;font-size:min(44px,calc(88cqw / (var(--n,7) * 1.2)));min-height:1.35em}
 .t{width:1.05em;height:1.3em;display:grid;place-items:center;border:3px solid var(--ink);border-radius:.2em;background:var(--white);
   font-weight:800;text-transform:uppercase;line-height:1}
@@ -891,7 +892,7 @@ function renderTyped() {
   const playing = S.phase === 'playing', n = norm(typed), i = playing ? n.indexOf(S.syl) : -1;
   let h = '';
   for (let k = 0; k < typed.length; k++) h += `<span class="t${i >= 0 && k >= i && k < i + S.syl.length ? ' s' : ''}">${esc(typed[k])}</span>`;
-  if (playing && S.turn === myId) h += '<span class="caret"></span>';
+  if (playing && S.turn === myId) h += (!typed && document.activeElement !== $('#word')) ? '<span class="hint">Toca para escribir</span>' : '<span class="caret"></span>';
   const el = $('#tiles'); el.innerHTML = h; el.style.setProperty('--n', Math.max(7, typed.length + 1));
 }
 
@@ -954,11 +955,14 @@ function renderGame() {
       `${tok(p)}<div class="nm">${esc(p.name)}</div><div class="dots">${hp}</div></div>`;
   }).join('');
   const myTurn = s.phase === 'playing' && s.turn === myId;
-  const w = $('#word'); w.disabled = !myTurn; $('#send').hidden = !myTurn;
+  // el campo está siempre activo mientras juegas: así el teclado del móvil no se cierra entre turnos
+  const canType = s.phase === 'playing' && !!me && me.alive;
+  const w = $('#word'); w.disabled = !canType; $('#send').hidden = !canType; $('#send').disabled = !myTurn;
   $('#fuse').hidden = !(s.phase === 'playing' && s.settings.show);
   if (s.turn !== lastTurn) {
-    typed = '';
-    if (myTurn) { w.value = ''; setTimeout(() => w.focus(), 30); if (!s.solo) play('turn'); }
+    typed = ''; w.value = '';
+    if (canType && document.activeElement !== w) { w.focus(); setTimeout(() => { if (S && S.phase === 'playing') w.focus(); }, 30); }
+    if (myTurn && !s.solo) play('turn');
     lastTurn = s.turn;
   }
   renderTyped();
@@ -1063,8 +1067,20 @@ $('#btnExit').onclick = leave;
 $('#cfgBasic').addEventListener('click', cfgClick);
 $('#cfgMoreBody').addEventListener('click', cfgClick);
 $('#plist').addEventListener('click', e => { const b = e.target.closest('[data-kick]'); if (b && isHost) kick(b.dataset.kick); });
-$('#word').addEventListener('input', e => { typed = e.target.value; renderTyped(); act({ t: 'typing', text: typed }); });
-$('#form').addEventListener('submit', e => { e.preventDefault(); const v = $('#word').value.trim(); if (v) act({ t: 'submit', w: v }); });
+$('#word').addEventListener('input', e => {
+  if (!S || S.turn !== myId) { e.target.value = ''; typed = ''; renderTyped(); return; }   // fuera de tu turno no se escribe
+  typed = e.target.value; renderTyped(); act({ t: 'typing', text: typed });
+});
+$('#form').addEventListener('submit', e => { e.preventDefault(); const v = $('#word').value.trim(); if (v && S && S.turn === myId) act({ t: 'submit', w: v }); });
+// un toque en cualquier sitio de la partida devuelve el foco al campo (y el teclado)
+$('#word').addEventListener('focus', renderTyped);
+$('#word').addEventListener('blur', renderTyped);
+document.addEventListener('click', e => {
+  const w = $('#word');
+  if (!S || S.phase !== 'playing' || w.disabled || $('#game').hidden || !$('#over').hidden) return;
+  if (e.target.closest('button, a, summary, details, input')) return;
+  w.focus();
+});
 addEventListener('keydown', e => {
   if (S && S.phase === 'playing' && S.turn === myId && document.activeElement !== $('#word') && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) $('#word').focus();
 });
