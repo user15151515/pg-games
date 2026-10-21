@@ -25,6 +25,12 @@
 .spark{transform-origin:170px 32px;animation:flick .3s infinite alternate}
 @keyframes flick{to{transform:scale(.7) rotate(20deg)}}
 
+/* barra superior (sala y partida) */
+.bar{display:flex;align-items:center;gap:20px;margin-bottom:12px;font-weight:700;font-size:16px}
+.bar a,.linkbtn{color:var(--ink);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:3px}
+.linkbtn{background:none;border:0;box-shadow:none;padding:2px 0;font:inherit;font-weight:700;cursor:pointer}
+.linkbtn:hover:not(:disabled),.linkbtn:active:not(:disabled){transform:none;box-shadow:none;text-decoration-color:var(--pink)}
+
 /* fichas de jugador */
 .tok{width:50px;height:50px;border-radius:50%;border:var(--line);background:var(--bg);color:var(--fg);display:grid;place-items:center;
   font-weight:800;font-size:22px;flex:0 0 auto;transition:transform .2s,box-shadow .2s}
@@ -54,6 +60,8 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .prow{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:700}
 .prow .tag{font-size:15px;font-weight:600;margin-left:auto;opacity:.7}
 .prow.wait{opacity:.5}
+.prow .kick{padding:5px 12px;font-size:14px;box-shadow:none;background:transparent;color:var(--ink);border-width:2px}
+.prow .kick:hover:not(:disabled),.prow .kick:active:not(:disabled){transform:none;box-shadow:none;background:var(--pink)}
 .set{display:grid;gap:6px;margin-bottom:16px}
 .set label,.set .lbl{font-size:15px;font-weight:700}
 .set.off{opacity:.4;pointer-events:none}
@@ -70,6 +78,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .stepper b{min-width:64px;text-align:center;font-size:20px}
 #cfgMore .body{padding-top:4px}
 #lobbyHint{text-align:center;font-weight:600;margin:14px 0 0;min-height:24px}
+#soloRec{font-weight:600;margin:0 0 16px}
 
 /* partida */
 #game .top{display:flex;justify-content:space-between;font-weight:700;font-size:15px}
@@ -129,23 +138,41 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #over{position:fixed;inset:0;background:#17140f99;display:grid;place-items:center;z-index:10;padding:16px}
 #over .box{background:var(--white);border:var(--line);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:24px 22px;max-width:400px;width:100%;
   max-height:92dvh;overflow:auto;transform:rotate(-.8deg)}
-#over .display{font-size:clamp(50px,15vw,76px);margin-bottom:18px;word-break:break-word}
-#rank{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:10px}
-#rank li{display:flex;align-items:center;gap:12px}
-#rank .n{width:16px;font-weight:800;font-size:18px;text-align:center}
-#rank b{display:block;font-size:19px;line-height:1.1}
-#rank small{display:block;font-size:15px;font-weight:500;line-height:1.2}
-#rank small em{font-style:normal;font-weight:700}
+#over .display{font-size:clamp(46px,14vw,70px);margin-bottom:18px;word-break:break-word}
+#rank{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:12px}
+.who summary,.who.plain{display:flex;align-items:center;gap:12px}
+.who summary{cursor:pointer;list-style:none;border-radius:10px}
+.who summary::-webkit-details-marker{display:none}
+.who summary:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.who summary::after{content:"+";margin-left:auto;font-weight:800;font-size:22px;line-height:1}
+.who[open] summary::after{content:"−"}
+.who .n{width:16px;font-weight:800;font-size:18px;text-align:center}
+.who b{display:block;font-size:19px;line-height:1.1}
+.who small{display:block;font-size:15px;font-weight:500;line-height:1.2}
+.log{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 0 2px 28px;font-size:16px;font-weight:600}
+.pair{white-space:nowrap}
+.chip{background:var(--pink);border:var(--line);border-radius:10px;padding:1px 10px;font-weight:800;font-size:18px;flex:0 0 auto}
+.chip.sm{font-size:12px;padding:0 6px;border-width:2px;border-radius:7px;margin-right:6px;vertical-align:1px}
 #fails{margin:0 0 18px;display:grid;gap:8px}
 #fails h4{margin:0;font-size:15px;font-weight:700}
 .fail{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600}
-.chip{background:var(--pink);border:var(--line);border-radius:10px;padding:1px 10px;font-weight:800;font-size:18px;flex:0 0 auto}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;text-align:center}
+.stats div{border:var(--line);border-radius:14px;padding:8px 4px}
+.stats div.new{background:var(--pink)}
+.stats b{display:block;font-size:36px;font-weight:800;font-stretch:75%;line-height:1}
+.stats small{font-size:13px;font-weight:600}
+#over .big+.big{margin-top:12px}
 #overHint{text-align:center;font-weight:600;margin:12px 0 0}
 </style>
 </head>
 <body>
 <div id="flash"></div>
 <main class="wrap">
+
+<div class="bar" id="bar" hidden>
+  <button type="button" class="linkbtn" id="btnLeave">← Salir</button>
+  <a href="../">pg games</a>
+</div>
 
 <section id="home">
   <a class="back" href="../">pg games</a>
@@ -163,6 +190,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
     <input id="name" type="text" maxlength="14" autocomplete="off" aria-label="Tu nombre" placeholder="Tu nombre">
     <div id="homeCreate" class="stack">
       <button id="btnCreate" class="big">Crear sala</button>
+      <button id="btnSolo" class="big alt">Individual</button>
       <div class="or">o entra con un código</div>
       <div class="row">
         <input id="codeIn" type="text" maxlength="4" autocomplete="off" aria-label="Código de sala" placeholder="ABCD">
@@ -178,7 +206,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 </section>
 
 <section id="lobby" hidden>
-  <div class="codecard">
+  <div class="codecard" id="codecard">
     <div class="display" id="lobbyCode">----</div>
     <div class="row">
       <button id="btnCopy">Copiar enlace</button>
@@ -187,6 +215,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   </div>
   <div class="plist" id="plist"></div>
   <div id="cfgBasic"></div>
+  <p id="soloRec" hidden></p>
   <button id="btnStart" class="big" hidden>Empezar</button>
   <p id="lobbyHint" role="status"></p>
   <details class="panel" id="cfgMore"><summary>Más ajustes</summary><div class="body" id="cfgMoreBody"></div></details>
@@ -225,9 +254,12 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 <div id="over" hidden>
   <div class="box">
     <div class="display" id="overTitle"></div>
+    <div class="stats" id="soloStats" hidden></div>
     <ol id="rank"></ol>
     <div id="fails"></div>
     <button id="btnAgain" class="big">Jugar de nuevo</button>
+    <button id="btnSettings" class="big alt" hidden>Ajustes</button>
+    <button id="btnExit" class="big alt">Salir</button>
     <p id="overHint"></p>
   </div>
 </div>
@@ -260,6 +292,7 @@ const net = { clients: [], seq: 0, seen: new Set(), order: [], onMsg: null, time
 
 function envelope(m, q) { return JSON.stringify({ f: myId, q: q === undefined ? ++net.seq : q, m }); }
 function netPub(suffix, m) {
+  if (!net.clients.length) return;
   const s = envelope(m);
   for (const c of net.clients) if (c.connected) { try { c.publish(TOPIC + room + '/' + suffix, s, { qos: 0 }); } catch (e) {} }
 }
@@ -305,22 +338,26 @@ function netClose() {
 
 // ---------- ajustes ----------
 // vals + labels: selector de botones; min/max: contador numérico (segundos)
+// ctx: 'solo' o 'multi' si solo aplica a un modo
 const SCHEMA = [
   { k: 'lives',   basic: 1, label: 'Vidas',                          vals: [1, 2, 3, 4, 5], labels: ['1', '2', '3', '4', '5'] },
   { k: 'diff',    basic: 1, label: 'Dificultad',                     vals: [0, 1, 2], labels: ['Fácil', 'Normal', 'Difícil'] },
+  { k: 'time',    basic: 1, ctx: 'solo', label: 'Tiempo por palabra', min: 4, max: 30 },
   { k: 'len',               label: 'Letras de la sílaba',            vals: [0, 2, 3], labels: ['Mixto', '2', '3'] },
   { k: 'minWord',           label: 'Letras mínimas de la palabra',   vals: [2, 3, 4, 5, 6], labels: ['2', '3', '4', '5', '6'] },
-  { k: 'mode',              label: 'Mecha',                          vals: ['shared', 'turn'], labels: ['Compartida', 'Por turno'] },
-  { k: 'min',               label: 'Tiempo mínimo',                  min: 3, max: 30 },
-  { k: 'max',               label: 'Tiempo máximo',                  min: 3, max: 40 },
-  { k: 'bonusSec',          label: 'Segundos extra al acertar',      vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
-  { k: 'floor',             label: 'Mínimo al recibir la bomba',     vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
-  { k: 'order',             label: 'Orden de pase',                  vals: ['ring', 'bounce', 'random'], labels: ['Círculo', 'Rebote', 'Azar'] },
-  { k: 'after',             label: 'Tras explotar',                  vals: ['next', 'same'], labels: ['Pasa al siguiente', 'Repite el mismo'] },
+  { k: 'mode',    ctx: 'multi', label: 'Mecha',                      vals: ['shared', 'turn'], labels: ['Compartida', 'Por turno'] },
+  { k: 'min',     ctx: 'multi', label: 'Tiempo mínimo',              min: 3, max: 30 },
+  { k: 'max',     ctx: 'multi', label: 'Tiempo máximo',              min: 3, max: 40 },
+  { k: 'bonusSec', ctx: 'multi', label: 'Segundos extra al acertar', vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
+  { k: 'floor',   ctx: 'multi', label: 'Mínimo al recibir la bomba', vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
+  { k: 'order',   ctx: 'multi', label: 'Orden de pase',              vals: ['ring', 'bounce', 'random'], labels: ['Círculo', 'Rebote', 'Azar'] },
+  { k: 'after',   ctx: 'multi', label: 'Tras explotar',              vals: ['next', 'same'], labels: ['Pasa al siguiente', 'Repite el mismo'] },
   { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'] },
   { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
 ];
 const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 2, order: 'ring', after: 'next', letters: 1, show: 0 };
+const DEF_SOLO = { ...DEF, lives: 3, mode: 'turn', min: 10, max: 10, show: 1 };
+const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 
 const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>La partida</h3>
@@ -328,6 +365,8 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida; sin vidas quedas eliminado y gana quien se queda en pie.</p>
 <p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS].join(' ').toUpperCase()}</b>.</p>
 <p>El diccionario tiene unas 636.000 formas, con plurales y conjugaciones, aunque puede que alguna palabra falte.</p>
+<h3>Individual</h3>
+<p>Juegas solo contra la mecha, que se reinicia en cada palabra. Se cuentan los aciertos y la racha, que son las palabras seguidas sin que explote la bomba. La partida acaba al quedarte sin vidas. El récord se guarda en este navegador, por separado para cada combinación de ajustes (dificultad, vidas, tiempo y longitudes de sílaba y de palabra).</p>
 <h3>Dificultad</h3>
 <p>Las sílabas se sacan del propio diccionario y se agrupan por lo comunes que son, según en cuántas palabras aparecen. Una sílaba no se repite hasta que han salido otras 8.</p>
 <dl>
@@ -348,7 +387,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <dt>Vida extra con las 20 letras</dt><dd>Activa o desactiva el reto de las letras.</dd>
 <dt>Ver la mecha</dt><dd>Muestra una barra con el tiempo que queda. Sin ella solo ves cómo tiembla la bomba.</dd>
 </dl>
-<p>Solo el anfitrión cambia los ajustes; el resto los ve en la sala.</p>
+<p>En una sala, solo el anfitrión cambia los ajustes y puede echar a jugadores; el resto los ve.</p>
 </div>`;
 
 // Minúsculas sin acentos, conserva la ñ. Conserva la longitud para alinear el resaltado.
@@ -361,9 +400,16 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const randCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += a[Math.random() * a.length | 0]; return c; };
 const rnd = (a, b) => a + Math.random() * (b - a);
 const tok = (p, cls) => `<div class="tok ${cls || ''}" style="--bg:${COLORS[p.color][0]};--fg:${COLORS[p.color][1]}">${esc(p.name[0].toUpperCase())}</div>`;
+const pairs = log => (log || []).map(([s, w]) => `<span class="pair"><span class="chip sm">${esc(s.toUpperCase())}</span>${esc(w)}</span>`).join('');
+
+// récords del modo individual (solo en este navegador)
+const REC_KEY = 'jt_solo_v1';
+const loadRec = () => { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } };
+const saveRec = r => { try { localStorage.setItem(REC_KEY, JSON.stringify(r)); } catch (e) {} };
+const soloKey = c => [c.diff, c.lives, c.min, c.len, c.minWord].join('.');
 
 // ---------- estado local ----------
-let isHost = false, room = '', myId = null, myName = '';
+let isHost = false, solo = false, room = '', myId = null, myName = '';
 let S = null, lastV = -1, fuseEnd = 0, fuseTotal = 1, typed = '';
 let lastTurn = null, lastSyl = '', lastHeard = 0, gotState = false;
 const lastSeen = {};    // solo anfitrión: id -> última vez que se supo de él
@@ -372,17 +418,17 @@ const lastSeen = {};    // solo anfitrión: id -> última vez que se supo de él
 let H = null, DICT = null, SYL = null, EX = null, dictLoading = false;
 function newH() {
   return { phase: 'lobby', players: [], turn: null, syl: '', fuseEnd: 0, fuseTotal: 1, used: new Set(), typing: '', recent: [], winner: null, tm: 0, dir: 1, v: 0,
-           fails: [], out: [], res: null, settings: { ...DEF } };
+           solo: false, fails: [], out: [], res: null, settings: { ...DEF } };
 }
 const byId = id => H.players.find(p => p.id === id);
 const now = () => performance.now();
 
 function pub() {
   return {
-    v: ++H.v, phase: H.phase, turn: H.turn, syl: H.syl, typing: H.typing, winner: H.winner, settings: H.settings,
+    v: ++H.v, solo: H.solo, phase: H.phase, turn: H.turn, syl: H.syl, typing: H.typing, winner: H.winner, settings: H.settings,
     res: H.phase === 'ended' ? H.res : null,
     fuse: Math.max(0, Math.round(H.fuseEnd - now())), total: Math.round(H.fuseTotal),
-    players: H.players.map(p => ({ id: p.id, name: p.name, lives: p.lives, alive: p.alive, spec: p.spec, on: p.on, back: p.back, letters: p.letters, color: p.color }))
+    players: H.players.map(p => ({ id: p.id, name: p.name, lives: p.lives, alive: p.alive, spec: p.spec, on: p.on, back: p.back, letters: p.letters, color: p.color, words: p.words, streak: p.streak }))
   };
 }
 function bcast(m) { netPub('all', m); }
@@ -393,6 +439,7 @@ function reply(id, m) { if (id === 'host') onMsg(m); else netPub('to/' + id, m);
 function setSetting(k, v) {
   const d = SCHEMA.find(x => x.k === k); if (!d || !H || H.phase === 'playing') return;
   const c = H.settings;
+  if (k === 'time') { v = Math.round(+v); if (!isFinite(v)) return; c.min = c.max = Math.max(d.min, Math.min(d.max, v)); push(); return; }
   if (d.vals) { const ok = d.vals.find(x => x === v); if (ok === undefined) return; c[k] = ok; }
   else { v = Math.round(+v); if (!isFinite(v)) return; c[k] = Math.max(d.min, Math.min(d.max, v)); }
   if (k === 'min' && c.min > c.max) c.max = c.min;
@@ -406,7 +453,7 @@ function addPlayer(id, name) {
   while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
   const used = new Set(H.players.map(p => p.color));
   let color = 0; while (used.has(color) && color < COLORS.length - 1) color++;
-  H.players.push({ id, name: n, lives: 0, alive: false, spec: H.phase === 'playing', on: true, back: true, letters: '', color, words: 0, best: '' });
+  H.players.push({ id, name: n, lives: 0, alive: false, spec: H.phase === 'playing', on: true, back: true, letters: '', color, words: 0, streak: 0, bestStreak: 0, log: [] });
 }
 
 function pickSyl() {
@@ -440,6 +487,7 @@ function stepFrom(pos, dir) {
   return null;
 }
 function pickNext(kind) {
+  if (H.solo) return H.players[0].id;
   const c = H.settings, cur = H.turn, alive = H.players.filter(p => p.alive && p.on);
   if (kind === 'boom' && c.after === 'same') { const p = byId(cur); if (p && p.alive && p.on) return cur; }
   if (c.order === 'random') {
@@ -460,9 +508,9 @@ function pickNext(kind) {
 function startGame() {
   if (!DICT || !SYL || H.phase === 'playing') return;
   const ps = H.players.filter(p => p.on);
-  if (ps.length < 2) return;
+  if (ps.length < (H.solo ? 1 : 2)) return;
   H.players = ps;
-  for (const p of H.players) { p.lives = H.settings.lives; p.alive = true; p.spec = false; p.back = false; p.letters = ''; p.words = 0; p.best = ''; }
+  for (const p of H.players) { p.lives = H.settings.lives; p.alive = true; p.spec = false; p.back = false; p.letters = ''; p.words = 0; p.streak = 0; p.bestStreak = 0; p.log = []; }
   H.used = new Set(); H.recent = []; H.winner = null; H.res = null; H.fails = []; H.out = []; H.phase = 'playing'; H.dir = 1;
   H.turn = H.players[Math.random() * H.players.length | 0].id;
   H.syl = pickSyl(); H.typing = '';
@@ -479,17 +527,25 @@ function buildRes() {
   const order = [];
   if (H.winner) order.push(H.winner);
   for (let i = H.out.length - 1; i >= 0; i--) if (!order.includes(H.out[i])) order.push(H.out[i]);
-  const rank = order.map(id => byId(id)).filter(Boolean).map(p => ({ id: p.id, words: p.words || 0, best: p.best || '' }));
+  const rank = order.map(id => byId(id)).filter(Boolean).map(p => ({ id: p.id, words: p.words || 0, log: p.log || [] }));
   const seen = new Set(), fails = [];
   for (const s of H.fails) { if (seen.has(s)) continue; seen.add(s); fails.push({ s, ex: examplesFor(s) }); if (fails.length >= 3) break; }
-  return { rank, fails };
-}
-function checkEnd() {
-  const alive = H.players.filter(p => p.alive && p.on);
-  if (alive.length <= 1) {
-    clearTimeout(H.tm); H.phase = 'ended'; H.turn = null; H.typing = '';
-    H.winner = alive[0] ? alive[0].id : null; H.res = buildRes(); push(); return true;
+  const res = { rank, fails };
+  if (H.solo) {
+    const p = H.players[0], rec = loadRec(), key = soloKey(H.settings), prev = rec[key] || { words: 0, streak: 0 };
+    rec[key] = { words: Math.max(prev.words, p.words), streak: Math.max(prev.streak, p.bestStreak) };
+    saveRec(rec);
+    res.rank = [{ id: p.id, words: p.words, log: p.log }];
+    res.solo = { words: p.words, streak: p.bestStreak, recWords: rec[key].words, recStreak: rec[key].streak,
+                 newWords: p.words > prev.words && p.words > 0, newStreak: p.bestStreak > prev.streak && p.bestStreak > 0 };
   }
+  return res;
+}
+function endGame() { clearTimeout(H.tm); H.phase = 'ended'; H.turn = null; H.typing = ''; H.res = buildRes(); push(); }
+function checkEnd() {
+  if (H.solo) { const p = H.players[0]; if (!p || !p.alive) { H.winner = null; endGame(); return true; } return false; }
+  const alive = H.players.filter(p => p.alive && p.on);
+  if (alive.length <= 1) { H.winner = alive[0] ? alive[0].id : null; endGame(); return true; }
   return false;
 }
 // kind: 'pass' (palabra correcta), 'boom' (explota), 'leave' (se va el que tenía la bomba)
@@ -503,7 +559,7 @@ function explode() {
   if (H.phase !== 'playing') return;
   const p = byId(H.turn);
   H.fails.push(H.syl);
-  if (p) { p.lives--; if (p.lives <= 0) { p.alive = false; H.out.push(p.id); } }
+  if (p) { p.lives--; p.streak = 0; if (p.lives <= 0) { p.alive = false; H.out.push(p.id); } }
   evt({ k: 'boom', id: H.turn, name: p ? p.name : '', out: !!p && !p.alive });
   advance('boom');
 }
@@ -519,7 +575,8 @@ function submit(id, raw) {
   if (err) { reply(id, { t: 'bad', m: err }); return; }
   H.used.add(w);
   const shown = String(raw).trim().toLowerCase().slice(0, 40);
-  p.words++; if (shown.length > p.best.length) p.best = shown;
+  p.words++; p.streak++; if (p.streak > p.bestStreak) p.bestStreak = p.streak;
+  p.log.push([H.syl, shown]);
   let bonus = false;
   if (c.letters) {
     for (const ch of w) if (BONUS.includes(ch) && !p.letters.includes(ch)) p.letters += ch;
@@ -535,15 +592,20 @@ function fromPlayer(id, m) {
   } else if (m.t === 'submit') submit(id, m.w);
   else if (m.t === 'again') { const p = byId(id); if (p && H.phase !== 'playing') { p.back = true; push(); } }
 }
-function hostLeft(id) {
+function hostLeft(id, kicked) {
   delete lastSeen[id];
   const p = byId(id); if (!p) return;
-  evt({ k: 'left', name: p.name });
+  evt({ k: 'left', name: p.name, kicked: !!kicked });
   if (H.phase === 'lobby') { H.players = H.players.filter(x => x.id !== id); push(); return; }
   if (p.alive && H.phase === 'playing') H.out.push(p.id);
   p.on = false; p.alive = false;
   if (H.phase === 'playing') { if (H.turn === id) advance('leave'); else if (!checkEnd()) push(); }
   else push();
+}
+function kick(id) {
+  if (!isHost || solo || id === 'host' || !byId(id)) return;
+  netPub('to/' + id, { t: 'kicked' });
+  hostLeft(id, true);
 }
 function hostRecv(m, f) {
   if (!m || typeof m !== 'object') return;
@@ -571,10 +633,10 @@ async function loadData() {
 
 // ---------- conexión ----------
 function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
-function fail(msg) { netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
+function fail(msg) { netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
 
 async function createRoom() {
-  room = randCode(); myId = 'host'; isHost = true;
+  room = randCode(); myId = 'host'; isHost = true; solo = false;
   net.onMsg = hostRecv;
   try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   H = newH(); addPlayer('host', myName);
@@ -587,8 +649,18 @@ async function createRoom() {
   push(); loadData();
 }
 
+function startSolo() {
+  myName = nameIn.value.trim() || 'Tú';
+  if (nameIn.value.trim()) localStorage.setItem('jt_name', myName);
+  solo = true; isHost = true; myId = 'host'; room = '';
+  H = newH(); H.solo = true; H.settings = { ...DEF_SOLO };
+  addPlayer('host', myName);
+  history.replaceState(null, '', location.pathname);
+  push(); loadData();
+}
+
 async function joinRoom(code) {
-  room = code; isHost = false; myId = uid(10); lastV = -1; gotState = false;
+  room = code; isHost = false; solo = false; myId = uid(10); lastV = -1; gotState = false;
   net.onMsg = onMsg;
   try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   lastHeard = now();
@@ -608,9 +680,15 @@ async function joinRoom(code) {
 function hostGone(why) {
   if (isHost) return;
   netClose(); S = null;
-  $('#rank').innerHTML = ''; $('#fails').innerHTML = '';
+  $('#rank').innerHTML = ''; $('#fails').innerHTML = ''; $('#soloStats').hidden = true; $('#btnSettings').hidden = true; $('#btnExit').hidden = true;
   $('#over').hidden = false; $('#overTitle').textContent = 'Sala cerrada'; $('#overHint').textContent = why || '';
-  const b = $('#btnAgain'); b.textContent = 'Salir'; b.onclick = () => { location.href = location.pathname; };
+  const b = $('#btnAgain'); b.textContent = 'Salir'; b.onclick = goHome;
+}
+function goHome() { location.href = location.pathname; }
+function leave() {
+  if (isHost && !solo && H && H.players.some(p => p.on && p.id !== 'host') && !confirm('Si sales, la sala se cierra para todos. ¿Salir?')) return;
+  if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' });
+  setTimeout(goHome, 150);
 }
 
 function onMsg(m) {
@@ -623,12 +701,13 @@ function onMsg(m) {
   else if (m.t === 'evt') showEvent(m.e);
   else if (m.t === 'bad') badInput(m.m);
   else if (m.t === 'full') fail('La sala está llena.');
+  else if (m.t === 'kicked') { netClose(); location.href = location.pathname + '?e=k'; }
   else if (m.t === 'closed') hostGone('El anfitrión ha cerrado la sala.');
 }
 function act(m) { if (isHost) fromPlayer('host', m); else netPub('host', m); }
 
 // ---------- UI ----------
-function show(id) { for (const s of ['home', 'lobby', 'game']) $('#' + s).hidden = s !== id; }
+function show(id) { for (const s of ['home', 'lobby', 'game']) $('#' + s).hidden = s !== id; $('#bar').hidden = id === 'home'; }
 function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
 
 function applyState(s) {
@@ -648,33 +727,39 @@ function ctl(d, val) {
     `<b>${val} s</b><button type="button" data-k="${d.k}" data-d="1" ${isHost && val < d.max ? '' : 'disabled'} aria-label="Más">+</button></div>`;
 }
 function cfgHtml(basic) {
-  const c = S.settings;
-  return SCHEMA.filter(d => !!d.basic === basic).map(d =>
-    `<div class="set ${d.off && d.off(c) ? 'off' : ''}"><span class="lbl">${esc(d.label)}</span>${ctl(d, c[d.k])}</div>`).join('');
+  const c = S.settings, ctx = S.solo ? 'solo' : 'multi';
+  return SCHEMA.filter(d => !!d.basic === basic && (!d.ctx || d.ctx === ctx)).map(d =>
+    `<div class="set ${d.off && d.off(c) ? 'off' : ''}"><span class="lbl">${esc(d.label)}</span>${ctl(d, getVal(d, c))}</div>`).join('');
 }
 function cfgClick(e) {
   const b = e.target.closest('button[data-k]'); if (!b || !isHost) return;
   const d = SCHEMA.find(x => x.k === b.dataset.k);
   if (d.vals) setSetting(d.k, d.vals[+b.dataset.i]);
-  else setSetting(d.k, H.settings[d.k] + (+b.dataset.d));
+  else setSetting(d.k, getVal(d, H.settings) + (+b.dataset.d));
 }
 
 function renderLobby() {
   if (!S) return;
+  const sl = !!S.solo, ended = S.phase === 'ended';
   $('#lobbyCode').textContent = room;
-  const ended = S.phase === 'ended';
+  $('#codecard').hidden = sl; $('#plist').hidden = sl; $('#soloRec').hidden = !sl;
   $('#plist').innerHTML = S.players.filter(p => p.on || !ended).map(p => {
     const wait = ended && !p.back;
     const tag = wait ? 'viendo resultados' : p.id === 'host' ? 'anfitrión' : (p.id === myId ? 'tú' : '');
-    return `<div class="prow ${wait ? 'wait' : ''}">${tok(p)}<span>${esc(p.name)}</span><span class="tag">${tag}</span></div>`;
+    const kick = isHost && p.id !== 'host' ? `<button type="button" class="kick" data-kick="${esc(p.id)}" aria-label="Echar a ${esc(p.name)}">Echar</button>` : '';
+    return `<div class="prow ${wait ? 'wait' : ''}">${tok(p)}<span>${esc(p.name)}</span><span class="tag">${tag}</span>${kick}</div>`;
   }).join('');
   $('#cfgBasic').innerHTML = cfgHtml(true);
   $('#cfgMoreBody').innerHTML = cfgHtml(false);
+  if (sl) {
+    const r = loadRec()[soloKey(S.settings)];
+    $('#soloRec').textContent = r ? `Tu récord con estos ajustes: ${r.words} ${r.words === 1 ? 'palabra' : 'palabras'}, racha de ${r.streak}.` : 'Aún no hay récord con estos ajustes.';
+  }
   $('#btnStart').hidden = !isHost;
   if (isHost) {
-    const ready = !!DICT && S.players.filter(p => p.on).length >= 2;
-    $('#btnStart').disabled = !ready;
-    $('#lobbyHint').textContent = dictLoading ? 'Cargando diccionario…' : !DICT ? '' : S.players.filter(p => p.on).length < 2 ? 'Comparte el enlace para empezar.' : '';
+    const need = sl ? 1 : 2, count = S.players.filter(p => p.on).length;
+    $('#btnStart').disabled = !DICT || count < need;
+    $('#lobbyHint').textContent = dictLoading ? 'Cargando diccionario…' : (!DICT || sl) ? '' : count < 2 ? 'Comparte el enlace para empezar.' : '';
   } else $('#lobbyHint').textContent = 'Esperando al anfitrión…';
 }
 
@@ -683,31 +768,57 @@ function renderTyped() {
   const playing = S.phase === 'playing', n = norm(typed), i = playing ? n.indexOf(S.syl) : -1;
   let h = '';
   for (let k = 0; k < typed.length; k++) h += `<span class="t${i >= 0 && k >= i && k < i + S.syl.length ? ' s' : ''}">${esc(typed[k])}</span>`;
-  if (playing) h += '<span class="caret"></span>';
+  if (playing && S.turn === myId) h += '<span class="caret"></span>';
   const el = $('#tiles'); el.innerHTML = h; el.style.setProperty('--n', Math.max(7, typed.length + 1));
 }
 
 function renderResults(s) {
-  const r = s.res || { rank: [], fails: [] };
-  const wn = s.players.find(p => p.id === s.winner);
-  $('#overTitle').textContent = wn ? (wn.id === myId ? 'Has ganado' : 'Gana ' + wn.name) : 'Empate';
-  $('#rank').innerHTML = r.rank.map((x, i) => {
-    const p = s.players.find(q => q.id === x.id); if (!p) return '';
-    const line = x.words ? `${x.words} ${x.words === 1 ? 'palabra' : 'palabras'}` + (x.best ? ` · <em>${esc(x.best)}</em>` : '') : 'sin palabras';
-    return `<li><span class="n">${i + 1}</span>${tok(p, 'sm')}<div><b>${esc(p.name)}</b><small>${line}</small></div></li>`;
-  }).join('');
+  const r = s.res || { rank: [], fails: [] }, soloBox = $('#soloStats');
+  let again = 'Jugar de nuevo';
+  if (s.solo && r.solo) {
+    const k = r.solo;
+    $('#overTitle').textContent = (k.newWords || k.newStreak) ? 'Nuevo récord' : 'Fin';
+    soloBox.hidden = false;
+    soloBox.innerHTML = `<div class="${k.newWords ? 'new' : ''}"><b>${k.words}</b><small>palabras</small></div>` +
+      `<div class="${k.newStreak ? 'new' : ''}"><b>${k.streak}</b><small>mejor racha</small></div>` +
+      `<div><b>${k.recWords}</b><small>récord</small></div>`;
+    const log = (r.rank[0] || {}).log || [];
+    $('#rank').innerHTML = log.length ? `<li><details class="who"><summary><div><b>Tus palabras</b><small>${log.length}</small></div></summary><div class="log" style="margin-left:0">${pairs(log)}</div></details></li>` : '';
+    again = 'Otra vez';
+  } else {
+    soloBox.hidden = true;
+    const wn = s.players.find(p => p.id === s.winner);
+    $('#overTitle').textContent = wn ? (wn.id === myId ? 'Has ganado' : 'Gana ' + wn.name) : 'Empate';
+    $('#rank').innerHTML = r.rank.map((x, i) => {
+      const p = s.players.find(q => q.id === x.id); if (!p) return '';
+      const sub = `${x.words} ${x.words === 1 ? 'palabra' : 'palabras'}`;
+      const head = `<span class="n">${i + 1}</span>${tok(p, 'sm')}<div><b>${esc(p.name)}</b><small>${sub}</small></div>`;
+      return x.words ? `<li><details class="who"><summary>${head}</summary><div class="log">${pairs(x.log)}</div></details></li>`
+                     : `<li><div class="who plain">${head}</div></li>`;
+    }).join('');
+  }
   $('#fails').innerHTML = r.fails.length ? '<h4>Sin resolver</h4>' + r.fails.map(f =>
     `<div class="fail"><span class="chip">${esc(f.s.toUpperCase())}</span><span>${f.ex.length ? esc(f.ex.join(', ')) : ''}</span></div>`).join('') : '';
-  const b = $('#btnAgain'); b.textContent = 'Jugar de nuevo';
-  b.onclick = () => { if (isHost) { const p = byId('host'); if (p) { p.back = true; push(); } } else act({ t: 'again' }); };
+  const b = $('#btnAgain'); b.textContent = again;
+  b.onclick = () => {
+    if (s.solo) startGame();
+    else if (isHost) { const p = byId('host'); if (p) { p.back = true; push(); } }
+    else act({ t: 'again' });
+  };
+  const st = $('#btnSettings'); st.hidden = !s.solo;
+  st.onclick = () => { const p = byId('host'); if (p) { p.back = true; push(); } };
+  $('#btnExit').hidden = false;
   $('#overHint').textContent = '';
 }
 
 function renderGame() {
   const s = S, n = s.players.length;
-  $('#gCode').textContent = room;
-  const alive = s.players.filter(p => p.alive).length;
-  $('#gInfo').textContent = s.phase === 'playing' ? alive + ' en juego' : '';
+  const me = s.players.find(p => p.id === myId);
+  $('#gCode').textContent = s.solo ? 'Individual' : room;
+  if (s.solo && me) {
+    const rec = (loadRec()[soloKey(s.settings)] || { words: 0 }).words;
+    $('#gInfo').textContent = `Aciertos ${me.words} · Racha ${me.streak} · Récord ${Math.max(rec, me.words)}`;
+  } else $('#gInfo').textContent = s.phase === 'playing' ? s.players.filter(p => p.alive).length + ' en juego' : '';
   const sylEl = $('#syl'), nsyl = s.phase === 'playing' ? s.syl : '';
   sylEl.textContent = nsyl;
   if (nsyl && nsyl !== lastSyl) { sylEl.classList.remove('pop'); void sylEl.offsetWidth; sylEl.classList.add('pop'); }
@@ -718,7 +829,7 @@ function renderGame() {
     return `<div class="pl ${p.id === s.turn ? 'turn' : ''} ${!p.alive && !p.spec ? 'out' : ''} ${!p.on ? 'off' : ''}" data-id="${esc(p.id)}">` +
       `${tok(p)}<div class="nm">${esc(p.name)}</div><div class="dots">${hp}</div></div>`;
   }).join('');
-  const mine = s.players.find(p => p.id === myId), myTurn = s.phase === 'playing' && s.turn === myId;
+  const myTurn = s.phase === 'playing' && s.turn === myId;
   const w = $('#word'); w.disabled = !myTurn; $('#send').hidden = !myTurn;
   $('#fuse').hidden = !(s.phase === 'playing' && s.settings.show);
   if (s.turn !== lastTurn) {
@@ -727,8 +838,8 @@ function renderGame() {
     lastTurn = s.turn;
   }
   renderTyped();
-  const L = mine ? mine.letters : '';
-  $('#letters').innerHTML = s.settings.letters && mine && mine.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
+  const L = me ? me.letters : '';
+  $('#letters').innerHTML = s.settings.letters && me && me.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
   const over = $('#over');
   if (s.phase === 'ended') { over.hidden = false; renderResults(s); }
   else over.hidden = true;
@@ -746,7 +857,7 @@ function showEvent(e) {
     f.classList.remove('go'); b.classList.remove('boom'); void f.offsetWidth; f.classList.add('go'); b.classList.add('boom');
     setTimeout(() => { const el = document.querySelector('.pl[data-id="' + CSS.escape(String(e.id)) + '"]'); if (el) el.classList.add('hit'); }, 30);
   } else if (e.k === 'join') say(e.name + ' entra');
-  else if (e.k === 'left') say(e.name + ' se va');
+  else if (e.k === 'left') say(e.name + (e.kicked ? ' expulsado' : ' se va'));
 }
 function badInput(m) {
   say(m, 'bad'); const st = $('#stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake'); $('#word').select();
@@ -780,14 +891,16 @@ nameIn.value = localStorage.getItem('jt_name') || '';
 const params = new URLSearchParams(location.search);
 const inviteCode = (params.get('sala') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
 if (inviteCode.length === 4) { $('#homeCreate').hidden = true; $('#homeInvite').hidden = false; $('#inviteCode').textContent = inviteCode; }
+if (params.get('e') === 'k') setHome('Te han expulsado de la sala.', 'bad');
 
 function getName() {
   const n = nameIn.value.trim();
   if (!n) { setHome('Escribe tu nombre.', 'bad'); nameIn.focus(); return null; }
   localStorage.setItem('jt_name', n); myName = n; setHome(''); return n;
 }
-function busy() { for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome('Conectando…'); }
+function busy() { for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome('Conectando…'); }
 $('#btnCreate').onclick = () => { if (getName()) { busy(); createRoom(); } };
+$('#btnSolo').onclick = startSolo;
 $('#btnJoin').onclick = () => {
   const c = $('#codeIn').value.toUpperCase().replace(/[^A-Z]/g, '');
   if (c.length !== 4) { setHome('El código tiene 4 letras.', 'bad'); return; }
@@ -801,8 +914,11 @@ $('#btnCopy').onclick = async () => {
 };
 if (navigator.share) { $('#btnShare').hidden = false; $('#btnShare').onclick = () => navigator.share({ title: 'Bomba', url: link() }).catch(() => {}); }
 $('#btnStart').onclick = startGame;
+$('#btnLeave').onclick = leave;
+$('#btnExit').onclick = leave;
 $('#cfgBasic').addEventListener('click', cfgClick);
 $('#cfgMoreBody').addEventListener('click', cfgClick);
+$('#plist').addEventListener('click', e => { const b = e.target.closest('[data-kick]'); if (b && isHost) kick(b.dataset.kick); });
 $('#word').addEventListener('input', e => { typed = e.target.value; renderTyped(); act({ t: 'typing', text: typed }); });
 $('#form').addEventListener('submit', e => { e.preventDefault(); const v = $('#word').value.trim(); if (v) act({ t: 'submit', w: v }); });
 addEventListener('keydown', e => {
