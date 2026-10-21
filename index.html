@@ -16,6 +16,7 @@ h1 span{display:block}
 h1 span+span{margin-left:.6em}
 .game{display:flex;align-items:center;gap:18px;padding:16px 20px;background:var(--white);border:var(--line);border-radius:18px;box-shadow:var(--hard);
   text-decoration:none;transition:transform .12s,box-shadow .12s}
+.game+.game{margin-top:16px}
 .game:hover{transform:rotate(-1.2deg) translate(-2px,-2px);box-shadow:7px 7px 0 var(--ink)}
 .game:focus-visible{outline:3px solid var(--blue);outline-offset:4px}
 .game svg{width:64px;height:auto;flex:0 0 auto}
@@ -37,6 +38,13 @@ h1 span+span{margin-left:.6em}
       <g class="spark"><polygon transform="translate(170 32)" points="0,-18 5,-6 18,0 5,6 0,18 -5,6 -18,0 -5,-6" fill="#ff5c8a"/></g>
     </svg>
     <span><b>Bomba</b><small>2 a 8 jugadores</small></span>
+  </a>
+  <a class="game" href="tutti/">
+    <svg viewBox="0 0 200 220" aria-hidden="true">
+      <rect x="22" y="40" width="156" height="156" rx="30" fill="#ff5c8a" stroke="#17140f" stroke-width="12" transform="rotate(-8 100 118)"/>
+      <path d="M62 92h76M62 124h76M62 156h44" stroke="#17140f" stroke-width="12" stroke-linecap="round" transform="rotate(-8 100 118)"/>
+    </svg>
+    <span><b>Tutti frutti</b><small>2 a 8 jugadores</small></span>
   </a>
 </main>
 </body>

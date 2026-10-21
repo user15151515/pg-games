@@ -2,7 +2,7 @@
 
 Juegos cortos multijugador para jugar con amigos. Web estática, sin registro: se juega compartiendo un enlace.
 
-Juegos: Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega». Tiene modo individual (aciertos, racha y récord, guardado en el navegador por combinación de ajustes), salir de la sala en cualquier momento y expulsión de jugadores por parte del anfitrión.
+Juegos: Tutti frutti (`tutti/`), una letra al azar y varias categorías que se pueden personalizar; se puntúa por respuestas únicas y los jugadores pueden votar las que no valen. Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega». Tiene modo individual (aciertos, racha y récord, guardado en el navegador por combinación de ajustes), salir de la sala en cualquier momento y expulsión de jugadores por parte del anfitrión.
 
 ## Multijugador
 
@@ -26,7 +26,8 @@ npm run words
 ```
 index.html            portada
 shared.css            fuente, colores, botones e inputs comunes
-bomba/index.html      el juego
+bomba/index.html      el juego Bomba
+tutti/index.html      el juego Tutti frutti (copia la capa de red de Bomba; si cambia una, cambia la otra)
 bomba/words.txt       diccionario normalizado (sin acentos)
 bomba/syllables.json  sílabas por dificultad
 bomba/examples.json   palabras de ejemplo por sílaba (para el resumen final)
