@@ -31,13 +31,6 @@
 .subrow{display:flex;justify-content:center;margin-top:6px}
 #codeIn{text-transform:uppercase;letter-spacing:.25em;font-weight:800;text-align:center;font-size:44px;font-stretch:75%;padding:14px 10px}
 .rech{font-size:clamp(60px,20vw,96px);margin:0 0 18px}
-.rec{display:flex;align-items:center;gap:14px;background:var(--white);border:var(--line);border-radius:16px;padding:10px 14px;margin-bottom:10px}
-.rec .rn{min-width:58px;text-align:center}
-.rec .rn b{display:block;font-size:40px;font-weight:800;font-stretch:75%;line-height:1}
-.rec .rn small{font-size:12px;font-weight:600}
-.rec .ri{flex:1;min-width:0;font-weight:700;line-height:1.2}
-.rec .ri small{display:block;font-weight:500;font-size:14px}
-.rec button{padding:8px 14px;font-size:16px;box-shadow:none}
 .emp{font-weight:600}
 .bar .snd,.topline .snd{margin-left:auto}
 .snd[aria-pressed=false]{text-decoration-line:line-through}
@@ -215,7 +208,6 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #typed input{font-size:20px}
 #typed input:disabled{opacity:.5}
 #tclock{text-align:center;font-weight:700;min-height:26px;margin-top:8px}
-.rec .rn b{font-size:34px}
 </style>
 </head>
 <body>
@@ -267,7 +259,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   <div class="plist" id="plist"></div>
   <div id="cfgBasic"></div>
   <p id="cfgSum"></p>
-  <p id="soloRec" hidden></p>
+  <div id="soloRec" hidden></div>
   <button type="button" class="linkbtn" id="btnRecLobby" hidden style="margin:-6px 0 16px">Ver todos los récords</button>
   <button id="btnStart" class="big" hidden>Empezar</button>
   <p id="lobbyHint" role="status"></p>
@@ -278,8 +270,8 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 <section id="records" hidden>
   <div class="topline"><button type="button" class="linkbtn" id="btnRecBack">← Volver</button><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
   <h2 class="display rech">Récords</h2>
-  <div class="set"><span class="lbl">Texto</span><div class="seg" id="recSrc"></div></div>
-  <div class="set"><span class="lbl">Exigencia</span><div class="seg" id="recEx"></div></div>
+  <div class="fgroup"><span class="lbl">Texto</span><div class="fchips" id="recSrc"></div></div>
+  <div class="fgroup"><span class="lbl">Reglas</span><div class="fchips" id="recRules"></div></div>
   <div id="recList"></div>
 </section>
 
@@ -420,7 +412,7 @@ function paintSnd() { for (const b of document.querySelectorAll('.snd')) { b.tex
 const SRC = [['refranes', 'Refranes'], ['frases', 'Frases'], ['parrafos', 'Párrafos'], ['palabras', 'Palabras']];
 const SRCN = Object.fromEntries(SRC);
 const N_OPTS = [15, 30, 50];
-const DEF = { src: 'frases', n: 30, exact: 0 };
+const DEF = { src: 'frases', n: 30, acc: 0, pun: 0, cas: 0 };   // acc: exigir tildes, pun: exigir puntuación, cas: exigir mayúsculas
 const COUNT = 3000, AFTER_FIRST = 15000, HARD = 300000;
 const REC_KEY = 'jt_teclazo_v1';
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -440,12 +432,14 @@ const accOf = (len, mis) => Math.round(len / (len + mis) * 100);
 // récords del modo individual (solo en este navegador)
 const loadRec = () => { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } };
 const saveRec = r => { try { localStorage.setItem(REC_KEY, JSON.stringify(r)); } catch (e) {} };
-const recKey = c => (c.src === 'palabras' ? 'palabras' + c.n : c.src) + '.' + (c.exact ? 1 : 0);
+const recKey = c => (c.src === 'palabras' ? 'palabras' + c.n : c.src) + '.' + (c.acc ? 1 : 0) + (c.pun ? 1 : 0) + (c.cas ? 1 : 0);
 function cfgOfKey(k) {
   const [a, e] = k.split('.'), m = a.match(/^([a-z]+?)(\d+)?$/);
-  return { src: m[1], n: m[2] ? +m[2] : DEF.n, exact: +e };
+  const [acc, pun, cas] = e.length === 1 ? [+e, +e, +e] : [...e].map(Number);   // las claves antiguas tenían un solo dígito
+  return { src: m[1], n: m[2] ? +m[2] : DEF.n, acc, pun, cas };
 }
-const cfgTitle = c => `${SRCN[c.src]}${c.src === 'palabras' ? ' (' + c.n + ')' : ''} · ${c.exact ? 'Exacta' : 'Fácil'}`;
+const rulesLabel = c => { const on = [c.acc && 'tildes', c.pun && 'puntuación', c.cas && 'mayúsculas'].filter(Boolean); return !on.length ? 'Fácil' : on.length === 3 ? 'Exacta' : 'Exige ' + on.join(', '); };
+const rulesClass = c => { const n = (c.acc ? 1 : 0) + (c.pun ? 1 : 0) + (c.cas ? 1 : 0); return n === 0 ? 'easy' : n === 3 ? 'exact' : 'custom'; };
 
 const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>La carrera</h3>
@@ -460,10 +454,12 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <dt>Párrafos</dt><dd>Un párrafo de unas 50 palabras. Es el más largo.</dd>
 <dt>Palabras</dt><dd>Palabras comunes al azar, a elegir entre 15, 30 o 50.</dd>
 </dl>
-<h3>Exigencia</h3>
+<h3>Reglas</h3>
+<p>En los ajustes se activa o desactiva por separado cada exigencia. Con todas desactivadas es el modo cómodo, ideal para el móvil; con todas activadas hay que escribir el texto exactamente como está.</p>
 <dl>
-<dt>Fácil</dt><dd>Da igual escribir con mayúsculas o minúsculas, con tilde o sin ella, y los signos de puntuación se saltan solos. Es lo cómodo en el móvil.</dd>
-<dt>Exacta</dt><dd>Hay que escribir cada letra, tilde, coma y punto exactamente como están.</dd>
+<dt>Tildes</dt><dd>Si no se exigen, «camión» y «camion» valen igual. Si se exigen, hay que poner la tilde; si no la pones, cuenta como error.</dd>
+<dt>Puntuación</dt><dd>Si no se exige, las comas, los puntos y demás signos se saltan solos y no hace falta escribirlos. Si se exige, hay que teclearlos.</dd>
+<dt>Mayúsculas</dt><dd>Si no se exigen, da igual escribir en mayúsculas o minúsculas.</dd>
 </dl>
 <h3>Resultados</h3>
 <p>La velocidad se mide en pulsaciones por minuto (ppm): cada 5 caracteres correctos cuentan como una palabra. La precisión es el porcentaje de pulsaciones que no han sido errores.</p>
@@ -473,6 +469,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 </div>`;
 
 // ---------- estado local ----------
+const HOVER = !!(window.matchMedia && matchMedia('(hover: hover)').matches);
 let isHost = false, solo = false, room = '', myId = null, myName = '';
 let S = null, lastV = -1, goAt = 0, raceT0 = 0, lastHeard = 0, gotState = false;
 let TG = null, TGkey = '', progMap = {}, lastCd = -1, loopT = 0, applyAt = 0;
@@ -485,7 +482,7 @@ function newH() {
   return { phase: 'lobby', solo: false, players: [], settings: { ...DEF }, txt: '', rid: 0, goAt: 0, t0: 0, endAt: 0, tm: 0, pi: 0, dirty: false, v: 0, res: null, ghost: 0, lastIdx: {} };
 }
 const byId = id => H.players.find(p => p.id === id);
-const tlen = () => target(H.txt, H.settings.exact).tstr.length;
+const tlen = () => target(H.txt, H.settings).tstr.length;
 
 function pub() {
   const t = now();
@@ -506,7 +503,7 @@ function setSetting(k, v) {
   if (!H || H.phase === 'count' || H.phase === 'race') return;
   if (k === 'src' && SRCN[v]) H.settings.src = v;
   else if (k === 'n' && N_OPTS.includes(v)) H.settings.n = v;
-  else if (k === 'exact' && (v === 0 || v === 1)) H.settings.exact = v;
+  else if ((k === 'acc' || k === 'pun' || k === 'cas') && (v === 0 || v === 1)) H.settings[k] = v;
   else return;
   push();
 }
@@ -567,6 +564,8 @@ function goRace() {
     if (!H.dirty) return; H.dirty = false;
     const p = Object.fromEntries(H.players.map(x => [x.id, x.prog]));
     bcast({ t: 'prog', p });
+    for (const x of H.players) if (x.id !== 'host') progMap[x.id] = x.prog;   // el anfitrión no recibe sus propios mensajes
+    updateLanes();
     for (const x of H.players) if (x.id !== 'host') progMap[x.id] = x.prog;   // el anfitrión no recibe sus propios mensajes
     updateLanes();
   }, 200);
@@ -718,18 +717,32 @@ function onMsg(m) {
 function act(m) { if (isHost) fromPlayer('host', m); else netPub('host', m); }
 
 // ---------- pantalla de récords ----------
-const recF = { src: '', exact: -1 };
+const recF = { src: '', rules: '' };
+const SRCCLS = { refranes: 'h', frases: 'n', parrafos: 'e', palabras: 'b' };
 function renderRecords() {
   const seg = (id, key, vals, labels) => { $(id).innerHTML = vals.map((v, i) => `<button type="button" data-f="${key}" data-v="${v}" class="${recF[key] === v ? 'on' : ''}" aria-pressed="${recF[key] === v}">${labels[i]}</button>`).join(''); };
   seg('#recSrc', 'src', ['', ...SRC.map(x => x[0])], ['Todos', ...SRC.map(x => x[1])]);
-  seg('#recEx', 'exact', [-1, 0, 1], ['Todas', 'Fácil', 'Exacta']);
+  seg('#recRules', 'rules', ['', 'easy', 'exact', 'custom'], ['Todas', 'Fácil', 'Exacta', 'Personalizada']);
   const all = Object.entries(loadRec()).filter(([k, r]) => r && r.wpm > 0).map(([k, r]) => ({ k, c: cfgOfKey(k), r }));
-  const rows = all.filter(x => (!recF.src || x.c.src === recF.src) && (recF.exact < 0 || x.c.exact === recF.exact)).sort((a, b) => b.r.wpm - a.r.wpm);
-  $('#recList').innerHTML = rows.length ? rows.map(x =>
-    `<div class="rec"><div class="rn"><b>${x.r.wpm}</b><small>ppm</small></div>` +
-    `<div class="ri">${esc(cfgTitle(x.c))}<small>precisión ${x.r.acc} % · ${x.r.runs} ${x.r.runs === 1 ? 'carrera' : 'carreras'}</small></div>` +
-    `<button type="button" data-play="${esc(x.k)}">Jugar</button></div>`).join('')
-    : `<p class="emp">${all.length ? 'Ningún récord con ese filtro.' : 'Aún no hay récords. Juega una carrera individual.'}</p>`;
+  const rows = all.filter(x => (!recF.src || x.c.src === recF.src) && (!recF.rules || rulesClass(x.c) === recF.rules)).sort((a, b) => b.r.wpm - a.r.wpm);
+  const pill = (t, c) => `<span class="pill ${c || ''}">${esc(t)}</span>`;
+  const pills = c => pill(SRCN[c.src] + (c.src === 'palabras' ? ' · ' + c.n : ''), SRCCLS[c.src]) + pill(rulesLabel(c));
+  const meta = x => `precisión ${x.r.acc} % · ${x.r.runs} ${x.r.runs === 1 ? 'carrera' : 'carreras'}`;
+  const playIcon = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+  if (!rows.length) {
+    $('#recList').innerHTML = `<div class="rempty"><p>${all.length ? 'Ninguna marca con ese filtro.' : 'Todavía no hay marcas. Corre una carrera individual y aparecerá aquí.'}</p>` +
+      (all.length ? '' : '<button type="button" id="recGo">Correr ahora</button>') + '</div>';
+    return;
+  }
+  const top = rows[0];
+  $('#recList').innerHTML =
+    `<div class="rbest"><div class="k">Tu mejor marca</div><div class="v"><b>${top.r.wpm}</b><span>ppm</span></div>` +
+    `<div class="pills">${pills(top.c)}</div><small>${esc(meta(top))}</small>` +
+    `<button type="button" class="go" data-play="${esc(top.k)}">Correr con estos ajustes</button></div>` +
+    (rows.length > 1 ? '<div class="rhead">Otras marcas</div><div class="rlist">' + rows.slice(1).map(x =>
+      `<div class="rcard"><div class="rv"><b>${x.r.wpm}</b><small>ppm</small></div>` +
+      `<div class="rm"><div class="pills">${pills(x.c)}</div><small>${esc(meta(x))}</small></div>` +
+      `<button type="button" class="play" data-play="${esc(x.k)}" aria-label="Correr con estos ajustes">${playIcon}</button></div>`).join('') + '</div>' : '');
 }
 function openRecords() { show('records'); renderRecords(); }
 
@@ -737,20 +750,22 @@ function openRecords() { show('records'); renderRecords(); }
 function show(id) { for (const s of ['home', 'lobby', 'game', 'records']) $('#' + s).hidden = s !== id; $('#bar').hidden = id === 'home' || id === 'records'; }
 function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
 
-// texto objetivo: en «Fácil» no se exigen mayúsculas, tildes ni signos
-function target(txt, exact) {
+// texto objetivo según las reglas: lo que no se exige se pliega (minúsculas, sin tildes) o se salta (puntuación)
+const stripAcc = s => { let o = ''; for (const ch of s) o += (ch === 'ñ' || ch === 'Ñ') ? ch : ch.normalize('NFD')[0]; return o; };
+const fold = (s, c) => { if (!c.cas) s = s.toLowerCase(); if (!c.acc) s = stripAcc(s); return s; };
+const isTypable = k => /^[\p{L}\p{N} ]$/u.test(k);
+function target(txt, c) {
   const cells = [], keys = []; let ti = 0;
   for (const ch of txt) {
-    if (exact) { cells.push({ ch, i: ti++ }); keys.push(ch); continue; }
-    const k = norm(ch);
-    if (/^[a-zñ0-9 ]$/.test(k)) { cells.push({ ch, i: ti++ }); keys.push(k); } else cells.push({ ch, i: -1 });
+    const k = fold(ch, c);
+    if (c.pun || isTypable(k)) { cells.push({ ch, i: ti++ }); keys.push(k); } else cells.push({ ch, i: -1 });
   }
   const tstr = keys.join(''), next = new Array(cells.length);
   let nx = tstr.length;
   for (let i = cells.length - 1; i >= 0; i--) { if (cells[i].i >= 0) nx = cells[i].i; next[i] = nx; }
   return { cells, tstr, next };
 }
-const typedKey = (raw, exact) => exact ? raw : norm(raw).replace(/[^a-zñ0-9 ]/g, '');
+const typedKey = (raw, c) => { const k = fold(raw, c); return c.pun ? k : k.replace(/[^\p{L}\p{N} ]/gu, ''); };
 const prefixLen = (a, b) => { let i = 0; const n = Math.min(a.length, b.length); while (i < n && a[i] === b[i]) i++; return i; };
 
 function applyState(s) {
@@ -762,7 +777,7 @@ function applyState(s) {
     loc.rid = s.rid; loc.prog = 0; loc.mis = 0; loc.prev = 0; loc.done = false; loc.err = false; progMap = {}; lastCd = -1;
     $('#word').value = '';
   }
-  if (s.txt) { const k = s.rid + '|' + s.settings.exact + '|' + s.txt; if (k !== TGkey) { TGkey = k; TG = target(s.txt, s.settings.exact); } }
+  if (s.txt) { const k = s.rid + '|' + s.settings.acc + s.settings.pun + s.settings.cas + '|' + s.txt; if (k !== TGkey) { TGkey = k; TG = target(s.txt, s.settings); } }
   if (s.phase === 'ended' && prev !== 'ended') {
     const r = s.res, x = r && r.rank.find(q => q.id === myId);
     play(s.solo ? (r && r.solo && r.solo.isNew ? 'win' : 'ok') : (r && r.rank[0] && r.rank[0].id === myId && r.rank[0].fin ? 'win' : 'lose'));
@@ -777,7 +792,7 @@ function ctlSeg(k, vals, labels, val) {
   return `<div class="seg" role="group">` + vals.map((v, i) =>
     `<button type="button" data-k="${k}" data-i="${i}" class="${v === val ? 'on' : ''}" ${isHost ? '' : 'disabled'} aria-pressed="${v === val}">${labels[i]}</button>`).join('') + '</div>';
 }
-function cfgSummary(s) { const c = s.settings; return `${SRCN[c.src]}${c.src === 'palabras' ? ' · ' + c.n : ''} · ${c.exact ? 'Exacta' : 'Fácil'}`; }
+function cfgSummary(s) { const c = s.settings; return `${SRCN[c.src]}${c.src === 'palabras' ? ' · ' + c.n : ''} · ${rulesLabel(c)}`; }
 function renderLobby() {
   if (!S) return;
   const sl = !!S.solo, ended = S.phase === 'ended', c = S.settings;
@@ -792,11 +807,15 @@ function renderLobby() {
   $('#cfgBasic').innerHTML = `<div class="set"><span class="lbl">Texto</span>${ctlSeg('src', SRC.map(x => x[0]), SRC.map(x => x[1]), c.src)}</div>`;
   $('#cfgMoreBody').innerHTML =
     (c.src === 'palabras' ? `<div class="set"><span class="lbl">Número de palabras</span>${ctlSeg('n', N_OPTS, N_OPTS.map(String), c.n)}</div>` : '') +
-    `<div class="set"><span class="lbl">Exigencia</span>${ctlSeg('exact', [0, 1], ['Fácil', 'Exacta'], c.exact)}</div>`;
+    `<div class="set"><span class="lbl">Tildes</span>${ctlSeg('acc', [0, 1], ['Ignorar', 'Exigir'], c.acc)}</div>` +
+    `<div class="set"><span class="lbl">Puntuación</span>${ctlSeg('pun', [0, 1], ['Ignorar', 'Exigir'], c.pun)}</div>` +
+    `<div class="set"><span class="lbl">Mayúsculas</span>${ctlSeg('cas', [0, 1], ['Ignorar', 'Exigir'], c.cas)}</div>`;
   $('#cfgSum').textContent = cfgSummary(S);
   if (sl) {
     const r = loadRec()[recKey(c)];
-    $('#soloRec').textContent = r ? `Tu récord con estos ajustes: ${r.wpm} ppm, precisión ${r.acc} %.` : 'Aún no hay récord con estos ajustes.';
+    $('#soloRec').innerHTML = r
+      ? `<div class="recline"><span class="tg">Récord</span><b>${r.wpm}</b><small>ppm · precisión ${r.acc} %</small></div>`
+      : `<div class="recline"><span class="tg">Récord</span><small>sin marca con estos ajustes</small></div>`;
   }
   $('#btnStart').hidden = !isHost;
   if (isHost) {
@@ -842,7 +861,7 @@ function updateLanes() {
 
 function renderText() {
   if (!S || !TG) return;
-  const p = loc.prog, errLen = Math.max(0, typedKey($('#word').value, S.settings.exact).length - p), err = errLen > 0;
+  const p = loc.prog, errLen = Math.max(0, typedKey($('#word').value, S.settings).length - p), err = errLen > 0;
   let h = '';
   for (let i = 0; i < TG.cells.length; i++) {
     const c = TG.cells[i]; let cls = '';
@@ -863,6 +882,7 @@ function renderGame() {
   const racing = s.phase === 'race' && !loc.done && !(me && me.fin);
   const w = $('#word'), canType = (s.phase === 'count' || racing) && !!me && !loc.done;
   w.disabled = !canType;
+  $('#cd').hidden = s.phase !== 'count';
   if (canType && document.activeElement !== w) { w.focus(); setTimeout(() => { if (S && !w.disabled) w.focus(); }, 30); }
   const over = $('#over');
   if (s.phase === 'ended') { over.hidden = false; renderResults(s); } else over.hidden = true;
@@ -900,6 +920,7 @@ function renderResults(s) {
   const st = $('#btnSettings'); st.hidden = !s.solo;
   st.onclick = () => { const p = byId('host'); if (p) { p.back = true; push(); } };
   $('#btnExit').hidden = false;
+  if (s.solo && r.solo !== undefined && HOVER) $('#overHint').textContent += ($('#overHint').textContent ? ' · ' : '') + 'R para repetir';
 }
 
 let msgTm = 0;
@@ -919,7 +940,7 @@ function onType() {
   const w = $('#word');
   if (!S || !TG) { w.value = ''; return; }
   if (S.phase !== 'race' || loc.done || now() < raceT0) { w.value = ''; return; }
-  const v = typedKey(w.value, S.settings.exact), p = prefixLen(v, TG.tstr);
+  const v = typedKey(w.value, S.settings), p = prefixLen(v, TG.tstr);
   if (v.length > loc.prev && p < v.length) { loc.mis += v.length - Math.max(loc.prev, p); if (!loc.err) play('bad'); loc.err = true; }
   else if (p === v.length) loc.err = false;
   loc.prev = v.length; loc.prog = p;
@@ -944,14 +965,16 @@ function hudUpdate() {
   const cd = $('#cd'), clk = $('#tclock');
   if (S.phase === 'count') {
     const n = Math.ceil((goAt - t) / 1000);
-    cd.hidden = n <= 0; cd.textContent = n;
+    cd.hidden = false; cd.textContent = n > 0 ? n : '¡Ya!';   // el velo se quita solo cuando el anfitrión da la salida
     if (n !== lastCd && n > 0) { tone(520, .12, { v: .2 }); }
     lastCd = n; clk.textContent = '';
   } else if (S.phase === 'race') {
     const since = t - raceT0;
     if (lastCd !== 0) { lastCd = 0; tone(880, .28, { type: 'triangle', v: .22 }); if (!$('#word').disabled) $('#word').focus(); }
-    cd.hidden = since > 700; cd.textContent = '¡Ya!';
-    if (S.endIn !== null) { const r = Math.max(0, Math.ceil((S.endIn - (t - applyAt)) / 1000)); clk.textContent = r + ' s para terminar'; } else clk.textContent = '';
+    cd.hidden = true;
+    if (since < 700) clk.textContent = '¡Ya!';
+    if (S.endIn !== null) { const r = Math.max(0, Math.ceil((S.endIn - (t - applyAt)) / 1000)); clk.textContent = r + ' s para terminar'; }
+    else if (since >= 700) clk.textContent = S.solo && HOVER ? 'Esc para reiniciar' : '';
     if (t - loopT > 250) { loopT = t; hudUpdate(); updateLanes(); }
   } else { cd.hidden = true; clk.textContent = ''; }
 })();
@@ -997,8 +1020,9 @@ $('#btnRecLobby').onclick = openRecords;
 $('#btnRecBack').onclick = () => { if (solo && S) applyState(S); else show('home'); };
 $('#records').addEventListener('click', e => {
   const f = e.target.closest('[data-f]'), p = e.target.closest('[data-play]');
-  if (f) { recF[f.dataset.f] = f.dataset.f === 'src' ? f.dataset.v : +f.dataset.v; renderRecords(); }
+  if (f) { recF[f.dataset.f] = f.dataset.v; renderRecords(); }
   else if (p) startSolo(cfgOfKey(p.dataset.play), true);
+  else if (e.target.closest('#recGo')) { if (solo && S) applyState(S); else startSolo(); }
 });
 const wEl = $('#word');
 wEl.addEventListener('input', onType);
@@ -1020,6 +1044,15 @@ addEventListener('pointerdown', unlock, true);
 addEventListener('keydown', unlock, true);
 paintSnd();
 $('#codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnJoin').click(); });
+function restartSolo() {
+  if (!isHost || !solo || !H || (H.phase !== 'count' && H.phase !== 'race')) return;
+  clearTimeout(H.tm); clearInterval(H.pi); H.phase = 'ended'; startRace();
+}
+addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || !S || !S.solo) return;
+  if ((e.key === 'r' || e.key === 'R') && S.phase === 'ended' && !$('#over').hidden) { e.preventDefault(); $('#btnAgain').click(); }
+  else if ((e.key === 'Escape' || e.key === 'Tab') && (S.phase === 'race' || S.phase === 'count') && !$('#game').hidden) { e.preventDefault(); restartSolo(); }
+});
 addEventListener('pagehide', () => { if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' }); });
 nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') (inviteCode.length === 4 ? $('#btnJoinInvite') : $('#btnCreate')).click(); });
 })();

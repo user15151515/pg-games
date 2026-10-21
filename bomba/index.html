@@ -31,13 +31,6 @@
 .subrow{display:flex;justify-content:center;margin-top:6px}
 #codeIn{text-transform:uppercase;letter-spacing:.25em;font-weight:800;text-align:center;font-size:44px;font-stretch:75%;padding:14px 10px}
 .rech{font-size:clamp(60px,20vw,96px);margin:0 0 18px}
-.rec{display:flex;align-items:center;gap:14px;background:var(--white);border:var(--line);border-radius:16px;padding:10px 14px;margin-bottom:10px}
-.rec .rn{min-width:58px;text-align:center}
-.rec .rn b{display:block;font-size:40px;font-weight:800;font-stretch:75%;line-height:1}
-.rec .rn small{font-size:12px;font-weight:600}
-.rec .ri{flex:1;min-width:0;font-weight:700;line-height:1.2}
-.rec .ri small{display:block;font-weight:500;font-size:14px}
-.rec button{padding:8px 14px;font-size:16px;box-shadow:none}
 .emp{font-weight:600}
 .bar .snd,.topline .snd{margin-left:auto}
 .snd[aria-pressed=false]{text-decoration-line:line-through}
@@ -244,7 +237,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   <div class="plist" id="plist"></div>
   <div id="cfgBasic"></div>
   <p id="cfgSum"></p>
-  <p id="soloRec" hidden></p>
+  <div id="soloRec" hidden></div>
   <button type="button" class="linkbtn" id="btnRecLobby" hidden style="margin:-6px 0 16px">Ver todos los récords</button>
   <button id="btnStart" class="big" hidden>Empezar</button>
   <p id="lobbyHint" role="status"></p>
@@ -284,9 +277,9 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 <section id="records" hidden>
   <div class="topline"><button type="button" class="linkbtn" id="btnRecBack">← Volver</button><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
   <h2 class="display rech">Récords</h2>
-  <div class="set"><span class="lbl">Modo</span><div class="seg" id="recMode"></div></div>
-  <div class="set"><span class="lbl">Dificultad</span><div class="seg" id="recDiff"></div></div>
-  <div class="set"><span class="lbl">Vidas</span><div class="seg" id="recLives"></div></div>
+  <div class="fgroup"><span class="lbl">Modo</span><div class="fchips" id="recMode"></div></div>
+  <div class="fgroup"><span class="lbl">Dificultad</span><div class="fchips" id="recDiff"></div></div>
+  <div class="fgroup"><span class="lbl">Vidas</span><div class="fchips" id="recLives"></div></div>
   <div id="recList"></div>
 </section>
 
@@ -762,11 +755,26 @@ function renderRecords() {
   const all = Object.entries(loadRec()).filter(([k, r]) => r && r.words > 0).map(([k, r]) => ({ k, c: cfgOfKey(k), r }));
   const rows = all.filter(x => (!recF.mode || x.c.smode === recF.mode) && (recF.diff < 0 || x.c.diff === recF.diff) && (!recF.lives || (!isRush(x.c) && x.c.lives === recF.lives)))
     .sort((a, b) => b.r.words - a.r.words || b.r.streak - a.r.streak);
-  $('#recList').innerHTML = rows.length ? rows.map(x =>
-    `<div class="rec"><div class="rn"><b>${x.r.words}</b><small>palabras</small></div>` +
-    `<div class="ri">${esc(cfgTitle(x.c))}<small>${isRush(x.c) ? '' : 'racha ' + x.r.streak + ' · '}${esc(cfgSub(x.c))}</small></div>` +
-    `<button type="button" data-play="${esc(x.k)}">Jugar</button></div>`).join('')
-    : `<p class="emp">${all.length ? 'Ningún récord con ese filtro.' : 'Aún no hay récords. Juega una partida individual.'}</p>`;
+  const pill = (t, c) => `<span class="pill ${c || ''}">${esc(t)}</span>`;
+  const pills = c => pill(DIFFN[c.diff], ['e', 'n', 'h'][c.diff]) + (isRush(c)
+    ? pill('Contrarreloj ' + (c.total >= 60 ? c.total / 60 + ' min' : c.total + ' s'), 'b')
+    : pill(c.lives + (c.lives === 1 ? ' vida' : ' vidas')) + pill(c.min + ' s por palabra'));
+  const meta = x => `${isRush(x.c) ? '' : 'racha ' + x.r.streak + ' · '}${cfgSub(x.c)}`;
+  const playIcon = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+  if (!rows.length) {
+    $('#recList').innerHTML = `<div class="rempty"><p>${all.length ? 'Ninguna marca con ese filtro.' : 'Todavía no hay marcas. Juega una partida individual y aparecerán aquí.'}</p>` +
+      (all.length ? '' : '<button type="button" id="recGo">Jugar ahora</button>') + '</div>';
+    return;
+  }
+  const top = rows[0];
+  $('#recList').innerHTML =
+    `<div class="rbest"><div class="k">Tu mejor marca</div><div class="v"><b>${top.r.words}</b><span>palabras</span></div>` +
+    `<div class="pills">${pills(top.c)}</div><small>${esc(meta(top))}</small>` +
+    `<button type="button" class="go" data-play="${esc(top.k)}">Jugar con estos ajustes</button></div>` +
+    (rows.length > 1 ? '<div class="rhead">Otras marcas</div><div class="rlist">' + rows.slice(1).map(x =>
+      `<div class="rcard"><div class="rv"><b>${x.r.words}</b><small>palabras</small></div>` +
+      `<div class="rm"><div class="pills">${pills(x.c)}</div><small>${esc(meta(x))}</small></div>` +
+      `<button type="button" class="play" data-play="${esc(x.k)}" aria-label="Jugar con estos ajustes">${playIcon}</button></div>`).join('') + '</div>' : '');
 }
 function openRecords() { show('records'); renderRecords(); }
 
@@ -876,8 +884,9 @@ function renderLobby() {
   $('#cfgSum').textContent = cfgSummary(S);
   if (sl) {
     const r = loadRec()[soloKey(S.settings)];
-    const pw = r && `${r.words} ${r.words === 1 ? 'palabra' : 'palabras'}`;
-    $('#soloRec').textContent = r ? `Tu récord con estos ajustes: ${pw}${isRush(S.settings) ? '' : ', racha de ' + r.streak}.` : 'Aún no hay récord con estos ajustes.';
+    $('#soloRec').innerHTML = r
+      ? `<div class="recline"><span class="tg">Récord</span><b>${r.words}</b><small>${r.words === 1 ? 'palabra' : 'palabras'}${isRush(S.settings) ? '' : ' · racha ' + r.streak}</small></div>`
+      : `<div class="recline"><span class="tg">Récord</span><small>sin marca con estos ajustes</small></div>`;
   }
   $('#btnStart').hidden = !isHost;
   if (isHost) {
@@ -933,7 +942,7 @@ function renderResults(s) {
   const st = $('#btnSettings'); st.hidden = !s.solo;
   st.onclick = () => { const p = byId('host'); if (p) { p.back = true; push(); } };
   $('#btnExit').hidden = false;
-  $('#overHint').textContent = '';
+  $('#overHint').textContent = s.solo && window.matchMedia && matchMedia('(hover: hover)').matches ? 'R para repetir' : '';
 }
 
 function renderGame() {
@@ -1040,6 +1049,7 @@ $('#records').addEventListener('click', e => {
   const f = e.target.closest('[data-f]'), p = e.target.closest('[data-play]');
   if (f) { recF[f.dataset.f] = f.dataset.f === 'mode' ? f.dataset.v : +f.dataset.v; renderRecords(); }
   else if (p) startSolo(cfgOfKey(p.dataset.play), true);
+  else if (e.target.closest('#recGo')) { if (solo && S) applyState(S); else startSolo(); }
 });
 for (const b of document.querySelectorAll('.snd')) b.onclick = () => {
   unlock(); SND.mute = !SND.mute;
@@ -1083,6 +1093,9 @@ document.addEventListener('click', e => {
 });
 addEventListener('keydown', e => {
   if (S && S.phase === 'playing' && S.turn === myId && document.activeElement !== $('#word') && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) $('#word').focus();
+});
+addEventListener('keydown', e => {
+  if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && !e.altKey && S && S.solo && S.phase === 'ended' && !$('#over').hidden) { e.preventDefault(); $('#btnAgain').click(); }
 });
 addEventListener('pagehide', () => { if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' }); });
 $('#codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnJoin').click(); });

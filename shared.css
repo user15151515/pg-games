@@ -33,3 +33,41 @@ button.alt{background:var(--white);color:var(--ink)}
 button.big{width:100%;font-size:22px;padding:16px 20px}
 
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* récords (comunes a todos los juegos) */
+.rbest{background:var(--ink);color:var(--paper);border-radius:24px;padding:16px 20px 20px;box-shadow:6px 6px 0 var(--pink);transform:rotate(-.8deg);margin:8px 0 26px}
+.rbest .k{font-weight:700;font-size:15px;opacity:.75}
+.rbest .v{display:flex;align-items:baseline;gap:10px;margin:2px 0 12px}
+.rbest .v b{font-size:clamp(84px,28vw,120px);font-weight:800;font-stretch:75%;line-height:.9}
+.rbest .v span{font-size:20px;font-weight:700}
+.rbest .pill{background:transparent;color:var(--paper);border-color:var(--paper)}
+.rbest small{display:block;margin-top:8px;font-size:14px;font-weight:500;opacity:.8}
+.rbest .go{margin-top:16px;width:100%;background:var(--paper);color:var(--ink);border-color:var(--paper);box-shadow:none}
+.rbest .go:hover:not(:disabled){transform:none;box-shadow:none;background:#fff}
+.fgroup{margin-bottom:10px}
+.fgroup .lbl{display:block;font-size:14px;font-weight:700;margin-bottom:6px}
+.fchips{display:flex;gap:8px;overflow-x:auto;padding:2px 3px 8px;margin:0 -3px;scrollbar-width:none}
+.fchips::-webkit-scrollbar{display:none}
+.fchips button{flex:0 0 auto;padding:6px 14px;font-size:15px;border-radius:99px;box-shadow:none;background:transparent;color:var(--ink);border-width:2px}
+.fchips button.on{background:var(--ink);color:var(--paper)}
+.fchips button:hover:not(:disabled),.fchips button:active:not(:disabled){transform:none;box-shadow:none}
+.rlist{display:grid;gap:10px;margin-top:6px}
+.rhead{font-size:15px;font-weight:700;margin:16px 0 0}
+.rcard{display:grid;grid-template-columns:62px 1fr auto;gap:12px;align-items:center;background:var(--white);border:var(--line);border-radius:18px;padding:10px 12px 10px 14px}
+.rcard .rv{text-align:center}
+.rcard .rv b{display:block;font-size:42px;font-weight:800;font-stretch:75%;line-height:1}
+.rcard .rv small{font-size:12px;font-weight:600}
+.rcard .rm small{display:block;margin-top:5px;font-size:13px;font-weight:500;line-height:1.25}
+.rcard .play,.rbest .play{width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center}
+.pills{display:flex;flex-wrap:wrap;gap:5px}
+.pill{border:2px solid var(--ink);border-radius:99px;padding:0 9px;font-weight:700;font-size:13px;line-height:1.55;background:var(--white);color:var(--ink);white-space:nowrap}
+.pill.e{background:var(--mint)}
+.pill.n{background:var(--paper)}
+.pill.h{background:var(--pink)}
+.pill.b{background:var(--blue);color:var(--white)}
+.rempty{border:3px dashed var(--ink);border-radius:20px;padding:22px 18px;text-align:center;font-weight:600}
+.rempty p{margin:0 0 14px}
+.recline{display:inline-flex;align-items:center;gap:10px;background:var(--white);border:var(--line);border-radius:99px;padding:4px 16px 4px 5px;font-weight:700;margin:0 0 6px}
+.recline .tg{background:var(--pink);border:2px solid var(--ink);border-radius:99px;padding:0 10px;font-size:13px;line-height:1.6}
+.recline b{font-size:24px;font-weight:800;font-stretch:75%;line-height:1}
+.recline small{font-size:13px;font-weight:600;opacity:.8}
