@@ -16,6 +16,8 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ffd93d'/%3E%3Crect x='8' y='26' width='48' height='18' rx='6' fill='%23ff5c8a' stroke='%2317140f' stroke-width='4'/%3E%3Ccircle cx='20' cy='46' r='6' fill='%2317140f'/%3E%3Ccircle cx='44' cy='46' r='6' fill='%2317140f'/%3E%3C/svg%3E">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="../shared.css">
 <style>
 .back{display:inline-block;font-weight:700;text-decoration:none;margin-bottom:18px}
@@ -219,6 +221,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 </style>
 </head>
 <body>
+<noscript><p style="padding:20px;font:700 20px system-ui">Los juegos necesitan JavaScript. Actívalo en tu navegador y recarga la página.</p></noscript>
 <div id="flash"></div>
 <main class="wrap">
 
@@ -324,10 +327,10 @@ const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'
 const SB_URL = window.PG_SB_URL || 'https://acsrnjowxvjamiybsjkx.supabase.co';
 const SB_KEY = window.PG_SB_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
 const TOPIC = 'pg:teclazo:';
-const BEAT = 3000, DEAD = 20000;
+const BEAT = 5000, DEAD = 20000;   // latido cada 5 s; se da por perdido a quien lleva 20 s sin enviar nada
 const MAX_CHANS = 16, MAX_RATE = 40;
 const uid = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
-const net = { clients: [], sb: null, a: null, u: {}, pend: {}, seq: 0, onMsg: null, timers: [], role: '', sent: [], probe: null };
+const net = { clients: [], sb: null, a: null, u: {}, pend: {}, seq: 0, onMsg: null, timers: [], role: '', sent: [], probe: null, last: { a: 0, u: 0 } };
 
 function netSend(ch, m) {
   const t = Date.now();
@@ -339,6 +342,9 @@ function netSend(ch, m) {
 function netPub(suffix, m) {
   if (!net.sb) return;
   let ch;
+  const hbeat = m && (m.t === 'hb' || m.t === 'ping'), side = suffix === 'all' ? 'a' : 'u', t = Date.now();
+  if (hbeat && t - net.last[side] < BEAT - 500) return;   // si ya se envió algo hace poco, el latido sobra
+  net.last[side] = t;
   if (suffix === 'all') ch = net.a;
   else if (suffix === 'host') ch = m && m.t === 'hello' ? net.a : net.u[myId];
   else { const id = suffix.slice(3); ch = net.u[id]; if (m && m.t === 'kicked') setTimeout(() => netDrop(id), 800); }
