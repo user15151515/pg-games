@@ -2,7 +2,7 @@
 
 Juegos cortos multijugador para jugar con amigos. Web estática, sin registro: se juega compartiendo un enlace.
 
-Juegos: Tutti frutti (`tutti/`), una letra al azar y varias categorías que se pueden personalizar; se puntúa por respuestas únicas y los jugadores pueden votar las que no valen. Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega». Tiene modo individual (aciertos, racha y récord, guardado en el navegador por combinación de ajustes), salir de la sala en cualquier momento y expulsión de jugadores por parte del anfitrión.
+Juegos: Teclazo (`teclazo/`), carrera de mecanografía en la que cada coche avanza según lo que escribes; se juega en sala o en individual contra la sombra de tu récord (ppm y precisión, guardados en el navegador). Tutti frutti (`tutti/`), una letra al azar y varias categorías que se pueden personalizar; se puntúa por respuestas únicas y los jugadores pueden votar las que no valen. Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega». Tiene modo individual (aciertos, racha y récord, guardado en el navegador por combinación de ajustes), salir de la sala en cualquier momento y expulsión de jugadores por parte del anfitrión.
 
 ## Multijugador
 
@@ -28,6 +28,9 @@ index.html            portada
 shared.css            fuente, colores, botones e inputs comunes
 bomba/index.html      el juego Bomba
 tutti/index.html      el juego Tutti frutti (copia la capa de red de Bomba; si cambia una, cambia la otra)
+teclazo/index.html    el juego Teclazo (misma capa de red copiada)
+teclazo/textos.json   refranes, frases y párrafos para las carreras (escritos para este proyecto o refranes populares)
+teclazo/palabras.json palabras comunes para el modo Palabras
 bomba/words.txt       diccionario normalizado (sin acentos)
 bomba/syllables.json  sílabas por dificultad
 bomba/examples.json   palabras de ejemplo por sílaba (para el resumen final)

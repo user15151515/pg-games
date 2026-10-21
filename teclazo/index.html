@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffd93d">
+<title>Teclazo · pg games</title>
+<meta property="og:title" content="Teclazo">
+<meta property="og:description" content="Carrera de mecanografía: tu coche va tan rápido como escribes.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23ffd93d'/%3E%3Crect x='8' y='26' width='48' height='18' rx='6' fill='%23ff5c8a' stroke='%2317140f' stroke-width='4'/%3E%3Ccircle cx='20' cy='46' r='6' fill='%2317140f'/%3E%3Ccircle cx='44' cy='46' r='6' fill='%2317140f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../shared.css">
+<style>
+.back{display:inline-block;font-weight:700;text-decoration:none;margin-bottom:18px}
+.back:hover{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:3px}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:28px}
+.hero h1{font-size:clamp(84px,28vw,150px)}
+.hero svg{width:clamp(70px,22vw,110px);height:auto;flex:0 0 auto;margin-bottom:8px;transform:rotate(8deg)}
+.stack{display:grid;gap:14px}
+.row{display:flex;gap:12px}
+.row input{flex:1;min-width:0}
+.topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.topline .back{margin:0}
+.cta{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+.cta button{font-size:clamp(28px,9vw,38px);font-weight:800;font-stretch:75%;letter-spacing:-.01em;line-height:1;padding:30px 8px;border-radius:20px}
+.cta .primary{box-shadow:5px 5px 0 var(--pink)}
+.cta .primary:hover:not(:disabled){box-shadow:7px 7px 0 var(--pink)}
+.solo{display:flex;width:100%;justify-content:space-between;align-items:baseline;gap:10px;text-align:left;background:var(--pink);color:var(--ink);
+  padding:18px 20px;border-radius:20px;transform:rotate(-.7deg);margin-top:10px}
+.solo b{font-size:34px;font-weight:800;font-stretch:75%;line-height:1}
+.solo small{font-size:15px;font-weight:600}
+.subrow{display:flex;justify-content:center;margin-top:6px}
+#codeIn{text-transform:uppercase;letter-spacing:.25em;font-weight:800;text-align:center;font-size:44px;font-stretch:75%;padding:14px 10px}
+.rech{font-size:clamp(60px,20vw,96px);margin:0 0 18px}
+.rec{display:flex;align-items:center;gap:14px;background:var(--white);border:var(--line);border-radius:16px;padding:10px 14px;margin-bottom:10px}
+.rec .rn{min-width:58px;text-align:center}
+.rec .rn b{display:block;font-size:40px;font-weight:800;font-stretch:75%;line-height:1}
+.rec .rn small{font-size:12px;font-weight:600}
+.rec .ri{flex:1;min-width:0;font-weight:700;line-height:1.2}
+.rec .ri small{display:block;font-weight:500;font-size:14px}
+.rec button{padding:8px 14px;font-size:16px;box-shadow:none}
+.emp{font-weight:600}
+.bar .snd,.topline .snd{margin-left:auto}
+.snd[aria-pressed=false]{text-decoration-line:line-through}
+#homeMsg{min-height:30px;margin:14px 0 0;font-weight:600}
+#homeMsg.bad{width:fit-content;background:var(--pink);padding:2px 12px;border-radius:99px}
+.spark{transform-origin:170px 32px;animation:flick .3s infinite alternate}
+@keyframes flick{to{transform:scale(.7) rotate(20deg)}}
+
+/* barra superior (sala y partida) */
+.bar{display:flex;align-items:center;gap:20px;margin-bottom:12px;font-weight:700;font-size:16px}
+.bar a,.linkbtn{color:var(--ink);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:3px}
+.linkbtn{background:none;border:0;box-shadow:none;padding:2px 0;font:inherit;font-weight:700;cursor:pointer}
+.linkbtn:hover:not(:disabled),.linkbtn:active:not(:disabled){transform:none;box-shadow:none;text-decoration-color:var(--pink)}
+
+/* fichas de jugador */
+.tok{width:50px;height:50px;border-radius:50%;border:var(--line);background:var(--bg);color:var(--fg);display:grid;place-items:center;
+  font-weight:800;font-size:22px;flex:0 0 auto;transition:transform .2s,box-shadow .2s}
+.tok.sm{width:38px;height:38px;font-size:17px}
+
+/* paneles desplegables */
+details.panel{background:var(--white);border:var(--line);border-radius:16px;padding:0 16px;margin-top:14px}
+details.panel summary{cursor:pointer;font-weight:700;padding:13px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;border-radius:10px}
+details.panel summary::-webkit-details-marker{display:none}
+details.panel summary::after{content:"+";font-weight:800;font-size:24px;line-height:1}
+details.panel[open] summary::after{content:"−"}
+details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.body{padding:0 0 16px;font-size:16px;line-height:1.45}
+.body h3{font-size:17px;margin:18px 0 6px;font-weight:800}
+.body h3:first-child{margin-top:2px}
+.body p{margin:0 0 8px}
+.body dl{margin:0}
+.body dt{font-weight:700;margin-top:10px}
+.body dd{margin:2px 0 0}
+.ex{font-weight:700;background:var(--paper);border-radius:6px;padding:0 5px;white-space:nowrap}
+
+/* sala */
+.codecard{background:var(--white);border:var(--line);border-radius:20px;box-shadow:var(--hard);padding:18px 20px 20px;transform:rotate(-1.2deg);margin-bottom:22px}
+.codecard .display{font-size:clamp(76px,26vw,120px);letter-spacing:.06em;margin-bottom:14px}
+.codecard .row button{flex:1;padding:12px 10px}
+.plist{display:grid;gap:10px;margin-bottom:24px}
+.prow{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:700}
+.prow .tag{font-size:15px;font-weight:600;margin-left:auto;opacity:.7}
+.prow.wait{opacity:.5}
+.prow .kick{padding:5px 12px;font-size:14px;box-shadow:none;background:transparent;color:var(--ink);border-width:2px}
+.prow .kick:hover:not(:disabled),.prow .kick:active:not(:disabled){transform:none;box-shadow:none;background:var(--pink)}
+.set{display:grid;gap:6px;margin-bottom:16px}
+.set label,.set .lbl{font-size:15px;font-weight:700}
+.set.off{opacity:.4;pointer-events:none}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:9px 6px;box-shadow:none;background:transparent;color:var(--ink);font-size:16px;white-space:nowrap}
+.seg button.on{background:var(--ink);color:var(--paper)}
+.seg button:hover:not(:disabled),.seg button:active:not(:disabled){transform:none;box-shadow:none}
+.seg button:disabled{opacity:1;cursor:default}
+.seg button:disabled:not(.on){opacity:.4}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:44px;padding:6px 0;box-shadow:none;background:transparent;color:var(--ink);font-size:22px;line-height:1}
+.stepper button:hover:not(:disabled),.stepper button:active:not(:disabled){transform:none;box-shadow:none}
+.stepper button:disabled{opacity:.35;cursor:default}
+.stepper b{min-width:64px;text-align:center;font-size:20px}
+#cfgMore .body{padding-top:4px}
+#lobbyHint{text-align:center;font-weight:600;margin:14px 0 0;min-height:24px}
+#soloRec{font-weight:600;margin:0 0 16px}
+#cfgSum{font-weight:600;margin:0 0 18px;opacity:.75}
+#cfgBasic:empty{display:none}
+
+/* partida */
+#game .top{display:flex;justify-content:space-between;font-weight:700;font-size:15px}
+#flash{position:fixed;inset:0;background:var(--pink);opacity:0;pointer-events:none;z-index:5}
+#flash.go{animation:fl .55s ease-out}
+@keyframes fl{from{opacity:.6}to{opacity:0}}
+#strip{position:relative;padding-top:56px;margin-top:6px}
+#players{display:flex;flex-wrap:wrap;justify-content:center;gap:56px 10px}
+#players.many{gap:50px 8px}
+#players.many .pl{width:62px}
+#players.many .tok{width:40px;height:40px;font-size:18px}
+#players.many .nm{max-width:62px;font-size:12px}
+.pl{display:flex;flex-direction:column;align-items:center;width:78px;text-align:center}
+.pl.turn .tok{transform:scale(1.22);box-shadow:var(--hard)}
+.pl .nm{font-size:14px;font-weight:700;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:6px}
+.pl.turn .nm{margin-top:9px}
+.dots{display:flex;gap:3px;min-height:9px;margin-top:3px;font-size:12px;font-weight:600}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.pl.out{opacity:.35}
+.pl.out .nm{text-decoration:line-through}
+.pl.off{opacity:.5}
+.pl.hit .tok{animation:hit .5s}
+@keyframes hit{25%{transform:rotate(-14deg) scale(1.2)}60%{transform:rotate(14deg) scale(1.2)}}
+#bomb{position:absolute;left:0;top:0;width:46px;z-index:3;pointer-events:none;opacity:0}
+#bomb svg{display:block;width:100%;height:auto}
+#bomb.boom svg{animation:boom .5s ease-out}
+@keyframes boom{40%{transform:scale(2.4) rotate(12deg)}100%{transform:scale(1)}}
+
+#stage{container-type:inline-size;background:var(--white);border:var(--line);border-radius:26px;box-shadow:var(--hard);
+  padding:14px 14px 18px;margin-top:10px;text-align:center;transform:rotate(-.6deg)}
+#stage.shake{animation:sshake .4s}
+@keyframes sshake{20%{transform:rotate(-.6deg) translateX(-9px)}40%{transform:rotate(-.6deg) translateX(9px)}60%{transform:rotate(-.6deg) translateX(-5px)}80%{transform:rotate(-.6deg) translateX(5px)}}
+#syl{font-weight:800;font-stretch:75%;font-size:min(36cqw,160px);line-height:.95;text-transform:uppercase;letter-spacing:.01em;min-height:.95em}
+#syl.pop{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.7) rotate(-4deg)}to{transform:none}}
+#entry{position:relative;margin-top:12px;min-height:1.4em}
+.hint{font-size:.5em;font-weight:600;opacity:.5;align-self:center}
+#tiles{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;font-size:min(44px,calc(88cqw / (var(--n,7) * 1.2)));min-height:1.35em}
+.t{width:1.05em;height:1.3em;display:grid;place-items:center;border:3px solid var(--ink);border-radius:.2em;background:var(--white);
+  font-weight:800;text-transform:uppercase;line-height:1}
+.t.s{background:var(--pink)}
+.caret{width:.1em;height:1.3em;background:var(--ink);align-self:center;margin:0 2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+#word{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;background:none;box-shadow:none;font-size:16px;padding:0;cursor:text}
+#word:disabled{pointer-events:none}
+#fuse{height:14px;border:var(--line);border-radius:99px;margin-top:16px;overflow:hidden}
+#fuse i{display:block;height:100%;width:100%;background:var(--pink)}
+#send{margin-top:14px}
+#msg{display:block;width:fit-content;min-height:30px;margin:14px auto 0;padding:2px 14px;border-radius:99px;font-weight:700;font-size:17px}
+#msg.ok{background:var(--mint)}
+#msg.bad{background:var(--pink)}
+#letters{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:16px}
+#letters span{width:24px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:700;text-transform:uppercase;
+  border:2px solid #17140f40;color:#17140f60}
+#letters span.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+
+/* resultados */
+#over{position:fixed;inset:0;background:#17140f99;display:grid;place-items:center;z-index:10;padding:16px}
+#over .box{background:var(--white);border:var(--line);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:24px 22px;max-width:400px;width:100%;
+  max-height:92dvh;overflow:auto;transform:rotate(-.8deg)}
+#over .display{font-size:clamp(46px,14vw,70px);margin-bottom:18px;word-break:break-word}
+#rank{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:12px}
+.who summary,.who.plain{display:flex;align-items:center;gap:12px}
+.who summary{cursor:pointer;list-style:none;border-radius:10px}
+.who summary::-webkit-details-marker{display:none}
+.who summary:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.who summary::after{content:"+";margin-left:auto;font-weight:800;font-size:22px;line-height:1}
+.who[open] summary::after{content:"−"}
+.who .n{width:16px;font-weight:800;font-size:18px;text-align:center}
+.who b{display:block;font-size:19px;line-height:1.1}
+.who small{display:block;font-size:15px;font-weight:500;line-height:1.2}
+.log{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 0 2px 28px;font-size:16px;font-weight:600}
+.pair{white-space:nowrap}
+.chip{background:var(--pink);border:var(--line);border-radius:10px;padding:1px 10px;font-weight:800;font-size:18px;flex:0 0 auto}
+.chip.sm{font-size:12px;padding:0 6px;border-width:2px;border-radius:7px;margin-right:6px;vertical-align:1px}
+#fails{margin:0 0 18px;display:grid;gap:8px}
+#fails h4{margin:0;font-size:15px;font-weight:700}
+.fail{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;text-align:center}
+.stats div{border:var(--line);border-radius:14px;padding:8px 4px}
+.stats div.new{background:var(--pink)}
+.stats b{display:block;font-size:36px;font-weight:800;font-stretch:75%;line-height:1}
+.stats small{font-size:13px;font-weight:600}
+#over .big+.big{margin-top:12px}
+#overHint{text-align:center;font-weight:600;margin:12px 0 0}
+/* teclazo */
+.lanes{display:grid;gap:8px;margin:12px 0}
+.lane{display:flex;align-items:center;gap:8px}
+.lane .info{width:78px;flex:0 0 auto;font-size:13px;line-height:1.15;font-weight:600}
+.lane .info b{display:block;font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lane .info small{font-size:12px;font-weight:600;opacity:.75}
+.track{position:relative;flex:1;min-width:0;height:44px;background:var(--white);border:var(--line);border-radius:12px;overflow:hidden}
+.track::before{content:"";position:absolute;left:0;right:14px;top:50%;height:3px;margin-top:-1px;background:repeating-linear-gradient(90deg,#17140f40 0 12px,transparent 12px 24px)}
+.track::after{content:"";position:absolute;right:0;top:0;bottom:0;width:14px;border-left:3px solid var(--ink);background:repeating-conic-gradient(var(--ink) 0 25%,var(--white) 0 50%) 0 0/9px 9px}
+.car{position:absolute;top:3px;width:52px;height:34px;left:calc((100% - 14px - 52px) * var(--p,0));transition:left .24s linear;color:var(--c)}
+.car svg{display:block;width:100%;height:100%}
+.car.ghost{opacity:.35}
+.car.run svg{animation:bump .22s infinite alternate}
+@keyframes bump{to{transform:translateY(-2px)}}
+.lane.me .info b::after{content:" (tú)";font-weight:600;opacity:.6}
+#textCard{background:var(--white);border:var(--line);border-radius:22px;box-shadow:var(--hard);padding:16px 18px;margin-top:6px;position:relative;cursor:text}
+#text{font-size:clamp(19px,5.2vw,25px);line-height:1.55;font-weight:600;overflow-wrap:anywhere}
+#text .ok{opacity:.3}
+#text .sk{opacity:.5}
+#text .cur{background:var(--paper);border-radius:4px;box-shadow:0 2px 0 var(--ink)}
+#text .err{background:var(--pink);border-radius:4px}
+#cd{position:absolute;inset:0;display:grid;place-items:center;background:#fffef8ee;border-radius:19px;font-weight:800;font-stretch:75%;font-size:clamp(90px,34vw,160px);line-height:1;z-index:2}
+#hud{display:flex;justify-content:space-between;font-weight:800;font-size:19px;margin:12px 2px 0}
+#hud small{font-weight:600;font-size:14px;opacity:.7}
+#typed{margin-top:12px}
+#typed input{font-size:20px}
+#typed input:disabled{opacity:.5}
+#tclock{text-align:center;font-weight:700;min-height:26px;margin-top:8px}
+.rec .rn b{font-size:34px}
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<main class="wrap">
+
+<div class="bar" id="bar" hidden>
+  <button type="button" class="linkbtn" id="btnLeave">← Salir</button>
+  <a href="../">pg games</a>
+  <button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button>
+</div>
+
+<section id="home">
+  <div class="topline"><a class="back" href="../">pg games</a><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
+  <div class="hero">
+    <h1 class="display" style="font-size:clamp(70px,24vw,130px)">Teclazo</h1>
+    <svg viewBox="0 0 64 38" aria-hidden="true" style="color:#ff5c8a"><rect x="3" y="15" width="58" height="15" rx="6" fill="currentColor" stroke="#17140f" stroke-width="3"/><path d="M16 15L22 5H42L50 15Z" fill="currentColor" stroke="#17140f" stroke-width="3" stroke-linejoin="round"/><path d="M22 14L26 8H33V14ZM36 14V8H41L45 14Z" fill="#fffef8" stroke="#17140f" stroke-width="1.5" stroke-linejoin="round"/><circle cx="17" cy="31" r="6" fill="#17140f"/><circle cx="47" cy="31" r="6" fill="#17140f"/><circle cx="17" cy="31" r="2" fill="#fffef8"/><circle cx="47" cy="31" r="2" fill="#fffef8"/></svg>
+  </div>
+  <div class="stack">
+    <input id="name" type="text" maxlength="14" autocomplete="off" aria-label="Tu nombre" placeholder="Tu nombre">
+    <div id="homeCreate">
+      <div class="cta">
+        <button id="btnCreate" class="primary">Crear sala</button>
+        <button id="btnJoinOpen" class="alt">Unirse</button>
+      </div>
+      <button id="btnSolo" class="solo"><b>Individual</b><small>tú contra tu récord</small></button>
+    </div>
+    <div id="homeJoin" class="stack" hidden>
+      <input id="codeIn" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" aria-label="Código de sala" placeholder="ABCD">
+      <button id="btnJoin" class="big">Entrar</button>
+      <div class="subrow"><button id="btnJoinBack" type="button" class="linkbtn">← Volver</button></div>
+    </div>
+    <div id="homeInvite" hidden>
+      <button id="btnJoinInvite" class="big">Entrar a <span id="inviteCode"></span></button>
+    </div>
+  </div>
+  <p id="homeMsg" role="status"></p>
+  <details class="panel" id="howHome"></details>
+</section>
+
+<section id="lobby" hidden>
+  <div class="codecard" id="codecard">
+    <div class="display" id="lobbyCode">----</div>
+    <div class="row">
+      <button id="btnCopy">Copiar enlace</button>
+      <button id="btnShare" class="alt" hidden>Compartir</button>
+    </div>
+  </div>
+  <div class="plist" id="plist"></div>
+  <div id="cfgBasic"></div>
+  <p id="cfgSum"></p>
+  <p id="soloRec" hidden></p>
+  <button type="button" class="linkbtn" id="btnRecLobby" hidden style="margin:-6px 0 16px">Ver todos los récords</button>
+  <button id="btnStart" class="big" hidden>Empezar</button>
+  <p id="lobbyHint" role="status"></p>
+  <details class="panel" id="cfgMore"><summary>Ajustes</summary><div class="body" id="cfgMoreBody"></div></details>
+  <details class="panel" id="howLobby"></details>
+</section>
+
+<section id="records" hidden>
+  <div class="topline"><button type="button" class="linkbtn" id="btnRecBack">← Volver</button><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
+  <h2 class="display rech">Récords</h2>
+  <div class="set"><span class="lbl">Texto</span><div class="seg" id="recSrc"></div></div>
+  <div class="set"><span class="lbl">Exigencia</span><div class="seg" id="recEx"></div></div>
+  <div id="recList"></div>
+</section>
+
+<section id="game" hidden>
+  <div class="top"><span id="gCode"></span><span id="gInfo"></span></div>
+  <div class="lanes" id="lanes"></div>
+  <div id="textCard"><div id="cd" hidden></div><div id="text"></div></div>
+  <div id="hud"><span id="hudWpm">0 ppm</span><span id="hudAcc"><small>precisión</small> 100 %</span></div>
+  <div id="typed"><input id="word" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Escribe el texto" placeholder="Escribe aquí" disabled></div>
+  <div id="tclock"></div>
+  <span id="msg" role="status"></span>
+</section>
+
+<div id="over" hidden>
+  <div class="box">
+    <div class="display" id="overTitle"></div>
+    <div class="stats" id="soloStats" hidden></div>
+    <ol id="rank"></ol>
+    <button id="btnAgain" class="big">Otra carrera</button>
+    <button id="btnSettings" class="big alt" hidden>Ajustes</button>
+    <button id="btnExit" class="big alt">Salir</button>
+    <p id="overHint"></p>
+  </div>
+</div>
+
+</main>
+
+<script src="../vendor/mqtt.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const MAX_PLAYERS = 8;
+const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'],['#ff8a3d','#17140f'],
+                ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
+
+// ---------- red ----------
+// Los mensajes pasan por brokers MQTT públicos (WebSocket seguro). No depende de la red de cada jugador.
+// Cada cliente se conecta a todos los brokers a la vez y publica por todos; los duplicados se descartan,
+// así que basta con que uno funcione para los dos lados.
+const BROKERS = window.PG_BROKERS || [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
+  'wss://test.mosquitto.org:8081'
+];
+const TOPIC = 'pg/teclazo/v1/';
+const BEAT = 3000, DEAD = 20000;
+const uid = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
+const net = { clients: [], seq: 0, seen: new Set(), order: [], onMsg: null, timers: [] };
+
+function envelope(m, q) { return JSON.stringify({ f: myId, q: q === undefined ? ++net.seq : q, m }); }
+function netPub(suffix, m) {
+  if (!net.clients.length) return;
+  const s = envelope(m);
+  for (const c of net.clients) if (c.connected) { try { c.publish(TOPIC + room + '/' + suffix, s, { qos: 0 }); } catch (e) {} }
+}
+function netRaw(buf) {
+  let e; try { e = JSON.parse(buf.toString()); } catch (x) { return; }
+  if (!e || typeof e !== 'object' || !e.m) return;
+  const key = e.f + ':' + e.q;
+  if (net.seen.has(key)) return;
+  net.seen.add(key); net.order.push(key);
+  if (net.order.length > 800) net.seen.delete(net.order.shift());
+  net.onMsg(e.m, e.f);
+}
+function netOpen(role) {
+  netClose();
+  const will = role === 'host'
+    ? { topic: TOPIC + room + '/all',  payload: JSON.stringify({ f: 'host', q: 'w', m: { t: 'closed' } }), qos: 0 }
+    : { topic: TOPIC + room + '/host', payload: JSON.stringify({ f: myId, q: 'w', m: { t: 'bye' } }), qos: 0 };
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const fin = ok => { if (done) return; done = true; clearTimeout(to); ok ? resolve() : reject(new Error('net')); };
+    const to = setTimeout(() => fin(false), 9000);
+    for (const url of BROKERS) {
+      let c;
+      try { c = mqtt.connect(url, { clientId: 'pg-' + uid(12), clean: true, keepalive: 20, reconnectPeriod: 2500, connectTimeout: 8000, will, ...(window.PG_MQTT_OPTS || {}) }); }
+      catch (e) { continue; }
+      net.clients.push(c);
+      c.on('connect', () => {
+        if (role === 'host') c.subscribe(TOPIC + room + '/host', { qos: 0 });
+        else { c.subscribe(TOPIC + room + '/all', { qos: 0 }); c.subscribe(TOPIC + room + '/to/' + myId, { qos: 0 }); }
+        fin(true);
+      });
+      c.on('message', (t, buf) => netRaw(buf));
+      c.on('error', () => {});
+    }
+  });
+}
+function netClose() {
+  for (const t of net.timers) clearInterval(t);
+  net.timers = [];
+  for (const c of net.clients) { try { c.end(true); } catch (e) {} }
+  net.clients = []; net.seen.clear(); net.order = [];
+}
+
+// ---------- sonido (sintetizado, sin archivos) ----------
+const SND = { ctx: null, mute: false };
+try { SND.mute = localStorage.getItem('jt_mute') === '1'; } catch (e) {}
+function unlock() {
+  if (SND.ctx) { if (SND.ctx.state === 'suspended') SND.ctx.resume(); return; }
+  try { const A = window.AudioContext || window.webkitAudioContext; if (A) SND.ctx = new A(); } catch (e) {}
+}
+function tone(f, d, o = {}) {
+  const c = SND.ctx; if (!c || SND.mute || c.state !== 'running') return;
+  const t = c.currentTime + (o.at || 0), osc = c.createOscillator(), g = c.createGain();
+  osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(f, t);
+  if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + d);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.v || .15, t + .008); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  osc.connect(g); g.connect(c.destination); osc.start(t); osc.stop(t + d + .03);
+}
+function noise(d, o) {
+  const c = SND.ctx; if (!c || SND.mute || c.state !== 'running') return;
+  const n = c.sampleRate * d | 0, b = c.createBuffer(1, n, c.sampleRate), a = b.getChannelData(0);
+  for (let i = 0; i < n; i++) a[i] = Math.random() * 2 - 1;
+  const s = c.createBufferSource(); s.buffer = b;
+  const f = c.createBiquadFilter(); f.type = 'lowpass'; const t = c.currentTime;
+  f.frequency.setValueAtTime(o.from, t); f.frequency.exponentialRampToValueAtTime(o.to, t + d);
+  const g = c.createGain(); g.gain.setValueAtTime(o.v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  s.connect(f); f.connect(g); g.connect(c.destination); s.start(t);
+}
+const sfx = {
+  tick: loud => tone(loud ? 1500 : 1100, .035, { type: 'square', v: loud ? .07 : .03 }),
+  ok: () => { tone(660, .09, { type: 'triangle', v: .16 }); tone(990, .14, { type: 'triangle', v: .16, at: .08 }); },
+  bonus: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .16, { type: 'triangle', v: .16, at: i * .07 })),
+  bad: () => tone(190, .22, { type: 'sawtooth', v: .12, to: 110 }),
+  turn: () => tone(520, .09, { v: .14 }),
+  boom: () => { noise(.7, { v: .55, from: 2200, to: 100 }); tone(150, .5, { v: .4, to: 40 }); },
+  join: () => tone(620, .07, { v: .1 }),
+  left: () => tone(340, .12, { v: .1, to: 220 }),
+  win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .2, { type: 'triangle', v: .16, at: i * .09 })),
+  lose: () => [392, 330, 262].forEach((f, i) => tone(f, .26, { type: 'triangle', v: .15, at: i * .16 }))
+};
+const play = (n, a) => { try { sfx[n](a); } catch (e) {} };
+function paintSnd() { for (const b of document.querySelectorAll('.snd')) { b.textContent = 'Sonido'; b.setAttribute('aria-pressed', String(!SND.mute)); } }
+
+// ---------- reglas ----------
+const SRC = [['refranes', 'Refranes'], ['frases', 'Frases'], ['parrafos', 'Párrafos'], ['palabras', 'Palabras']];
+const SRCN = Object.fromEntries(SRC);
+const N_OPTS = [15, 30, 50];
+const DEF = { src: 'frases', n: 30, exact: 0 };
+const COUNT = 3000, AFTER_FIRST = 15000, HARD = 300000;
+const REC_KEY = 'jt_teclazo_v1';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function norm(s) {
+  s = String(s).toLowerCase(); let o = '';
+  for (let i = 0; i < s.length; i++) { const ch = s[i]; o += ch === 'ñ' ? 'ñ' : ch.normalize('NFD')[0]; }
+  return o;
+}
+const randCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; let c = ''; for (let i = 0; i < 4; i++) c += a[Math.random() * a.length | 0]; return c; };
+const tok = (p, cls) => `<div class="tok ${cls || ''}" style="--bg:${COLORS[p.color][0]};--fg:${COLORS[p.color][1]}">${esc(p.name[0].toUpperCase())}</div>`;
+const now = () => performance.now();
+const CAR = '<svg viewBox="0 0 64 38" aria-hidden="true"><rect x="3" y="15" width="58" height="15" rx="6" fill="currentColor" stroke="#17140f" stroke-width="3"/><path d="M16 15L22 5H42L50 15Z" fill="currentColor" stroke="#17140f" stroke-width="3" stroke-linejoin="round"/><path d="M22 14L26 8H33V14ZM36 14V8H41L45 14Z" fill="#fffef8" stroke="#17140f" stroke-width="1.5" stroke-linejoin="round"/><circle cx="17" cy="31" r="6" fill="#17140f"/><circle cx="47" cy="31" r="6" fill="#17140f"/><circle cx="17" cy="31" r="2" fill="#fffef8"/><circle cx="47" cy="31" r="2" fill="#fffef8"/></svg>';
+const fmtT = ms => (ms / 1000).toFixed(1).replace('.', ',') + ' s';
+const wpmOf = (chars, ms) => ms > 0 ? Math.round(chars / 5 / (ms / 60000)) : 0;
+const accOf = (len, mis) => Math.round(len / (len + mis) * 100);
+
+// récords del modo individual (solo en este navegador)
+const loadRec = () => { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } };
+const saveRec = r => { try { localStorage.setItem(REC_KEY, JSON.stringify(r)); } catch (e) {} };
+const recKey = c => (c.src === 'palabras' ? 'palabras' + c.n : c.src) + '.' + (c.exact ? 1 : 0);
+function cfgOfKey(k) {
+  const [a, e] = k.split('.'), m = a.match(/^([a-z]+?)(\d+)?$/);
+  return { src: m[1], n: m[2] ? +m[2] : DEF.n, exact: +e };
+}
+const cfgTitle = c => `${SRCN[c.src]}${c.src === 'palabras' ? ' (' + c.n + ')' : ''} · ${c.exact ? 'Exacta' : 'Fácil'}`;
+
+const HOW = `<summary>Cómo se juega</summary><div class="body">
+<h3>La carrera</h3>
+<p>Aparece un texto y una cuenta atrás de 3 segundos. Cuando sale la señal, escribe el texto tal cual lo ves. Tu coche avanza según lo que llevas escrito, así que va más rápido cuanto más rápido teclees.</p>
+<p>Si te equivocas, el error se marca en rosa y tu coche no avanza hasta que lo corrijas con la tecla de borrar. Gana quien llega primero a la meta.</p>
+<h3>Cuando alguien termina</h3>
+<p>El resto tiene 15 segundos para acabar. Quien no llegue se clasifica por lo que haya escrito hasta entonces.</p>
+<h3>Textos</h3>
+<dl>
+<dt>Refranes</dt><dd>Dos refranes seguidos. Es la carrera más corta.</dd>
+<dt>Frases</dt><dd>Una frase de unas 20 palabras.</dd>
+<dt>Párrafos</dt><dd>Un párrafo de unas 50 palabras. Es el más largo.</dd>
+<dt>Palabras</dt><dd>Palabras comunes al azar, a elegir entre 15, 30 o 50.</dd>
+</dl>
+<h3>Exigencia</h3>
+<dl>
+<dt>Fácil</dt><dd>Da igual escribir con mayúsculas o minúsculas, con tilde o sin ella, y los signos de puntuación se saltan solos. Es lo cómodo en el móvil.</dd>
+<dt>Exacta</dt><dd>Hay que escribir cada letra, tilde, coma y punto exactamente como están.</dd>
+</dl>
+<h3>Resultados</h3>
+<p>La velocidad se mide en pulsaciones por minuto (ppm): cada 5 caracteres correctos cuentan como una palabra. La precisión es el porcentaje de pulsaciones que no han sido errores.</p>
+<p>En una sala, el tiempo lo mide el anfitrión desde la salida, así que a los invitados les cuenta también el retardo de la conexión, normalmente unas décimas de segundo. Las victorias se acumulan en la sala mientras sigáis en ella.</p>
+<h3>Individual</h3>
+<p>Corres tú solo contra la sombra de tu récord, un coche transparente que va a la velocidad de tu mejor marca. Los récords se guardan en este navegador, por separado para cada tipo de texto y exigencia, y se pueden ver todos en «Ver todos los récords», con la opción de volver a jugar con esos mismos ajustes.</p>
+</div>`;
+
+// ---------- estado local ----------
+let isHost = false, solo = false, room = '', myId = null, myName = '';
+let S = null, lastV = -1, goAt = 0, raceT0 = 0, lastHeard = 0, gotState = false;
+let TG = null, TGkey = '', progMap = {}, lastCd = -1, loopT = 0, applyAt = 0;
+const loc = { rid: -1, prog: 0, mis: 0, prev: 0, done: false, tm: 0, last: 0, err: false };
+const lastSeen = {};
+
+// ---------- estado del anfitrión ----------
+let H = null, TXT = null, PAL = null, dataLoading = false;
+function newH() {
+  return { phase: 'lobby', solo: false, players: [], settings: { ...DEF }, txt: '', rid: 0, goAt: 0, t0: 0, endAt: 0, tm: 0, pi: 0, dirty: false, v: 0, res: null, ghost: 0, lastIdx: {} };
+}
+const byId = id => H.players.find(p => p.id === id);
+const tlen = () => target(H.txt, H.settings.exact).tstr.length;
+
+function pub() {
+  const t = now();
+  return {
+    v: ++H.v, solo: H.solo, phase: H.phase, rid: H.rid, settings: H.settings, txt: H.phase === 'lobby' ? '' : H.txt, ghost: H.ghost,
+    left: H.phase === 'count' ? Math.max(0, Math.round(H.goAt - t)) : 0,
+    el: H.phase === 'race' ? Math.round(t - H.t0) : 0,
+    endIn: H.phase === 'race' && H.endAt ? Math.max(0, Math.round(H.endAt - t)) : null,
+    res: H.phase === 'ended' ? H.res : null,
+    players: H.players.map(p => ({ id: p.id, name: p.name, color: p.color, on: p.on, back: p.back, wins: p.wins, prog: p.prog, fin: p.fin }))
+  };
+}
+function bcast(m) { netPub('all', m); }
+function push() { const s = pub(); applyState(s); bcast({ t: 'state', s }); }
+function evt(e) { showEvent(e); bcast({ t: 'evt', e }); }
+
+function setSetting(k, v) {
+  if (!H || H.phase === 'count' || H.phase === 'race') return;
+  if (k === 'src' && SRCN[v]) H.settings.src = v;
+  else if (k === 'n' && N_OPTS.includes(v)) H.settings.n = v;
+  else if (k === 'exact' && (v === 0 || v === 1)) H.settings.exact = v;
+  else return;
+  push();
+}
+function addPlayer(id, name) {
+  name = (name || 'Jugador').trim().slice(0, 14) || 'Jugador';
+  let n = name, k = 2;
+  while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
+  const used = new Set(H.players.map(p => p.color));
+  let color = 0; while (used.has(color) && color < COLORS.length - 1) color++;
+  H.players.push({ id, name: n, on: true, back: true, wins: 0, prog: 0, mis: 0, fin: null, color });
+}
+
+function pick(arr, key) {
+  let i = Math.random() * arr.length | 0;
+  if (arr.length > 1 && i === H.lastIdx[key]) i = (i + 1) % arr.length;
+  H.lastIdx[key] = i; return arr[i];
+}
+function pickText() {
+  const s = H.settings;
+  if (s.src === 'palabras') {
+    const pool = PAL.slice(), out = [];
+    for (let i = 0; i < s.n && pool.length; i++) out.push(pool.splice(Math.random() * pool.length | 0, 1)[0]);
+    return out.join(' ');
+  }
+  if (s.src === 'refranes') {
+    const a = pick(TXT.refranes, 'r1'); let b = pick(TXT.refranes, 'r2'); if (b === a) b = pick(TXT.refranes, 'r2');
+    return a + ' ' + b;
+  }
+  return pick(TXT[s.src], s.src);
+}
+async function loadData() {
+  if ((TXT && PAL) || dataLoading) return; dataLoading = true; renderLobby();
+  try {
+    const [t, p] = await Promise.all([fetch('textos.json').then(r => r.json()), fetch('palabras.json').then(r => r.json())]);
+    TXT = t; PAL = p;
+  } catch (e) { $('#lobbyHint').textContent = 'No se pudieron cargar los textos. Recarga la página.'; }
+  dataLoading = false; renderLobby();
+}
+
+function startRace() {
+  if (!TXT || !PAL || H.phase === 'count' || H.phase === 'race') return;
+  const ps = H.players.filter(p => p.on);
+  if (ps.length < (H.solo ? 1 : 2)) return;
+  H.players = ps;
+  for (const p of H.players) { p.prog = 0; p.mis = 0; p.fin = null; p.back = false; }
+  H.rid++; H.txt = pickText(); H.res = null; H.endAt = 0;
+  H.ghost = 0;
+  if (H.solo) { const r = loadRec()[recKey(H.settings)]; if (r) H.ghost = r.wpm; }
+  H.phase = 'count'; H.goAt = now() + COUNT;
+  clearTimeout(H.tm); H.tm = setTimeout(goRace, COUNT);
+  push();
+}
+function goRace() {
+  if (H.phase !== 'count') return;
+  H.phase = 'race'; H.t0 = now(); H.dirty = false;
+  clearInterval(H.pi);
+  H.pi = setInterval(() => {
+    if (!H.dirty) return; H.dirty = false;
+    const p = Object.fromEntries(H.players.map(x => [x.id, x.prog]));
+    bcast({ t: 'prog', p });
+    for (const x of H.players) if (x.id !== 'host') progMap[x.id] = x.prog;   // el anfitrión no recibe sus propios mensajes
+    updateLanes();
+  }, 200);
+  clearTimeout(H.tm); H.tm = setTimeout(endRace, HARD); H.endAt = 0;
+  push();
+}
+function finishedAll() { return H.players.filter(p => p.on).every(p => p.fin); }
+function fromPlayer(id, m) {
+  if (!m || typeof m !== 'object') return;
+  const p = byId(id); if (!p) return;
+  if (m.t === 'prog') {
+    if (H.phase !== 'race' || p.fin) return;
+    const n = Math.max(0, Math.min(tlen(), m.n | 0));
+    p.prog = n; p.mis = Math.max(0, m.m | 0); H.dirty = true;
+  } else if (m.t === 'done') {
+    if (H.phase !== 'race' || p.fin) return;
+    const len = tlen(); if ((m.n | 0) < len) return;
+    const t = Math.max(1, Math.round(now() - H.t0));
+    p.prog = len; p.mis = Math.max(0, m.m | 0);
+    p.fin = { t, wpm: wpmOf(len, t), acc: accOf(len, p.mis), pos: H.players.filter(x => x.fin).length + 1 };
+    H.dirty = true;
+    if (finishedAll()) { endRace(); return; }
+    if (!H.solo && !H.endAt) { H.endAt = now() + AFTER_FIRST; clearTimeout(H.tm); H.tm = setTimeout(endRace, AFTER_FIRST); }
+    push();
+  } else if (m.t === 'again') { if (H.phase === 'ended') { p.back = true; push(); } }
+}
+function endRace() {
+  if (H.phase !== 'race') return;
+  clearTimeout(H.tm); clearInterval(H.pi);
+  const len = tlen(), el = Math.max(1, now() - H.t0);
+  const fin = H.players.filter(p => p.fin).sort((a, b) => a.fin.t - b.fin.t);
+  const rest = H.players.filter(p => !p.fin).sort((a, b) => b.prog - a.prog);
+  const rank = [...fin, ...rest].map(p => p.fin
+    ? { id: p.id, fin: true, t: p.fin.t, wpm: p.fin.wpm, acc: p.fin.acc, pct: 100 }
+    : { id: p.id, fin: false, t: 0, wpm: wpmOf(p.prog, el), acc: p.prog + p.mis ? accOf(p.prog, p.mis) : 100, pct: Math.round(p.prog / len * 100) });
+  if (!H.solo && fin.length) { const w = byId(rank[0].id); if (w) w.wins++; }
+  const res = { rank, len };
+  if (H.solo) {
+    const x = rank[0], rec = loadRec(), key = recKey(H.settings), prev = rec[key];
+    if (x.fin) {
+      const best = !prev || x.wpm > prev.wpm;
+      rec[key] = { wpm: best ? x.wpm : prev.wpm, acc: best ? x.acc : prev.acc, runs: (prev ? prev.runs : 0) + 1 };
+      saveRec(rec);
+      res.solo = { wpm: x.wpm, acc: x.acc, t: x.t, prev: prev ? prev.wpm : 0, isNew: best };
+    }
+  }
+  H.phase = 'ended'; H.res = res; push();
+}
+function hostLeft(id, kicked) {
+  delete lastSeen[id];
+  const p = byId(id); if (!p) return;
+  evt({ k: 'left', name: p.name, kicked: !!kicked });
+  if (H.phase === 'lobby' || H.phase === 'ended') { H.players = H.players.filter(x => x.id !== id); push(); return; }
+  p.on = false;
+  if (!H.players.some(x => x.on)) { endRace(); return; }
+  if (H.phase === 'race' && finishedAll()) { endRace(); return; }
+  push();
+}
+function kick(id) {
+  if (!isHost || solo || id === 'host' || !byId(id)) return;
+  netPub('to/' + id, { t: 'kicked' });
+  hostLeft(id, true);
+}
+function hostRecv(m, f) {
+  if (!m || typeof m !== 'object') return;
+  lastSeen[f] = now();
+  if (m.t === 'hello') {
+    const p = byId(f);
+    if (p) { netPub('to/' + f, { t: 'state', s: pub() }); return; }
+    if (H.phase === 'count' || H.phase === 'race') { netPub('to/' + f, { t: 'started' }); return; }
+    if (H.players.filter(x => x.on).length >= MAX_PLAYERS) { netPub('to/' + f, { t: 'full' }); return; }
+    addPlayer(f, m.name); evt({ k: 'join', name: byId(f).name }); push();
+  } else if (m.t === 'bye') hostLeft(f);
+  else fromPlayer(f, m);
+}
+
+// ---------- conexión ----------
+function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
+function fail(msg) { netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
+
+async function createRoom() {
+  room = randCode(); myId = 'host'; isHost = true; solo = false;
+  net.onMsg = hostRecv;
+  try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
+  H = newH(); addPlayer('host', myName);
+  history.replaceState(null, '', '?sala=' + room);
+  net.timers.push(setInterval(() => {
+    bcast({ t: 'hb' });
+    const t = now();
+    for (const p of H.players.slice()) if (p.id !== 'host' && p.on && t - (lastSeen[p.id] || 0) > DEAD) hostLeft(p.id);
+  }, BEAT));
+  push(); loadData();
+}
+async function startSolo(cfg, auto) {
+  myName = nameIn.value.trim() || 'Tú';
+  if (nameIn.value.trim()) localStorage.setItem('jt_name', myName);
+  solo = true; isHost = true; myId = 'host'; room = '';
+  H = newH(); H.solo = true; H.settings = { ...DEF, ...(cfg || {}) };
+  addPlayer('host', myName);
+  history.replaceState(null, '', location.pathname);
+  push();
+  await loadData();
+  if (auto) startRace();
+}
+async function joinRoom(code) {
+  room = code; isHost = false; solo = false; myId = uid(10); lastV = -1; gotState = false;
+  net.onMsg = onMsg;
+  try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
+  lastHeard = now();
+  const hello = () => netPub('host', { t: 'hello', name: myName });
+  hello(); let tries = 0;
+  const h = setInterval(() => {
+    if (gotState) { clearInterval(h); return; }
+    if (++tries > 6) { clearInterval(h); fail('No se encontró esa sala. Revisa el código.'); return; }
+    hello();
+  }, 1500);
+  net.timers.push(h);
+  net.timers.push(setInterval(() => {
+    netPub('host', { t: 'ping' });
+    if (gotState && now() - lastHeard > DEAD) hostGone('Se perdió la conexión con la sala.');
+  }, BEAT));
+}
+function hostGone(why) {
+  if (isHost) return;
+  netClose(); S = null;
+  $('#rank').innerHTML = ''; $('#soloStats').hidden = true; $('#btnSettings').hidden = true; $('#btnExit').hidden = true;
+  $('#over').hidden = false; $('#overTitle').textContent = 'Sala cerrada'; $('#overHint').textContent = why || '';
+  const b = $('#btnAgain'); b.textContent = 'Salir'; b.onclick = goHome;
+}
+function goHome() { location.href = location.pathname; }
+function leave() {
+  if (isHost && !solo && H && H.players.some(p => p.on && p.id !== 'host') && !confirm('Si sales, la sala se cierra para todos. ¿Salir?')) return;
+  if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' });
+  setTimeout(goHome, 150);
+}
+function onMsg(m) {
+  if (!m) return;
+  if (!isHost) lastHeard = now();
+  if (m.t === 'state') {
+    if (m.s.v <= lastV) return;
+    lastV = m.s.v; gotState = true; applyState(m.s);
+  } else if (m.t === 'prog') { for (const id in m.p) if (id !== myId) progMap[id] = m.p[id]; updateLanes(); }
+  else if (m.t === 'evt') showEvent(m.e);
+  else if (m.t === 'full') fail('La sala está llena.');
+  else if (m.t === 'started') fail('La carrera ya ha empezado.');
+  else if (m.t === 'kicked') { netClose(); location.href = location.pathname + '?e=k'; }
+  else if (m.t === 'closed') hostGone('El anfitrión ha cerrado la sala.');
+}
+function act(m) { if (isHost) fromPlayer('host', m); else netPub('host', m); }
+
+// ---------- pantalla de récords ----------
+const recF = { src: '', exact: -1 };
+function renderRecords() {
+  const seg = (id, key, vals, labels) => { $(id).innerHTML = vals.map((v, i) => `<button type="button" data-f="${key}" data-v="${v}" class="${recF[key] === v ? 'on' : ''}" aria-pressed="${recF[key] === v}">${labels[i]}</button>`).join(''); };
+  seg('#recSrc', 'src', ['', ...SRC.map(x => x[0])], ['Todos', ...SRC.map(x => x[1])]);
+  seg('#recEx', 'exact', [-1, 0, 1], ['Todas', 'Fácil', 'Exacta']);
+  const all = Object.entries(loadRec()).filter(([k, r]) => r && r.wpm > 0).map(([k, r]) => ({ k, c: cfgOfKey(k), r }));
+  const rows = all.filter(x => (!recF.src || x.c.src === recF.src) && (recF.exact < 0 || x.c.exact === recF.exact)).sort((a, b) => b.r.wpm - a.r.wpm);
+  $('#recList').innerHTML = rows.length ? rows.map(x =>
+    `<div class="rec"><div class="rn"><b>${x.r.wpm}</b><small>ppm</small></div>` +
+    `<div class="ri">${esc(cfgTitle(x.c))}<small>precisión ${x.r.acc} % · ${x.r.runs} ${x.r.runs === 1 ? 'carrera' : 'carreras'}</small></div>` +
+    `<button type="button" data-play="${esc(x.k)}">Jugar</button></div>`).join('')
+    : `<p class="emp">${all.length ? 'Ningún récord con ese filtro.' : 'Aún no hay récords. Juega una carrera individual.'}</p>`;
+}
+function openRecords() { show('records'); renderRecords(); }
+
+// ---------- UI ----------
+function show(id) { for (const s of ['home', 'lobby', 'game', 'records']) $('#' + s).hidden = s !== id; $('#bar').hidden = id === 'home' || id === 'records'; }
+function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
+
+// texto objetivo: en «Fácil» no se exigen mayúsculas, tildes ni signos
+function target(txt, exact) {
+  const cells = [], keys = []; let ti = 0;
+  for (const ch of txt) {
+    if (exact) { cells.push({ ch, i: ti++ }); keys.push(ch); continue; }
+    const k = norm(ch);
+    if (/^[a-zñ0-9 ]$/.test(k)) { cells.push({ ch, i: ti++ }); keys.push(k); } else cells.push({ ch, i: -1 });
+  }
+  const tstr = keys.join(''), next = new Array(cells.length);
+  let nx = tstr.length;
+  for (let i = cells.length - 1; i >= 0; i--) { if (cells[i].i >= 0) nx = cells[i].i; next[i] = nx; }
+  return { cells, tstr, next };
+}
+const typedKey = (raw, exact) => exact ? raw : norm(raw).replace(/[^a-zñ0-9 ]/g, '');
+const prefixLen = (a, b) => { let i = 0; const n = Math.min(a.length, b.length); while (i < n && a[i] === b[i]) i++; return i; };
+
+function applyState(s) {
+  const prev = S ? S.phase : null;
+  S = s; applyAt = now();
+  if (s.phase === 'count') goAt = now() + s.left;
+  if (s.phase === 'race') raceT0 = now() - s.el;
+  if (s.rid !== loc.rid && (s.phase === 'count' || s.phase === 'race')) {
+    loc.rid = s.rid; loc.prog = 0; loc.mis = 0; loc.prev = 0; loc.done = false; loc.err = false; progMap = {}; lastCd = -1;
+    $('#word').value = '';
+  }
+  if (s.txt) { const k = s.rid + '|' + s.settings.exact + '|' + s.txt; if (k !== TGkey) { TGkey = k; TG = target(s.txt, s.settings.exact); } }
+  if (s.phase === 'ended' && prev !== 'ended') {
+    const r = s.res, x = r && r.rank.find(q => q.id === myId);
+    play(s.solo ? (r && r.solo && r.solo.isNew ? 'win' : 'ok') : (r && r.rank[0] && r.rank[0].id === myId && r.rank[0].fin ? 'win' : 'lose'));
+  }
+  const me = s.players.find(p => p.id === myId);
+  const inLobby = s.phase === 'lobby' || (s.phase === 'ended' && me && me.back);
+  if (inLobby) { show('lobby'); $('#over').hidden = true; renderLobby(); }
+  else { show('game'); renderGame(); }
+}
+
+function ctlSeg(k, vals, labels, val) {
+  return `<div class="seg" role="group">` + vals.map((v, i) =>
+    `<button type="button" data-k="${k}" data-i="${i}" class="${v === val ? 'on' : ''}" ${isHost ? '' : 'disabled'} aria-pressed="${v === val}">${labels[i]}</button>`).join('') + '</div>';
+}
+function cfgSummary(s) { const c = s.settings; return `${SRCN[c.src]}${c.src === 'palabras' ? ' · ' + c.n : ''} · ${c.exact ? 'Exacta' : 'Fácil'}`; }
+function renderLobby() {
+  if (!S) return;
+  const sl = !!S.solo, ended = S.phase === 'ended', c = S.settings;
+  $('#lobbyCode').textContent = room;
+  $('#codecard').hidden = sl; $('#plist').hidden = sl; $('#soloRec').hidden = !sl; $('#btnRecLobby').hidden = !sl;
+  $('#plist').innerHTML = S.players.filter(p => p.on || !ended).map(p => {
+    const wait = ended && !p.back;
+    const tag = wait ? 'viendo resultados' : [p.id === 'host' ? 'anfitrión' : (p.id === myId ? 'tú' : ''), p.wins ? p.wins + (p.wins === 1 ? ' victoria' : ' victorias') : ''].filter(Boolean).join(' · ');
+    const kick = isHost && p.id !== 'host' ? `<button type="button" class="kick" data-kick="${esc(p.id)}" aria-label="Echar a ${esc(p.name)}">Echar</button>` : '';
+    return `<div class="prow ${wait ? 'wait' : ''}">${tok(p)}<span>${esc(p.name)}</span><span class="tag">${tag}</span>${kick}</div>`;
+  }).join('');
+  $('#cfgBasic').innerHTML = `<div class="set"><span class="lbl">Texto</span>${ctlSeg('src', SRC.map(x => x[0]), SRC.map(x => x[1]), c.src)}</div>`;
+  $('#cfgMoreBody').innerHTML =
+    (c.src === 'palabras' ? `<div class="set"><span class="lbl">Número de palabras</span>${ctlSeg('n', N_OPTS, N_OPTS.map(String), c.n)}</div>` : '') +
+    `<div class="set"><span class="lbl">Exigencia</span>${ctlSeg('exact', [0, 1], ['Fácil', 'Exacta'], c.exact)}</div>`;
+  $('#cfgSum').textContent = cfgSummary(S);
+  if (sl) {
+    const r = loadRec()[recKey(c)];
+    $('#soloRec').textContent = r ? `Tu récord con estos ajustes: ${r.wpm} ppm, precisión ${r.acc} %.` : 'Aún no hay récord con estos ajustes.';
+  }
+  $('#btnStart').hidden = !isHost;
+  if (isHost) {
+    const need = sl ? 1 : 2, count = S.players.filter(p => p.on).length, ready = TXT && PAL;
+    $('#btnStart').disabled = !ready || count < need;
+    $('#lobbyHint').textContent = dataLoading ? 'Cargando textos…' : (!ready || sl) ? '' : count < 2 ? 'Comparte el enlace para empezar.' : '';
+  } else $('#lobbyHint').textContent = 'Esperando al anfitrión…';
+}
+function cfgClick(e) {
+  const b = e.target.closest('button[data-k]'); if (!b || !isHost) return;
+  const k = b.dataset.k, i = +b.dataset.i;
+  setSetting(k, k === 'src' ? SRC[i][0] : k === 'n' ? N_OPTS[i] : i);
+}
+
+function renderLanes() {
+  const s = S;
+  let ps = s.players.filter(p => p.on || s.phase !== 'lobby');
+  const lanes = ps.map(p => `<div class="lane ${p.id === myId ? 'me' : ''}" data-id="${esc(p.id)}"><div class="info"><b>${esc(p.name)}</b><small></small></div>` +
+    `<div class="track"><div class="car" style="--c:${COLORS[p.color][0]}">${CAR}</div></div></div>`);
+  if (s.solo && s.ghost) lanes.push(`<div class="lane" data-id="ghost"><div class="info"><b>Récord</b><small>${s.ghost} ppm</small></div><div class="track"><div class="car ghost" style="--c:#17140f">${CAR}</div></div></div>`);
+  $('#lanes').innerHTML = lanes.join('');
+  updateLanes();
+}
+function updateLanes() {
+  if (!S || !TG) return;
+  const len = TG.tstr.length || 1, el = S.phase === 'race' ? Math.max(0, now() - raceT0) : 0;
+  for (const ln of document.querySelectorAll('#lanes .lane')) {
+    const id = ln.dataset.id, car = ln.querySelector('.car'), sm = ln.querySelector('small');
+    const p = S.players.find(q => q.id === id);
+    let n;
+    if (id === 'ghost') n = Math.min(len, S.phase === 'race' ? el / 60000 * S.ghost * 5 : 0);
+    else if (id === myId) n = loc.prog;
+    else n = p && p.fin ? len : Math.max(progMap[id] || 0, (p && p.prog) || 0);
+    if (S.phase === 'ended' || (p && p.fin)) n = p && p.fin ? len : n;
+    car.style.setProperty('--p', Math.min(1, n / len).toFixed(4));
+    if (id !== 'ghost') {
+      const fin = p && p.fin;
+      car.classList.toggle('run', !fin && S.phase === 'race' && n > 0);
+      sm.textContent = fin ? `${fin.pos}º · ${fin.wpm} ppm` : (S.phase === 'race' && el > 1500 && n > 0 ? wpmOf(n, el) + ' ppm' : '');
+    }
+  }
+}
+
+function renderText() {
+  if (!S || !TG) return;
+  const p = loc.prog, errLen = Math.max(0, typedKey($('#word').value, S.settings.exact).length - p), err = errLen > 0;
+  let h = '';
+  for (let i = 0; i < TG.cells.length; i++) {
+    const c = TG.cells[i]; let cls = '';
+    if (c.i < 0) cls = TG.next[i] <= p ? 'ok' : 'sk';
+    else if (c.i < p) cls = 'ok';
+    else if (c.i === p) cls = err ? 'err cur' : 'cur';
+    else if (err && c.i < p + errLen) cls = 'err';
+    h += cls ? `<span class="${cls}">${esc(c.ch)}</span>` : esc(c.ch);
+  }
+  $('#text').innerHTML = h;
+}
+
+function renderGame() {
+  const s = S, me = s.players.find(p => p.id === myId);
+  $('#gCode').textContent = s.solo ? 'Individual' : room;
+  $('#gInfo').textContent = cfgSummary(s);
+  renderLanes(); renderText();
+  const racing = s.phase === 'race' && !loc.done && !(me && me.fin);
+  const w = $('#word'), canType = (s.phase === 'count' || racing) && !!me && !loc.done;
+  w.disabled = !canType;
+  if (canType && document.activeElement !== w) { w.focus(); setTimeout(() => { if (S && !w.disabled) w.focus(); }, 30); }
+  const over = $('#over');
+  if (s.phase === 'ended') { over.hidden = false; renderResults(s); } else over.hidden = true;
+}
+
+function renderResults(s) {
+  const r = s.res || { rank: [] }, box = $('#soloStats');
+  let again = 'Otra carrera';
+  if (s.solo) {
+    const k = r.solo;
+    box.hidden = false; box.style.gridTemplateColumns = '';
+    if (k) {
+      $('#overTitle').textContent = k.isNew ? 'Nuevo récord' : 'Meta';
+      box.innerHTML = `<div class="${k.isNew ? 'new' : ''}"><b>${k.wpm}</b><small>ppm</small></div><div><b>${k.acc}</b><small>% precisión</small></div><div><b>${fmtT(k.t).replace(' s', '')}</b><small>segundos</small></div>`;
+      $('#overHint').textContent = k.prev ? (k.isNew ? `Antes: ${k.prev} ppm` : `Tu récord sigue en ${k.prev} ppm`) : 'Primer récord con estos ajustes';
+    } else { $('#overTitle').textContent = 'Sin meta'; box.innerHTML = ''; box.hidden = true; $('#overHint').textContent = ''; }
+    $('#rank').innerHTML = ''; again = 'Otra vez';
+  } else {
+    box.hidden = true;
+    const top = r.rank[0], nm = id => (s.players.find(p => p.id === id) || { name: '?' }).name;
+    $('#overTitle').textContent = !top || !top.fin ? 'Fin' : top.id === myId ? 'Has ganado' : 'Gana ' + nm(top.id);
+    $('#rank').innerHTML = r.rank.map((x, i) => {
+      const p = s.players.find(q => q.id === x.id); if (!p) return '';
+      const sub = x.fin ? `${x.wpm} ppm · ${x.acc} % · ${fmtT(x.t)}` : `No ha llegado · ${x.pct} % del texto`;
+      return `<li><div class="who plain"><span class="n">${i + 1}</span>${tok(p, 'sm')}<div><b>${esc(p.name)}</b><small>${sub}</small></div></div></li>`;
+    }).join('');
+    $('#overHint').textContent = '';
+  }
+  const b = $('#btnAgain'); b.textContent = again;
+  b.onclick = () => {
+    if (s.solo) startRace();
+    else if (isHost) { const p = byId('host'); if (p) { p.back = true; push(); } }
+    else act({ t: 'again' });
+  };
+  const st = $('#btnSettings'); st.hidden = !s.solo;
+  st.onclick = () => { const p = byId('host'); if (p) { p.back = true; push(); } };
+  $('#btnExit').hidden = false;
+}
+
+let msgTm = 0;
+function say(text, cls) { const m = $('#msg'); m.textContent = text; m.className = cls || ''; clearTimeout(msgTm); msgTm = setTimeout(() => { m.textContent = ''; m.className = ''; }, 3200); }
+function showEvent(e) {
+  if (e.k === 'join') { play('join'); say(e.name + ' entra'); }
+  else if (e.k === 'left') { play('left'); say(e.name + (e.kicked ? ' expulsado' : ' se va')); }
+}
+
+// escritura
+function sendProg(final) {
+  const m = final ? { t: 'done', n: loc.prog, m: loc.mis } : { t: 'prog', n: loc.prog, m: loc.mis };
+  act(m);
+  if (final) setTimeout(() => act(m), 500);
+}
+function onType() {
+  const w = $('#word');
+  if (!S || !TG) { w.value = ''; return; }
+  if (S.phase !== 'race' || loc.done || now() < raceT0) { w.value = ''; return; }
+  const v = typedKey(w.value, S.settings.exact), p = prefixLen(v, TG.tstr);
+  if (v.length > loc.prev && p < v.length) { loc.mis += v.length - Math.max(loc.prev, p); if (!loc.err) play('bad'); loc.err = true; }
+  else if (p === v.length) loc.err = false;
+  loc.prev = v.length; loc.prog = p;
+  renderText(); updateLanes(); hudUpdate();
+  if (p >= TG.tstr.length) { loc.done = true; w.disabled = true; sendProg(true); return; }
+  const t = now();
+  if (t - loc.last >= 120) { loc.last = t; clearTimeout(loc.tm); sendProg(false); }
+  else { clearTimeout(loc.tm); loc.tm = setTimeout(() => { loc.last = now(); sendProg(false); }, 130); }
+}
+function hudUpdate() {
+  if (!S || !TG) return;
+  const el = S.phase === 'race' ? now() - raceT0 : 0;
+  $('#hudWpm').textContent = (el > 1000 && loc.prog > 0 ? wpmOf(loc.prog, el) : 0) + ' ppm';
+  $('#hudAcc').innerHTML = `<small>precisión</small> ${loc.prog + loc.mis ? accOf(loc.prog, loc.mis) : 100} %`;
+}
+
+// reloj y cuenta atrás
+(function loop() {
+  requestAnimationFrame(loop);
+  if (!S) return;
+  const t = now();
+  const cd = $('#cd'), clk = $('#tclock');
+  if (S.phase === 'count') {
+    const n = Math.ceil((goAt - t) / 1000);
+    cd.hidden = n <= 0; cd.textContent = n;
+    if (n !== lastCd && n > 0) { tone(520, .12, { v: .2 }); }
+    lastCd = n; clk.textContent = '';
+  } else if (S.phase === 'race') {
+    const since = t - raceT0;
+    if (lastCd !== 0) { lastCd = 0; tone(880, .28, { type: 'triangle', v: .22 }); if (!$('#word').disabled) $('#word').focus(); }
+    cd.hidden = since > 700; cd.textContent = '¡Ya!';
+    if (S.endIn !== null) { const r = Math.max(0, Math.ceil((S.endIn - (t - applyAt)) / 1000)); clk.textContent = r + ' s para terminar'; } else clk.textContent = '';
+    if (t - loopT > 250) { loopT = t; hudUpdate(); updateLanes(); }
+  } else { cd.hidden = true; clk.textContent = ''; }
+})();
+
+// ---------- eventos ----------
+for (const id of ['#howHome', '#howLobby']) $(id).innerHTML = HOW;
+const nameIn = $('#name');
+nameIn.value = localStorage.getItem('jt_name') || '';
+const params = new URLSearchParams(location.search);
+const inviteCode = (params.get('sala') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+if (inviteCode.length === 4) { $('#homeCreate').hidden = true; $('#homeInvite').hidden = false; $('#inviteCode').textContent = inviteCode; }
+if (params.get('e') === 'k') setHome('Te han expulsado de la sala.', 'bad');
+
+function getName() {
+  const n = nameIn.value.trim();
+  if (!n) { setHome('Escribe tu nombre.', 'bad'); nameIn.focus(); return null; }
+  localStorage.setItem('jt_name', n); myName = n; setHome(''); return n;
+}
+function busy() { for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome('Conectando…'); }
+$('#btnCreate').onclick = () => { if (getName()) { busy(); createRoom(); } };
+$('#btnSolo').onclick = () => startSolo();
+$('#btnJoinOpen').onclick = () => { $('#homeCreate').hidden = true; $('#homeJoin').hidden = false; setHome(''); $('#codeIn').focus(); };
+$('#btnJoinBack').onclick = () => { $('#homeJoin').hidden = true; $('#homeCreate').hidden = false; setHome(''); };
+$('#btnJoin').onclick = () => {
+  const c = $('#codeIn').value.toUpperCase().replace(/[^A-Z]/g, '');
+  if (c.length !== 4) { setHome('El código tiene 4 letras.', 'bad'); return; }
+  if (getName()) { busy(); joinRoom(c); }
+};
+$('#btnJoinInvite').onclick = () => { if (getName()) { busy(); joinRoom(inviteCode); } };
+$('#btnCopy').onclick = async () => {
+  const b = $('#btnCopy');
+  try { await navigator.clipboard.writeText(link()); b.textContent = 'Copiado'; } catch (e) { prompt('Copia el enlace:', link()); }
+  setTimeout(() => b.textContent = 'Copiar enlace', 1500);
+};
+if (navigator.share) { $('#btnShare').hidden = false; $('#btnShare').onclick = () => navigator.share({ title: 'Teclazo', url: link() }).catch(() => {}); }
+$('#btnStart').onclick = startRace;
+$('#btnLeave').onclick = leave;
+$('#btnExit').onclick = leave;
+$('#cfgBasic').addEventListener('click', cfgClick);
+$('#cfgMoreBody').addEventListener('click', cfgClick);
+$('#plist').addEventListener('click', e => { const b = e.target.closest('[data-kick]'); if (b && isHost) kick(b.dataset.kick); });
+$('#btnRecLobby').onclick = openRecords;
+$('#btnRecBack').onclick = () => { if (solo && S) applyState(S); else show('home'); };
+$('#records').addEventListener('click', e => {
+  const f = e.target.closest('[data-f]'), p = e.target.closest('[data-play]');
+  if (f) { recF[f.dataset.f] = f.dataset.f === 'src' ? f.dataset.v : +f.dataset.v; renderRecords(); }
+  else if (p) startSolo(cfgOfKey(p.dataset.play), true);
+});
+const wEl = $('#word');
+wEl.addEventListener('input', onType);
+wEl.addEventListener('paste', e => e.preventDefault());
+wEl.addEventListener('drop', e => e.preventDefault());
+wEl.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+$('#textCard').addEventListener('click', () => { if (!wEl.disabled) wEl.focus(); });
+document.addEventListener('click', e => {
+  if (!S || $('#game').hidden || wEl.disabled || !$('#over').hidden) return;
+  if (e.target.closest('button, a, summary, details, input')) return;
+  wEl.focus();
+});
+for (const b of document.querySelectorAll('.snd')) b.onclick = () => {
+  unlock(); SND.mute = !SND.mute;
+  try { localStorage.setItem('jt_mute', SND.mute ? '1' : '0'); } catch (e) {}
+  paintSnd(); play('join');
+};
+addEventListener('pointerdown', unlock, true);
+addEventListener('keydown', unlock, true);
+paintSnd();
+$('#codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnJoin').click(); });
+addEventListener('pagehide', () => { if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' }); });
+nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') (inviteCode.length === 4 ? $('#btnJoinInvite') : $('#btnCreate')).click(); });
+})();
+</script>
+</body>
+</html>
