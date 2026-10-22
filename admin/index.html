@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffd93d">
+<meta name="robots" content="noindex,nofollow">
+<title>Panel · pg games</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="../shared.css">
+<style>
+:root{--card:var(--white);--mute:#17140f99;--grid:#17140f1f;--wash:#17140f0f}
+body{font-size:16px}
+.page{max-width:1120px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 56px}
+svg{display:block}
+.ic{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* acceso */
+#login{min-height:100dvh;display:grid;place-items:center;padding:20px}
+#login form{width:100%;max-width:380px;display:grid;gap:14px}
+#login h1{font-size:96px;margin:0 0 10px}
+input[type=email],input[type=password]{width:100%;font:inherit;font-weight:600;color:var(--ink);background:var(--white);border:var(--line);border-radius:14px;padding:13px 16px;outline:none;box-shadow:var(--hard)}
+input[type=email]:focus-visible,input[type=password]:focus-visible{box-shadow:var(--hard),0 0 0 3px var(--blue)}
+#err{min-height:24px;margin:0;font-weight:700}
+
+/* barra superior */
+.top{position:sticky;top:0;z-index:5;margin:0 -16px;padding:max(10px,env(safe-area-inset-top)) 16px 10px;background:var(--paper);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font-size:40px;margin:0;margin-right:auto}
+.chips{display:flex;gap:6px}
+@media(max-width:620px){.top .chips{order:5;width:100%}.top .chips button{flex:1;padding:8px 6px}.top h1{font-size:36px}}
+.chips button,.icon{box-shadow:none;border-width:2px;border-radius:99px;padding:7px 14px;font-size:15px;background:transparent;color:var(--ink)}
+.chips button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.chips button:hover:not(:disabled),.icon:hover:not(:disabled){transform:none;box-shadow:none;background:var(--wash)}
+.chips button[aria-pressed=true]:hover:not(:disabled){background:var(--ink)}
+.chips button:active:not(:disabled),.icon:active:not(:disabled){transform:none;box-shadow:none}
+.icon{padding:7px 9px;display:grid;place-items:center}
+.live{display:flex;align-items:center;gap:8px;font-weight:800;background:var(--white);border:2px solid var(--ink);border-radius:99px;padding:5px 14px 5px 11px}
+.live i{width:10px;height:10px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 2px var(--white),0 0 0 4px var(--mint)}
+.live.zero i{background:#17140f40;box-shadow:none}
+.spin .ic{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+main{display:grid;gap:16px;transition:opacity .2s}
+main.load{opacity:.55}
+.card{background:var(--card);border:var(--line);border-radius:18px;box-shadow:var(--hard);padding:16px 18px;min-width:0}
+.card h2{margin:0 0 12px;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+
+/* cifras */
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:720px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{position:relative;padding:14px 16px 12px;display:grid;gap:2px;align-content:start;min-height:112px}
+.kpi .l{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px;color:var(--mute)}
+.kpi .v{font-size:44px;font-weight:800;font-stretch:75%;line-height:1;letter-spacing:-.01em;margin-top:4px}
+.kpi.hero{grid-column:span 2;background:var(--ink);color:var(--paper)}
+.kpi.hero .l{color:#ffd93dcc}
+.kpi.hero .v{font-size:84px}
+@media(min-width:720px){.kpi.hero{grid-row:span 1}}
+.kpi .d{font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:3px;margin-top:4px}
+.kpi .d svg{width:11px;height:11px;fill:currentColor}
+.kpi .d.up{color:#0b8a54}.kpi .d.dn{color:#d6215a}
+.kpi.hero .d.up{color:var(--mint)}.kpi.hero .d.dn{color:var(--pink)}
+.kpi .sp{position:absolute;right:12px;bottom:12px;opacity:.9}
+.kpi.warn .v{color:#d6215a}
+
+/* tendencia */
+.chart{position:relative;touch-action:pan-y}
+.tip{position:fixed;z-index:20;pointer-events:none;background:var(--ink);color:var(--paper);border-radius:10px;padding:7px 11px;font-weight:700;font-size:14px;line-height:1.25;white-space:nowrap;transform:translate(-50%,-120%);opacity:0;transition:opacity .08s}
+.tip b{display:block;font-size:20px;color:var(--white);font-weight:800}
+.tip.on{opacity:1}
+.ax{font-size:12px;font-weight:600;fill:#17140f99}
+
+/* juegos */
+.game{display:grid;gap:12px}
+.game header{display:flex;align-items:center;gap:10px}
+.game .gi{width:40px;height:40px;border-radius:12px;border:2px solid var(--ink);display:grid;place-items:center}
+.game h3{margin:0;font-size:24px;font-weight:800;font-stretch:75%;letter-spacing:-.01em;flex:1}
+.game .pct{font-weight:800;font-size:14px;background:var(--wash);border-radius:99px;padding:3px 10px}
+.game .big{font-size:60px;font-weight:800;font-stretch:75%;line-height:.9}
+.split{display:flex;height:14px;gap:2px;border-radius:7px;overflow:hidden;background:var(--wash)}
+.split i{display:block;height:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-weight:700;font-size:14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.facts div{background:var(--wash);border-radius:12px;padding:8px 10px;min-width:0}
+.facts b{display:block;font-size:22px;font-weight:800;font-stretch:75%;line-height:1.05}
+.facts small{display:flex;align-items:center;gap:4px;font-weight:700;font-size:12px;color:var(--mute)}
+.facts .ic{width:14px;height:14px;stroke-width:2.8}
+
+/* mapa de calor */
+.heat{display:grid;grid-template-columns:18px repeat(24,1fr);gap:2px;align-items:center}
+.heat .rl{font-size:11px;font-weight:700;color:var(--mute);text-align:center}
+.heat .c{aspect-ratio:1;border-radius:4px;background:var(--wash);outline-offset:1px}
+.heat .c:hover,.heat .c:focus-visible{outline:2px solid var(--ink)}
+.heat .hl{font-size:11px;font-weight:700;color:var(--mute);grid-column:span 3;text-align:left}
+
+/* barras */
+.cols{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:22px}
+.cols .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%}
+.cols .bar{width:100%;max-width:34px;border-radius:6px 6px 0 0;background:var(--blue);min-height:3px}
+.cols .col:hover .bar,.cols .col:focus-visible .bar{filter:brightness(1.15)}
+.cols .col:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:6px}
+.cols .n{font-size:13px;font-weight:800}
+.cols .x{font-size:13px;font-weight:700;color:var(--mute);border-top:2px solid var(--ink);width:100%;text-align:center;padding-top:3px}
+.rows{display:grid;gap:8px}
+.rows .r{display:grid;grid-template-columns:96px 1fr 44px;gap:10px;align-items:center;font-weight:700;font-size:15px}
+.rows .t{height:14px;background:var(--wash);border-radius:7px;overflow:hidden}
+.rows .t i{display:block;height:100%;background:var(--ink);border-radius:7px}
+.rows .r:hover .t i{background:var(--blue)}
+.rows .r b{text-align:right}
+.empty{color:var(--mute);font-weight:700;padding:18px 0;text-align:center}
+
+/* actividad */
+.feed{display:grid;gap:6px}
+.feed .f{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;padding:6px 0;border-bottom:2px solid var(--wash)}
+.feed .f:last-child{border-bottom:0}
+.feed .gi{width:30px;height:30px;border-radius:9px;border:2px solid var(--ink);display:grid;place-items:center;flex:0 0 auto}
+.feed .gi .ic{width:16px;height:16px}
+.feed .w{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed .tm{color:var(--mute);font-size:13px;white-space:nowrap}
+.tag{display:inline-block;background:var(--wash);border-radius:99px;padding:1px 9px;font-size:13px;margin-left:6px}
+.tag.bad{background:#ff5c8a33;color:#a3123f}
+</style>
+</head>
+<body>
+<noscript><p style="padding:20px;font:700 20px system-ui">Activa JavaScript para ver el panel.</p></noscript>
+
+<section id="login" hidden>
+  <form id="form" autocomplete="on">
+    <h1 class="display">panel</h1>
+    <input id="email" type="email" autocomplete="username" required aria-label="Correo" placeholder="Correo">
+    <input id="pass" type="password" autocomplete="current-password" required aria-label="Contraseña" placeholder="Contraseña">
+    <button class="big" id="go" type="submit">Entrar</button>
+    <p id="err" role="alert"></p>
+  </form>
+</section>
+
+<div id="app" class="page" hidden>
+  <div class="top">
+    <h1 class="display">panel</h1>
+    <div class="live zero" id="live" title="Ahora"><i></i><b id="liveN">0</b></div>
+    <div class="chips" id="chips" role="group" aria-label="Periodo"></div>
+    <button class="icon alt" id="refresh" type="button" aria-label="Actualizar"><svg class="ic" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></svg></button>
+    <button class="icon alt" id="out" type="button" aria-label="Salir"><svg class="ic" viewBox="0 0 24 24"><path d="M10 4H5v16h5"/><path d="M15 8l4 4-4 4"/><path d="M19 12H9"/></svg></button>
+  </div>
+  <main id="main" class="load">
+    <section class="kpis" id="kpis"></section>
+    <section class="card"><h2 id="trH"></h2><div class="chart" id="trend"></div></section>
+    <section class="grid" id="games"></section>
+    <div class="grid">
+      <section class="card"><h2 title="Horas" aria-label="Horas"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></h2><div id="heat"></div></section>
+      <section class="card"><h2 title="Jugadores por sala" aria-label="Jugadores por sala"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14c2.5 0 4 2 4 5"/></svg></h2><div id="sizes"></div></section>
+    </div>
+    <div class="grid">
+      <section class="card"><h2 title="Dispositivos" aria-label="Dispositivos"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></h2><div id="devices"></div></section>
+      <section class="card"><h2 title="Origen" aria-label="Origen"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12h12"/><path d="M12 6l6 6-6 6"/></svg></h2><div id="sources"></div></section>
+      <section class="card"><h2 title="Nuevos y recurrentes" aria-label="Nuevos y recurrentes"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/></svg></h2><div id="people"></div></section>
+    </div>
+    <section class="card"><h2 title="Actividad" aria-label="Actividad"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></h2><div class="feed" id="feed"></div></section>
+  </main>
+</div>
+<div class="tip" id="tip"></div>
+
+<script src="../vendor/supabase.js"></script>
+<script>
+(() => {
+'use strict';
+const SB_URL = window.PG_SB_URL || 'https://acsrnjowxvjamiybsjkx.supabase.co';
+const SB_KEY = window.PG_SB_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
+const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'pg-admin-auth' } });
+const $ = s => document.querySelector(s);
+const INK = '#17140f', PINK = '#ff5c8a', BLUE = '#3b5bff', MINT = '#2fd08a', WHITE = '#fffef8';
+const GAMES = { bomba: { name: 'Bomba', color: PINK }, tutti: { name: 'Tutti frutti', color: MINT }, teclazo: { name: 'Teclazo', color: BLUE } };
+const RANGES = [[7, '7 d'], [30, '30 d'], [90, '90 d'], [365, '1 año']];
+const nf = new Intl.NumberFormat('es-ES'), nf1 = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
+const fmt = n => n == null ? '–' : n >= 10000 ? nf1.format(n / 1000) + ' k' : nf.format(n);
+const dur = s => s == null ? '–' : Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+const ICON = {
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  user: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14c2.5 0 4 2 4 5"/>',
+  door: '<path d="M6 21V4h12v17"/><path d="M3 21h18"/><circle cx="14.5" cy="12.5" r=".8"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h13l-2.5 4.5L18 13H5"/>',
+  warn: '<path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r=".8"/>',
+  repeat: '<path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/>',
+  spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  play: '<path d="M7 4l13 8-13 8z"/>',
+  stop: '<rect x="5" y="5" width="14" height="14" rx="2"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  bomb: '<circle cx="11" cy="14" r="7"/><path d="M15.5 8.5L18 6M17 3l.8 2.2L20 6l-2.2.8L17 9l-.8-2.2L14 6l2.2-.8z"/>',
+  note: '<rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(-6 12 12)"/><path d="M8 10h8M8 14h5"/>',
+  car: '<path d="M3 16v-3l2-5h14l2 5v3z"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>',
+  bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4"/><path d="M12 13v4M8 20h8"/>',
+  type: '<path d="M4 7V5h16v2M12 5v14M9 19h6"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'
+};
+const ic = (n, cls) => `<svg class="ic ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+const GICON = { bomba: 'bomb', tutti: 'note', teclazo: 'car' };
+const SRC = { directo: 'Directo', whatsapp: 'WhatsApp', telegram: 'Telegram', instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', google: 'Google', bing: 'Bing', duckduckgo: 'DuckDuckGo', x: 'X', reddit: 'Reddit', discord: 'Discord', youtube: 'YouTube', otros: 'Otros' };
+const DEV = { m: ['Móvil', BLUE], d: ['Escritorio', PINK], t: ['Tablet', MINT] };
+
+let days = 7, data = null, busy = false, timer = 0;
+try { const d = +localStorage.getItem('pg_admin_days'); if (RANGES.some(r => r[0] === d)) days = d; } catch (e) {}
+
+/* ---------- acceso ---------- */
+function showLogin(msg) { $('#app').hidden = true; $('#login').hidden = false; $('#err').textContent = msg || ''; clearInterval(timer); }
+function showApp() { $('#login').hidden = true; $('#app').hidden = false; try { localStorage.setItem('pg_notrack', '1'); } catch (e) {} }
+$('#form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const b = $('#go'); b.disabled = true; $('#err').textContent = '';
+  const { error } = await sb.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#pass').value });
+  b.disabled = false;
+  if (error) { $('#err').textContent = 'Datos incorrectos'; return; }
+  $('#pass').value = '';
+  start();
+});
+$('#out').onclick = async () => { await sb.auth.signOut(); data = null; showLogin(); };
+
+/* ---------- datos ---------- */
+async function load() {
+  if (busy) return; busy = true;
+  $('#main').classList.add('load'); $('#refresh').classList.add('spin');
+  const { data: d, error } = await sb.rpc('admin_stats', { p_days: days });
+  busy = false; $('#refresh').classList.remove('spin'); $('#main').classList.remove('load');
+  if (error) {
+    const denied = error.code === '42501' || /forbidden|jwt|not authorized/i.test(error.message || '');
+    if (denied) { await sb.auth.signOut(); showLogin('Sin acceso'); }
+    else if (!data) { showLogin('Sin conexión'); }
+    return;
+  }
+  data = d; render();
+}
+async function start() {
+  const { data: s } = await sb.auth.getSession();
+  if (!s || !s.session) { showLogin(); return; }
+  showApp(); chips(); await load();
+  clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(); }, 60000);
+}
+
+/* ---------- piezas ---------- */
+function chips() {
+  $('#chips').innerHTML = RANGES.map(([d, l]) => `<button type="button" data-d="${d}" aria-pressed="${d === days}">${l}</button>`).join('');
+}
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  days = +b.dataset.d; try { localStorage.setItem('pg_admin_days', days); } catch (x) {}
+  chips(); load();
+});
+$('#refresh').onclick = load;
+addEventListener('resize', () => { if (data) { drawTrend(); } });
+
+const tip = $('#tip');
+function showTip(e, head, val) {
+  tip.innerHTML = ''; const b = document.createElement('b'); b.textContent = val; tip.append(b, document.createTextNode(head));
+  const x = e.clientX != null ? e.clientX : 0, y = e.clientY != null ? e.clientY : 0;
+  tip.style.left = Math.min(Math.max(x, 70), innerWidth - 70) + 'px'; tip.style.top = y + 'px'; tip.classList.add('on');
+}
+const hideTip = () => tip.classList.remove('on');
+function hover(el, head, val) {
+  el.addEventListener('pointermove', e => showTip(e, head, val));
+  el.addEventListener('pointerleave', hideTip);
+  el.addEventListener('focus', () => { const r = el.getBoundingClientRect(); showTip({ clientX: r.left + r.width / 2, clientY: r.top }, head, val); });
+  el.addEventListener('blur', hideTip);
+}
+const pctChange = (c, p) => (p > 0 && c != null && p != null) ? Math.round((c - p) / p * 100) : null;
+function delta(c, p) {
+  const x = pctChange(c, p); if (x === null || x === 0) return '';
+  return `<span class="d ${x > 0 ? 'up' : 'dn'}"><svg viewBox="0 0 10 10"><path d="${x > 0 ? 'M5 1l4.5 8h-9z' : 'M5 9L.5 1h9z'}"/></svg>${Math.abs(x)} %</span>`;
+}
+function spark(vals, color) {
+  const W = 84, H = 30, n = vals.length; if (n < 2) return '';
+  const max = Math.max(1, ...vals);
+  const pts = vals.map((v, i) => [2 + (W - 4) * i / (n - 1), H - 3 - (H - 8) * v / max]);
+  const last = pts[n - 1];
+  return `<svg class="sp" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}"/><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.5" fill="${color}"/></svg>`;
+}
+const niceMax = v => { if (v <= 4) return 4; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; };
+const shortDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }); };
+const longDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }); };
+const ago = t => {
+  const s = (Date.now() - new Date(t).getTime()) / 1000;
+  if (s < 90) return 'ahora'; if (s < 3600) return Math.round(s / 60) + ' min'; if (s < 86400) return Math.round(s / 3600) + ' h';
+  const d = Math.round(s / 86400); return d === 1 ? 'ayer' : d + ' d';
+};
+
+/* ---------- secciones ---------- */
+let trendKey = 'v';
+function renderKpis() {
+  const c = data.cur, p = data.prev, dl = data.daily;
+  const fin = c.started ? Math.round(c.finished / c.started * 100) : null, finP = p.started ? Math.round(p.finished / p.started * 100) : null;
+  const ret = c.visitors ? Math.round((c.visitors - data.new) / c.visitors * 100) : null;
+  const retP = p.visitors ? Math.round((p.visitors - data.prev_new) / p.visitors * 100) : null;
+  const K = [
+    ['hero', 'play', 'Partidas', fmt(c.started), delta(c.started, p.started), spark(dl.map(x => x.g), PINK)],
+    ['', 'eye', 'Visitantes', fmt(c.visitors), delta(c.visitors, p.visitors), spark(dl.map(x => x.v), INK)],
+    ['', 'user', 'Jugadores', fmt(c.players), delta(c.players, p.players), ''],
+    ['', 'grid', 'Visitas', fmt(c.views), delta(c.views, p.views), spark(dl.map(x => x.pv), INK)],
+    ['', 'door', 'Salas', fmt(c.rooms), delta(c.rooms, p.rooms), ''],
+    ['', 'users', 'Por sala', c.avg_n == null ? '–' : nf1.format(c.avg_n), delta(c.avg_n, p.avg_n), ''],
+    ['', 'clock', 'Duración', dur(c.avg_dur), delta(c.avg_dur, p.avg_dur), ''],
+    ['', 'flag', 'Terminan', fin == null ? '–' : fin + ' %', delta(fin, finP), ''],
+    ['', 'spark', 'Nuevos', fmt(data.new), delta(data.new, data.prev_new), ''],
+    ['', 'repeat', 'Vuelven', ret == null ? '–' : ret + ' %', delta(ret, retP), ''],
+    [c.fails > 0 ? 'warn' : '', 'warn', 'Fallos', fmt(c.fails), '', '']
+  ];
+  $('#kpis').innerHTML = K.map(([cls, i, l, v, d, s]) => `<div class="card kpi ${cls}"><div class="l">${ic(i)}${l}</div><div class="v">${v}</div>${d}${s}</div>`).join('');
+}
+
+function drawTrend() {
+  const host = $('#trend'); if (!data) return;
+  const key = trendKey, pts = data.daily.map(x => ({ d: x.d, y: x[key] }));
+  const W = Math.max(280, host.clientWidth), H = 230, m = { l: 34, r: 14, t: 14, b: 26 };
+  const max = niceMax(Math.max(1, ...pts.map(p => p.y))), n = pts.length;
+  const X = i => m.l + (W - m.l - m.r) * (n === 1 ? .5 : i / (n - 1)), Y = v => m.t + (H - m.t - m.b) * (1 - v / max);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.y).toFixed(1)).join('');
+  const area = line + `L${X(n - 1).toFixed(1)} ${Y(0)}L${X(0).toFixed(1)} ${Y(0)}Z`;
+  const color = key === 'g' ? PINK : INK;
+  let g = '';
+  for (const t of [0, max / 2, max]) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t === 0 ? INK : '#17140f1f'}" stroke-width="${t === 0 ? 2 : 1}"/><text class="ax" x="${m.l - 8}" y="${Y(t) + 4}" text-anchor="end">${fmt(t)}</text>`;
+  const xl = n > 1 ? [0, Math.floor((n - 1) / 2), n - 1] : [0];
+  for (const i of xl) g += `<text class="ax" x="${X(i)}" y="${H - 6}" text-anchor="${i === 0 && n > 1 ? 'start' : i === n - 1 && n > 1 ? 'end' : 'middle'}">${shortDate(pts[i].d)}</text>`;
+  const lastY = Y(pts[n - 1].y);
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tendencia">${g}
+    <path d="${area}" fill="${color}" fill-opacity=".1"/><path d="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${X(n - 1)}" cy="${lastY}" r="5" fill="${color}" stroke="${WHITE}" stroke-width="2"/>
+    <line id="cx" y1="${m.t}" y2="${Y(0)}" stroke="${INK}" stroke-width="1" opacity="0"/><circle id="cd" r="5" fill="${color}" stroke="${WHITE}" stroke-width="2" opacity="0"/>
+    <rect x="${m.l}" y="0" width="${W - m.l - m.r}" height="${H}" fill="transparent" id="hit"/></svg>`;
+  const hit = host.querySelector('#hit'), cx = host.querySelector('#cx'), cd = host.querySelector('#cd');
+  const at = e => {
+    const r = hit.getBoundingClientRect(), i = n === 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round((e.clientX - r.left) / r.width * (n - 1))));
+    cx.setAttribute('x1', X(i)); cx.setAttribute('x2', X(i)); cx.setAttribute('opacity', '.35');
+    cd.setAttribute('cx', X(i)); cd.setAttribute('cy', Y(pts[i].y)); cd.setAttribute('opacity', '1');
+    showTip({ clientX: r.left + (X(i) - m.l), clientY: r.top + Y(pts[i].y) - 8 }, longDate(pts[i].d), nf.format(pts[i].y));
+  };
+  hit.addEventListener('pointermove', at); hit.addEventListener('pointerdown', at);
+  hit.addEventListener('pointerleave', () => { cx.setAttribute('opacity', '0'); cd.setAttribute('opacity', '0'); hideTip(); });
+}
+function renderTrend() {
+  const opts = [['v', 'eye', 'Visitantes'], ['g', 'play', 'Partidas'], ['pv', 'grid', 'Visitas']];
+  $('#trH').innerHTML = `<div class="chips" role="group" aria-label="Serie">${opts.map(([k, i, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === trendKey}">${l}</button>`).join('')}</div>`;
+  $('#trH').onclick = e => { const b = e.target.closest('button'); if (!b) return; trendKey = b.dataset.k; renderTrend(); };
+  drawTrend();
+}
+
+function renderGames() {
+  const tot = data.games.reduce((a, g) => a + g.started, 0);
+  $('#games').innerHTML = data.games.map(g => {
+    const G = GAMES[g.game], multi = Math.max(0, g.started - g.solo), share = tot ? Math.round(g.started / tot * 100) : 0;
+    const extra = g.game === 'teclazo' ? [['bolt', g.avg_m == null ? '–' : Math.round(g.avg_m), 'ppm'], ['trophy', g.best_m == null ? '–' : Math.round(g.best_m), 'mejor']]
+      : g.game === 'bomba' ? [['type', g.avg_m == null ? '–' : nf1.format(g.avg_m), 'palabras'], ['trophy', g.best_m == null ? '–' : Math.round(g.best_m), 'mejor']] : [];
+    const facts = [['user', fmt(g.players), 'Jugadores'], ['door', fmt(g.rooms), 'Salas'], ['users', g.avg_n == null ? '–' : nf1.format(g.avg_n), 'Por sala'], ['clock', dur(g.avg_dur), 'Duración'], ['eye', fmt(g.views), 'Visitas'], ['link', fmt(g.joins), 'Se unen'], ...extra.map(([i, v, l]) => [i, v, l])];
+    return `<article class="card game"><header><div class="gi" style="background:${G.color}">${ic(GICON[g.game])}</div><h3>${G.name}</h3><span class="pct">${share} %</span></header>
+      <div class="big">${fmt(g.started)}</div>
+      <div class="split" role="img" aria-label="Solo y en sala"><i style="flex:${g.solo};background:${INK}"></i><i style="flex:${multi};background:${G.color}"></i></div>
+      <div class="legend"><span><i style="background:${INK}"></i>${ic('user')}${fmt(g.solo)}</span><span><i style="background:${G.color}"></i>${ic('users')}${fmt(multi)}</span></div>
+      <div class="facts">${facts.map(([i, v, l]) => `<div><b>${v}</b><small>${ic(i)}${l}</small></div>`).join('')}</div></article>`;
+  }).join('');
+  for (const el of document.querySelectorAll('#games .split i')) { /* sin hover: las cifras están en la leyenda */ }
+}
+
+function renderHeat() {
+  const host = $('#heat'), cell = {}; let max = 0;
+  for (const x of data.heat) { cell[x.w + '-' + x.h] = x.n; max = Math.max(max, x.n); }
+  const DN = ['L', 'M', 'X', 'J', 'V', 'S', 'D'], DL = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+  let h = '<div class="heat"><span></span>';
+  for (let i = 0; i < 24; i += 3) h += `<span class="hl">${i}</span>`;
+  for (let w = 1; w <= 7; w++) {
+    h += `<span class="rl">${DN[w - 1]}</span>`;
+    for (let k = 0; k < 24; k++) {
+      const n = cell[w + '-' + k] || 0, a = n ? (.18 + .82 * Math.sqrt(n / max)).toFixed(2) : 0;
+      h += `<span class="c" tabindex="0" data-h="${DL[w - 1]} ${String(k).padStart(2, '0')}:00" data-n="${n}" style="${n ? 'background:rgba(59,91,255,' + a + ')' : ''}"></span>`;
+    }
+  }
+  host.innerHTML = h + '</div>';
+  for (const c of host.querySelectorAll('.c')) hover(c, c.dataset.h, nf.format(+c.dataset.n));
+}
+
+function renderSizes() {
+  const host = $('#sizes'), by = {}; let max = 0, any = false;
+  for (const x of data.sizes) { by[x.n] = x.c; max = Math.max(max, x.c); any = true; }
+  if (!any) { host.innerHTML = '<div class="empty">–</div>'; return; }
+  let h = '<div class="cols">';
+  for (let n = 2; n <= 8; n++) { const c = by[n] || 0; h += `<div class="col" tabindex="0" data-n="${n}" data-c="${c}"><span class="n">${c || ''}</span><div class="bar" style="height:${c ? Math.max(3, c / max * 100) : 0}%"></div><span class="x">${n}</span></div>`; }
+  host.innerHTML = h + '</div>';
+  for (const c of host.querySelectorAll('.col')) hover(c, c.dataset.n + ' jugadores', nf.format(+c.dataset.c));
+}
+
+function stackBar(items) {
+  const tot = items.reduce((a, i) => a + i.n, 0);
+  if (!tot) return '<div class="empty">–</div>';
+  return `<div class="split" style="height:22px;border-radius:11px">${items.map(i => `<i style="flex:${i.n};background:${i.color}" data-h="${i.l}" data-n="${i.n}"></i>`).join('')}</div>
+    <div class="legend" style="margin-top:12px">${items.map(i => `<span><i style="background:${i.color}"></i>${i.l} ${Math.round(i.n / tot * 100)} %</span>`).join('')}</div>`;
+}
+function renderDevices() {
+  const host = $('#devices');
+  host.innerHTML = stackBar(data.devices.map(d => ({ n: d.n, l: DEV[d.k][0], color: DEV[d.k][1] })));
+  for (const i of host.querySelectorAll('.split i')) hover(i, i.dataset.h, nf.format(+i.dataset.n));
+}
+function renderPeople() {
+  const nw = data.new, ret = Math.max(0, data.cur.visitors - nw);
+  const host = $('#people');
+  host.innerHTML = stackBar([{ n: nw, l: 'Nuevos', color: MINT }, { n: ret, l: 'Vuelven', color: INK }]);
+  for (const i of host.querySelectorAll('.split i')) hover(i, i.dataset.h, nf.format(+i.dataset.n));
+}
+function renderSources() {
+  const host = $('#sources'), max = Math.max(1, ...data.sources.map(s => s.n));
+  if (!data.sources.length) { host.innerHTML = '<div class="empty">–</div>'; return; }
+  host.innerHTML = '<div class="rows">' + data.sources.map(s => `<div class="r"><span>${SRC[s.k] || s.k}</span><div class="t"><i style="width:${s.n / max * 100}%"></i></div><b>${nf.format(s.n)}</b></div>`).join('') + '</div>';
+}
+function renderFeed() {
+  const host = $('#feed');
+  if (!data.recent.length) { host.innerHTML = '<div class="empty">–</div>'; return; }
+  const K = { room_create: ['plus', 'Sala'], room_join: ['link', 'Se une'], game_start: ['play', 'Empieza'], game_end: ['flag', 'Termina'], net_fail: ['warn', 'Fallo'] };
+  host.innerHTML = data.recent.slice(0, 10).map(r => {
+    const G = GAMES[r.g], [i, l] = K[r.k] || ['spark', r.k];
+    const tag = r.k === 'net_fail' ? '' : r.solo ? `<span class="tag">${ic('user')}</span>` : r.n ? `<span class="tag">×${r.n}</span>` : '';
+    return `<div class="f"><div class="gi" style="background:${G ? G.color : WHITE}">${ic(G ? GICON[r.g] : 'grid')}</div><span class="w">${G ? G.name : ''} · ${l}${tag}</span><span class="tm">${ago(r.t)}</span></div>`;
+  }).join('');
+}
+
+function render() {
+  $('#liveN').textContent = data.now; $('#live').classList.toggle('zero', !data.now);
+  renderKpis(); renderTrend(); renderGames(); renderHeat(); renderSizes(); renderDevices(); renderSources(); renderPeople(); renderFeed();
+}
+
+start();
+})();
+</script>
+</body>
+</html>

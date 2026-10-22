@@ -235,6 +235,8 @@ button.pink{background:var(--pink);color:var(--ink)}
 .rline{margin:10px 0 2px 28px;font-size:15px;font-weight:600;line-height:1.3}
 .rline .z{text-decoration:line-through;opacity:.5}
 </style>
+<script>window.PGT={ev(){},start(){},end(){}}</script>
+<script src="../pg.js" defer></script>
 </head>
 <body>
 <noscript><p style="padding:20px;font:700 20px system-ui">Los juegos necesitan JavaScript. Actívalo en tu navegador y recarga la página.</p></noscript>
@@ -576,6 +578,7 @@ function startGame() {
   H.players = ps;
   for (const p of H.players) { p.score = 0; p.back = false; }
   H.round = 0; H.used = []; H.hist = []; H.res = null;
+  PGT.start(H.players.length, false);
   nextRound();
 }
 function nextRound() {
@@ -621,6 +624,7 @@ function endReview() {
 }
 function endGame() {
   clearTimeout(H.tm); H.phase = 'ended'; H.rv = null;
+  PGT.end(H.players.length, false, null);
   const rank = H.players.slice().sort((a, b) => b.score - a.score)
     .map(p => ({ id: p.id, score: p.score, rounds: H.hist.map(h => h.pts[p.id] || 0) }));
   const rounds = H.hist.map(h => {
@@ -696,13 +700,14 @@ function hostRecv(m, f) {
 
 // ---------- conexión ----------
 function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
-function fail(msg) { netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
+function fail(msg) { if (/Sin conexión/.test(msg)) PGT.ev('net_fail'); netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
 
 async function createRoom() {
   room = randCode(); myId = 'host'; isHost = true;
   net.onMsg = hostRecv;
   try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   H = newH(); addPlayer('host', myName);
+  PGT.ev('room_create');
   history.replaceState(null, '', '?sala=' + room);
   net.timers.push(setInterval(() => {
     bcast({ t: 'hb' });
@@ -747,7 +752,7 @@ function onMsg(m) {
   if (!isHost) lastHeard = now();
   if (m.t === 'state') {
     if (m.s.v <= lastV) return;
-    lastV = m.s.v; gotState = true; applyState(m.s);
+    lastV = m.s.v; if (!gotState) PGT.ev('room_join'); gotState = true; applyState(m.s);
   } else if (m.t === 'evt') showEvent(m.e);
   else if (m.t === 'full') fail('La sala está llena.');
   else if (m.t === 'started') fail('La partida ya ha empezado.');

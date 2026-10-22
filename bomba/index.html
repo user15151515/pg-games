@@ -191,6 +191,8 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #over .big+.big{margin-top:12px}
 #overHint{text-align:center;font-weight:600;margin:12px 0 0}
 </style>
+<script>window.PGT={ev(){},start(){},end(){}}</script>
+<script src="../pg.js" defer></script>
 </head>
 <body>
 <noscript><p style="padding:20px;font:700 20px system-ui">Los juegos necesitan JavaScript. Actívalo en tu navegador y recarga la página.</p></noscript>
@@ -642,7 +644,7 @@ function startGame() {
   if (ps.length < (H.solo ? 1 : 2)) return;
   H.players = ps;
   for (const p of H.players) { p.lives = H.settings.lives; p.alive = true; p.spec = false; p.back = false; p.letters = ''; p.words = 0; p.streak = 0; p.bestStreak = 0; p.log = []; }
-  H.used = new Set(); H.recent = []; H.winner = null; H.res = null; H.fails = []; H.out = []; H.phase = 'playing'; H.dir = 1;
+  H.used = new Set(); H.recent = []; H.winner = null; H.res = null; H.fails = []; H.out = []; H.phase = 'playing'; H.dir = 1; PGT.start(ps.length, !!H.solo);
   H.turn = H.players[Math.random() * H.players.length | 0].id;
   H.syl = pickSyl(); H.typing = '';
   if (H.solo && isRush(H.settings)) { for (const p of H.players) p.lives = 1; setFuse(H.settings.total * 1000); } else newFuse();
@@ -674,7 +676,7 @@ function buildRes() {
   }
   return res;
 }
-function endGame() { clearTimeout(H.tm); H.phase = 'ended'; H.turn = null; H.typing = ''; H.res = buildRes(); push(); }
+function endGame() { clearTimeout(H.tm); H.phase = 'ended'; H.turn = null; H.typing = ''; H.res = buildRes(); PGT.end(H.players.length, !!H.solo, H.res.rank[0] ? H.res.rank[0].words : null); push(); }
 function checkEnd() {
   if (H.solo) { const p = H.players[0]; if (!p || !p.alive) { H.winner = null; endGame(); return true; } return false; }
   const alive = H.players.filter(p => p.alive && p.on);
@@ -766,13 +768,14 @@ async function loadData() {
 
 // ---------- conexión ----------
 function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
-function fail(msg) { netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
+function fail(msg) { if (/Sin conexión/.test(msg)) PGT.ev('net_fail'); netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
 
 async function createRoom() {
   room = randCode(); myId = 'host'; isHost = true; solo = false;
   net.onMsg = hostRecv;
   try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   H = newH(); addPlayer('host', myName);
+  PGT.ev('room_create');
   history.replaceState(null, '', '?sala=' + room);
   net.timers.push(setInterval(() => {
     bcast({ t: 'hb' });
@@ -864,7 +867,7 @@ function onMsg(m) {
   if (!isHost) lastHeard = now();
   if (m.t === 'state') {
     if (m.s.v <= lastV) return;
-    lastV = m.s.v; gotState = true; applyState(m.s);
+    lastV = m.s.v; if (!gotState) PGT.ev('room_join'); gotState = true; applyState(m.s);
   } else if (m.t === 'typing') { if (!S || S.turn !== myId) setTyped(m.text); }
   else if (m.t === 'evt') showEvent(m.e);
   else if (m.t === 'bad') badInput(m.m);

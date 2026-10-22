@@ -219,6 +219,8 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #typed input:disabled{opacity:.5}
 #tclock{text-align:center;font-weight:700;min-height:26px;margin-top:8px}
 </style>
+<script>window.PGT={ev(){},start(){},end(){}}</script>
+<script src="../pg.js" defer></script>
 </head>
 <body>
 <noscript><p style="padding:20px;font:700 20px system-ui">Los juegos necesitan JavaScript. Actívalo en tu navegador y recarga la página.</p></noscript>
@@ -596,7 +598,7 @@ function startRace() {
   if (!TXT || !PAL || H.phase === 'count' || H.phase === 'race') return;
   const ps = H.players.filter(p => p.on);
   if (ps.length < (H.solo ? 1 : 2)) return;
-  H.players = ps;
+  H.players = ps; PGT.start(ps.length, !!H.solo);
   for (const p of H.players) { p.prog = 0; p.mis = 0; p.fin = null; p.back = false; }
   H.rid++; H.txt = pickText(); H.res = null; H.endAt = 0;
   H.ghost = 0;
@@ -659,6 +661,7 @@ function endRace() {
       res.solo = { wpm: x.wpm, acc: x.acc, t: x.t, prev: prev ? prev.wpm : 0, isNew: best };
     }
   }
+  PGT.end(H.players.length, !!H.solo, rank[0] && rank[0].fin ? rank[0].wpm : null);
   H.phase = 'ended'; H.res = res; push();
 }
 function hostLeft(id, kicked) {
@@ -691,13 +694,14 @@ function hostRecv(m, f) {
 
 // ---------- conexión ----------
 function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
-function fail(msg) { netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
+function fail(msg) { if (/Sin conexión/.test(msg)) PGT.ev('net_fail'); netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
 
 async function createRoom() {
   room = randCode(); myId = 'host'; isHost = true; solo = false;
   net.onMsg = hostRecv;
   try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   H = newH(); addPlayer('host', myName);
+  PGT.ev('room_create');
   history.replaceState(null, '', '?sala=' + room);
   net.timers.push(setInterval(() => {
     bcast({ t: 'hb' });
@@ -753,7 +757,7 @@ function onMsg(m) {
   if (!isHost) lastHeard = now();
   if (m.t === 'state') {
     if (m.s.v <= lastV) return;
-    lastV = m.s.v; gotState = true; applyState(m.s);
+    lastV = m.s.v; if (!gotState) PGT.ev('room_join'); gotState = true; applyState(m.s);
   } else if (m.t === 'prog') { for (const id in m.p) if (id !== myId) progMap[id] = m.p[id]; updateLanes(); }
   else if (m.t === 'evt') showEvent(m.e);
   else if (m.t === 'full') fail('La sala está llena.');

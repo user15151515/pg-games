@@ -41,3 +41,9 @@ tools/build-words.mjs genera diccionario y sílabas
 ## Publicación
 
 Sitio estático sin build: se sirve tal cual desde la raíz del repo, con rutas relativas. Destino: `https://games.pgfantasy.cat`, como proyecto de Cloudflare Pages propio conectado solo a este repo (sin build command; cabeceras en `_headers`). No comparte repo, proyecto, base de datos ni claves con ningún otro producto; del dominio raíz solo usa el subdominio. No usa cookies ni claves: el multijugador va por brokers MQTT públicos y los datos locales viven en `localStorage` del propio origen.
+
+## Estadísticas y panel de administración
+
+Estadísticas propias y anónimas, sin terceros: `pg.js` guarda un identificador aleatorio en el navegador y envía eventos sueltos (visita, sala creada o unida, partida empezada o terminada, fallo de conexión) a la función `pg_log` del proyecto Supabase de pg games. No registra nombres, palabras ni textos. No envía nada en localhost, con «No rastrear» activado ni en el navegador del administrador (que se marca al iniciar sesión en el panel).
+
+El panel está en `/admin/` (sin enlace desde la web, con `noindex`). Entra con un usuario de Supabase Auth cuyo correo esté en la tabla `admins`; los datos salen de la función `admin_stats`, que rechaza a cualquier otro usuario. La tabla de eventos no se puede leer ni escribir directamente desde la API. Todo el SQL (tablas, funciones y permisos) está en `supabase/schema.sql` y se puede ejecutar varias veces sin perder datos.
