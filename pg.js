@@ -1,11 +1,13 @@
 // Estadísticas propias y anónimas de pg games (proyecto Supabase de pg games, sin terceros).
 // Guarda un identificador aleatorio en este navegador y eventos sueltos: visita, sala creada o unida,
 // partida empezada o terminada y fallos de conexión. No lee nombres, palabras ni textos de los jugadores.
-// Se desactiva con «No rastrear» del navegador, en localhost y en el navegador del administrador.
+// Se desactiva con «No rastrear» del navegador, en localhost, en el navegador del administrador y en los dispositivos abiertos con ?notrack=1.
 (() => {
   const URL = 'https://acsrnjowxvjamiybsjkx.supabase.co';
   const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
   const noop = { ev() {}, start() {}, end() {} };
+  // Para ignorar un dispositivo: abrir la web una vez con ?notrack=1 (y ?notrack=0 para volver a contar).
+  try { const q = new URLSearchParams(location.search).get('notrack'); if (q === '1') localStorage.setItem('pg_notrack', '1'); else if (q === '0') localStorage.removeItem('pg_notrack'); } catch (e) {}
   let off = /^(localhost|127\.|\[::1\])/.test(location.hostname) || navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true;
   try { if (localStorage.getItem('pg_notrack') === '1') off = true; } catch (e) {}
   if (off) { window.PGT = noop; return; }
