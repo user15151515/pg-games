@@ -518,8 +518,9 @@ function renderPlayers() {
   $('#plist').innerHTML = list.map(p => {
     const gs = (p.games || []).filter(g => GAMES[g]).map(g => `<i style="background:${GAMES[g].color}" title="${GAMES[g].name}"></i>`).join('');
     const dv = p.dev && DEV[p.dev] ? `<span>${ic(p.dev === 'd' ? 'grid' : 'user')}${DEV[p.dev][0]}</span>` : '';
-    return `<div class="pl ${p.hidden ? 'off' : ''}"><div class="av">${esc(p.name.slice(0, 1).toUpperCase())}</div>
-      <div style="min-width:0"><div class="nm">${esc(p.name)}<span class="gs">${gs}</span></div>
+    const nm = p.name ? esc(p.name) : '<i style="font-weight:700;color:var(--mute)">sin nombre</i>';
+    return `<div class="pl ${p.hidden ? 'off' : ''}"><div class="av">${p.name ? esc(p.name.slice(0, 1).toUpperCase()) : '?'}</div>
+      <div style="min-width:0"><div class="nm">${nm}<span class="gs">${gs}</span></div>
       <div class="meta"><span>${ic('play')}${p.hosted}</span><span>${ic('link')}${p.joined}</span><span>${ic('eye')}${p.visits}</span>${dv}<span>${ic('clock')}${ago(p.last)}</span></div></div>
       <button type="button" data-v="${esc(p.vid)}" data-h="${p.hidden ? 0 : 1}" aria-label="${p.hidden ? 'Mostrar' : 'Ocultar'}" title="${p.hidden ? 'Mostrar' : 'Ocultar'}"><svg class="ic" viewBox="0 0 24 24">${ICON[p.hidden ? 'eye' : 'eyeoff']}</svg></button></div>`;
   }).join('');

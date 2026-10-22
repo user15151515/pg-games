@@ -185,7 +185,7 @@ end $$;
 revoke all on function public.admin_stats(int) from public, anon;
 grant execute on function public.admin_stats(int) to authenticated;
 
--- Lista de jugadores (alias) con su actividad, incluidos los ocultos.
+-- Lista de jugadores con su actividad, incluidos los ocultos y los que juegan sin escribir nombre.
 create or replace function public.admin_players(p_days int default 90)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
@@ -197,15 +197,22 @@ begin
   if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
   select coalesce(jsonb_agg(to_jsonb(r) order by r.last desc), '[]'::jsonb) into res
   from (
-    select pl.vid, pl.name, (h.vid is not null) as hidden, pl.first_seen as first, pl.last_seen as last,
-           (select count(*) from events e where e.vid = pl.vid and e.kind = 'game_start' and e.ts >= t0) as hosted,
-           (select count(*) from events e where e.vid = pl.vid and e.kind = 'room_join' and e.ts >= t0) as joined,
-           (select count(*) from events e where e.vid = pl.vid and e.kind = 'view' and e.ts >= t0) as visits,
-           (select coalesce(jsonb_agg(distinct e.game), '[]'::jsonb) from events e where e.vid = pl.vid and e.game <> '' and e.kind in ('game_start', 'room_join', 'room_create') and e.ts >= t0) as games,
-           (select e.p ->> 'dev' from events e where e.vid = pl.vid and e.kind = 'view' and e.p ? 'dev' order by e.ts desc limit 1) as dev
-    from players pl left join hidden_vids h on h.vid = pl.vid
-    where pl.last_seen >= t0
-    order by pl.last_seen desc limit 300
+    select v.vid, pl.name, (h.vid is not null) as hidden,
+           coalesce(pl.first_seen, (select min(e.ts) from events e where e.vid = v.vid)) as first,
+           greatest(pl.last_seen, (select max(e.ts) from events e where e.vid = v.vid)) as last,
+           (select count(*) from events e where e.vid = v.vid and e.kind = 'game_start' and e.ts >= t0) as hosted,
+           (select count(*) from events e where e.vid = v.vid and e.kind = 'room_join' and e.ts >= t0) as joined,
+           (select count(*) from events e where e.vid = v.vid and e.kind = 'view' and e.ts >= t0) as visits,
+           (select coalesce(jsonb_agg(distinct e.game), '[]'::jsonb) from events e where e.vid = v.vid and e.game <> '' and e.kind in ('game_start', 'room_join', 'room_create') and e.ts >= t0) as games,
+           (select e.p ->> 'dev' from events e where e.vid = v.vid and e.kind = 'view' and e.p ? 'dev' order by e.ts desc limit 1) as dev
+    from (
+      select vid from players where last_seen >= t0
+      union
+      select distinct vid from events where kind in ('game_start', 'room_join', 'room_create') and ts >= t0
+    ) v
+    left join players pl on pl.vid = v.vid
+    left join hidden_vids h on h.vid = v.vid
+    order by 5 desc limit 300
   ) r;
   return res;
 end $$;
