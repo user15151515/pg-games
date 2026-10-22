@@ -260,6 +260,7 @@ button.pink{background:var(--pink);color:var(--ink)}
         <button id="btnCreate" class="primary">Crear sala</button>
         <button id="btnJoinOpen" class="alt">Unirse</button>
       </div>
+      <button id="btnSolo" class="solo"><b>Individual</b><small>tú contra el reloj</small></button>
     </div>
     <div id="homeJoin" class="stack" hidden>
       <input id="codeIn" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" aria-label="Código de sala" placeholder="ABCD">
@@ -285,6 +286,7 @@ button.pink{background:var(--pink);color:var(--ink)}
   <div class="plist" id="plist"></div>
   <p id="cfgSum"></p>
   <button id="btnStart" class="big" hidden>Empezar</button>
+  <div id="soloRec" hidden></div>
   <p id="lobbyHint" role="status"></p>
   <details class="panel" id="cfgMore"><summary>Ajustes</summary><div class="body">
     <div id="cfgSet"></div>
@@ -484,6 +486,11 @@ const CATS_DEF = ['Nombre', 'Marca', 'Comida', 'Animal', 'País o ciudad'];
 const ROUND_OPTS = [3, 5, 8, 10], TIME_OPTS = [45, 60, 90, 120, 180];
 const GRACE = 5000, COLLECT = 1800, REVIEW_MAX = 75000, MIN_CATS = 3, MAX_CATS = 12;
 const CAT_KEY = 'pg_tutti_cats';
+// récords del modo individual (solo en este navegador)
+const REC_KEY = 'pg_tutti_solo_v1';
+const loadRec = () => { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } };
+const saveRec = r => { try { localStorage.setItem(REC_KEY, JSON.stringify(r)); } catch (e) {} };
+const recKey = c => [c.rounds, c.time, c.cats.map(x => key(x)).join('|')].join('.');
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function norm(s) {
   s = String(s).toLowerCase(); let o = '';
@@ -503,6 +510,8 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>Puntos</h3>
 <p>Una respuesta válida y única vale 10 puntos. Si otro jugador ha puesto lo mismo, vale 5 para cada uno. Vacía o con otra letra vale 0.</p>
 <p>Al acabar la ronda se ven las respuestas de todos. Si alguna no te convence, tócala para decir que no vale; si la mayoría de los demás jugadores la rechaza, se queda en 0. Cuando todos pulsáis «Listo» empieza la siguiente ronda, o pasa sola a los 75 segundos.</p>
+<h3>Individual</h3>
+<p>Juegas tú solo contra el reloj, con las mismas rondas, tiempo y categorías. «¡Basta!» acaba la ronda al momento. Al corregir eres tú quien decide: toca las respuestas que no valgan y se quedan en 0. Cada respuesta válida vale 10 puntos. El récord se guarda en este navegador, por separado para cada combinación de rondas, tiempo y categorías.</p>
 <h3>Letras</h3>
 <p>Solo salen letras con las que se puede jugar: no hay K, Ñ, Q, U, W, X, Y ni Z, y no se repite ninguna en la partida.</p>
 <h3>Ajustes</h3>
@@ -510,7 +519,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 </div>`;
 
 // ---------- estado local ----------
-let isHost = false, room = '', myId = null, myName = '';
+let isHost = false, solo = false, room = '', myId = null, myName = '';
 let S = null, lastV = -1, endAt = 0, total = 1, lastHeard = 0, gotState = false;
 let fieldsRound = -1, collectSent = -1, lastLetter = '', ansTm = 0, lastSec = -1;
 const lastSeen = {};
@@ -524,13 +533,13 @@ function loadCats() {
 function saveCats() { try { localStorage.setItem(CAT_KEY, JSON.stringify(H.settings.cats)); } catch (e) {} }
 function newH() {
   return { phase: 'lobby', players: [], settings: { cats: loadCats(), rounds: 5, time: 90 }, round: 0, letter: '', used: [], part: [],
-           endAt: 0, total: 1, stopper: null, ans: {}, fin: new Set(), flags: {}, ready: new Set(), rv: null, hist: [], tm: 0, v: 0, res: null };
+           solo: false, endAt: 0, total: 1, stopper: null, ans: {}, fin: new Set(), flags: {}, ready: new Set(), rv: null, hist: [], tm: 0, v: 0, res: null };
 }
 const byId = id => H.players.find(p => p.id === id);
 
 function pub() {
   return {
-    v: ++H.v, phase: H.phase, round: H.round, rounds: H.settings.rounds, letter: H.letter, settings: H.settings, stopper: H.stopper,
+    v: ++H.v, solo: !!H.solo, phase: H.phase, round: H.round, rounds: H.settings.rounds, letter: H.letter, settings: H.settings, stopper: H.stopper,
     left: Math.max(0, Math.round(H.endAt - now())), total: Math.round(H.total),
     rv: H.phase === 'review' ? H.rv : null, res: H.phase === 'ended' ? H.res : null,
     players: H.players.map(p => ({ id: p.id, name: p.name, color: p.color, on: p.on, back: p.back, score: p.score, ready: H.ready.has(p.id) }))
@@ -574,11 +583,11 @@ function pickLetter() {
 function startGame() {
   if (H.phase === 'play' || H.phase === 'collect' || H.phase === 'review') return;
   const ps = H.players.filter(p => p.on);
-  if (ps.length < 2) return;
+  if (ps.length < (H.solo ? 1 : 2)) return;
   H.players = ps;
   for (const p of H.players) { p.score = 0; p.back = false; }
   H.round = 0; H.used = []; H.hist = []; H.res = null;
-  PGT.start(H.players.length, false);
+  PGT.start(H.players.length, !!H.solo);
   nextRound();
 }
 function nextRound() {
@@ -595,7 +604,9 @@ function endPlay() {
 function finishCollect() {
   if (H.phase !== 'collect') return;
   clearTimeout(H.tm); computeReview();
-  H.phase = 'review'; H.ready = new Set(); H.total = REVIEW_MAX; H.endAt = now() + REVIEW_MAX; at(endReview); push();
+  H.phase = 'review'; H.ready = new Set();
+  if (H.solo) { clearTimeout(H.tm); H.total = 1; H.endAt = now(); push(); return; }   // en individual la corrección no tiene límite de tiempo
+  H.total = REVIEW_MAX; H.endAt = now() + REVIEW_MAX; at(endReview); push();
 }
 function computeReview() {
   const L = H.letter.toLowerCase();
@@ -606,7 +617,8 @@ function computeReview() {
       const k = key(a), ok = k[0] === L;
       const fl = [...(H.flags[ci + '|' + id] || [])].filter(v => byId(v) && byId(v).on);
       const others = H.players.filter(p => p.on && p.id !== id).length;
-      rows.push({ id, a, k, ok, fl, valid: ok && !(others > 0 && fl.length * 2 > others), pts: 0 });
+      // en individual vale lo que el propio jugador no haya marcado; en sala, lo que no rechace la mayoría de los demás
+      rows.push({ id, a, k, ok, fl, valid: ok && (H.solo ? !fl.length : !(others > 0 && fl.length * 2 > others)), pts: 0 });
     }
     const cnt = {}; for (const r of rows) if (r.valid) cnt[r.k] = (cnt[r.k] || 0) + 1;
     for (const r of rows) r.pts = r.valid ? (cnt[r.k] > 1 ? 5 : 10) : 0;
@@ -624,7 +636,7 @@ function endReview() {
 }
 function endGame() {
   clearTimeout(H.tm); H.phase = 'ended'; H.rv = null;
-  PGT.end(H.players.length, false, null);
+  PGT.end(H.players.length, !!H.solo, H.solo && H.players[0] ? H.players[0].score : null);
   const rank = H.players.slice().sort((a, b) => b.score - a.score)
     .map(p => ({ id: p.id, score: p.score, rounds: H.hist.map(h => h.pts[p.id] || 0) }));
   const rounds = H.hist.map(h => {
@@ -632,7 +644,13 @@ function endGame() {
     for (const c of h.cats) for (const r of c.rows) (by[r.id] = by[r.id] || []).push([c.name, r.a, r.pts]);
     return { letter: h.letter, by };
   });
-  H.res = { rank, rounds }; push();
+  H.res = { rank, rounds };
+  if (H.solo && H.players[0]) {
+    const rec = loadRec(), k = recKey(H.settings), prev = rec[k] || 0, sc = H.players[0].score;
+    if (sc > prev) { rec[k] = sc; saveRec(rec); }
+    H.res.solo = { score: sc, rec: Math.max(prev, sc), isNew: sc > prev && sc > 0 };
+  }
+  push();
 }
 function allIn(list) { return list.every(id => { const p = byId(id); return !p || !p.on || H.fin.has(id); }); }
 
@@ -649,13 +667,15 @@ function fromPlayer(id, m) {
     setAns(m.a);
     const a = H.ans[id] || [];
     if (a.length < nc || !a.every(x => startsOk(x, H.letter))) return;
-    H.stopper = id; H.endAt = Math.min(H.endAt, now() + GRACE); at(endPlay);
+    H.stopper = id;
+    if (H.solo) { endPlay(); return; }   // en individual no hay que esperar a nadie
+    H.endAt = Math.min(H.endAt, now() + GRACE); at(endPlay);
     evt({ k: 'stop', name: byId(id).name }); push();
   } else if (m.t === 'flag') {
     if (H.phase !== 'review' || !H.rv) return;
     const ci = +m.c, aid = String(m.id);
     const row = H.rv.cats[ci] && H.rv.cats[ci].rows.find(r => r.id === aid);
-    if (!row || !row.ok || aid === id || !byId(id) || !byId(id).on) return;
+    if (!row || !row.ok || (aid === id && !H.solo) || !byId(id) || !byId(id).on) return;
     const k = ci + '|' + aid, set = H.flags[k] || (H.flags[k] = new Set());
     if (set.has(id)) set.delete(id); else set.add(id);
     computeReview(); push();
@@ -700,10 +720,10 @@ function hostRecv(m, f) {
 
 // ---------- conexión ----------
 function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
-function fail(msg) { if (/Sin conexión/.test(msg)) PGT.ev('net_fail'); netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
+function fail(msg) { if (/Sin conexión/.test(msg)) PGT.ev('net_fail'); netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
 
 async function createRoom() {
-  room = randCode(); myId = 'host'; isHost = true;
+  room = randCode(); myId = 'host'; isHost = true; solo = false;
   net.onMsg = hostRecv;
   try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   H = newH(); addPlayer('host', myName);
@@ -716,8 +736,16 @@ async function createRoom() {
   }, BEAT));
   push();
 }
+function startSolo() {
+  myName = nameIn.value.trim() || 'Tú';
+  if (nameIn.value.trim()) localStorage.setItem('jt_name', myName);
+  solo = true; isHost = true; myId = 'host'; room = '';
+  H = newH(); H.solo = true; addPlayer('host', myName);
+  history.replaceState(null, '', location.pathname);
+  setHome(''); push();
+}
 async function joinRoom(code) {
-  room = code; isHost = false; myId = uid(10); lastV = -1; gotState = false;
+  room = code; isHost = false; solo = false; myId = uid(10); lastV = -1; gotState = false;
   net.onMsg = onMsg;
   try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   lastHeard = now();
@@ -743,7 +771,7 @@ function hostGone(why) {
 }
 function goHome() { location.href = location.pathname; }
 function leave() {
-  if (isHost && H && H.players.some(p => p.on && p.id !== 'host') && !confirm('Si sales, la sala se cierra para todos. ¿Salir?')) return;
+  if (isHost && !solo && H && H.players.some(p => p.on && p.id !== 'host') && !confirm('Si sales, la sala se cierra para todos. ¿Salir?')) return;
   if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' });
   setTimeout(goHome, 150);
 }
@@ -768,7 +796,7 @@ function link() { const u = new URL(location.href); u.search = '?sala=' + room; 
 function applyState(s) {
   const prev = S ? S.phase : null;
   S = s; endAt = now() + s.left; total = Math.max(1, s.total || 1);
-  if (s.phase === 'ended' && prev !== 'ended') play(s.res && s.res.rank[0] && s.res.rank[0].id === myId ? 'win' : 'lose');
+  if (s.phase === 'ended' && prev !== 'ended') play((s.solo ? s.res && s.res.solo && s.res.solo.isNew : s.res && s.res.rank[0] && s.res.rank[0].id === myId) ? 'win' : 'lose');
   const me = s.players.find(p => p.id === myId);
   const inLobby = s.phase === 'lobby' || (s.phase === 'ended' && me && me.back);
   if (s.phase === 'lobby' || s.phase === 'ended') { fieldsRound = -1; collectSent = -1; }
@@ -783,7 +811,10 @@ function ctlSeg(k, vals, labels, val) {
 function renderLobby() {
   if (!S) return;
   const ended = S.phase === 'ended', c = S.settings;
+  const sl = !!S.solo;
   $('#lobbyCode').textContent = room;
+  $('#codecard').hidden = sl; $('#plist').hidden = sl; $('#soloRec').hidden = !sl;
+  if (sl) { const r = loadRec()[recKey(c)]; $('#soloRec').innerHTML = r ? `Récord con estos ajustes: <b>${r}</b> puntos` : 'Aún no hay récord con estos ajustes'; }
   $('#plist').innerHTML = S.players.filter(p => p.on || !ended).map(p => {
     const wait = ended && !p.back;
     const tag = wait ? 'viendo resultados' : p.id === 'host' ? 'anfitrión' : (p.id === myId ? 'tú' : '');
@@ -799,8 +830,8 @@ function renderLobby() {
   $('#btnStart').hidden = !isHost;
   if (isHost) {
     const count = S.players.filter(p => p.on).length;
-    $('#btnStart').disabled = count < 2;
-    $('#lobbyHint').textContent = count < 2 ? 'Comparte el enlace para empezar.' : '';
+    $('#btnStart').disabled = count < (sl ? 1 : 2);
+    $('#lobbyHint').textContent = !sl && count < 2 ? 'Comparte el enlace para empezar.' : '';
   } else $('#lobbyHint').textContent = 'Esperando al anfitrión…';
 }
 
@@ -826,7 +857,7 @@ function sendAns() { clearTimeout(ansTm); ansTm = setTimeout(() => act({ t: 'ans
 
 function renderGame() {
   const s = S, inPlay = s.phase === 'play' || s.phase === 'collect';
-  $('#gCode').textContent = room; $('#gInfo').textContent = `Ronda ${s.round}/${s.rounds}`;
+  $('#gCode').textContent = s.solo ? 'Individual' : room; $('#gInfo').textContent = `Ronda ${s.round}/${s.rounds}`;
   const L = $('#letter'); L.textContent = s.letter;
   if (s.letter !== lastLetter) { L.classList.remove('pop'); void L.offsetWidth; L.classList.add('pop'); lastLetter = s.letter; }
   $('#form').hidden = s.phase === 'review'; $('#review').hidden = s.phase !== 'review';
@@ -849,8 +880,8 @@ function renderReview(s) {
   const rv = s.rv; if (!rv) return;
   $('#rvCats').innerHTML = rv.cats.map((c, ci) => `<div class="rcat"><h4>${esc(c.name)}</h4>` + (c.rows.length ? c.rows.map(r => {
     const p = s.players.find(q => q.id === r.id) || { name: '?', color: 0 };
-    const tag = !r.ok ? 'No empieza por ' + s.letter : r.fl.length ? r.fl.length + ' en contra' : '';
-    return `<button type="button" class="rrow ${r.valid ? '' : 'no'} ${r.fl.includes(myId) ? 'flagged' : ''}" data-c="${ci}" data-id="${esc(r.id)}" ${r.id === myId || !r.ok ? 'disabled' : ''}>` +
+    const tag = !r.ok ? 'No empieza por ' + s.letter : r.fl.length ? (s.solo ? 'No vale' : r.fl.length + ' en contra') : '';
+    return `<button type="button" class="rrow ${r.valid ? '' : 'no'} ${r.fl.includes(myId) ? 'flagged' : ''}" data-c="${ci}" data-id="${esc(r.id)}" ${(r.id === myId && !s.solo) || !r.ok ? 'disabled' : ''}>` +
       `${tok(p, 'sm')}<span class="ra">${esc(r.a)}${tag ? `<small>${esc(tag)}</small>` : ''}</span><span class="pts">+${r.pts}</span></button>`;
   }).join('') : '<p class="emp">Nadie ha respondido.</p>') + '</div>').join('');
   $('#rvScore').innerHTML = s.players.filter(p => p.on || s.rv.pts[p.id]).slice()
@@ -858,14 +889,15 @@ function renderReview(s) {
     .map(p => `<div>${tok(p, 'sm')}<span>${esc(p.name)}</span><em>${p.score + (rv.pts[p.id] || 0)}</em><small>+${rv.pts[p.id] || 0}</small></div>`).join('');
   const me = s.players.find(p => p.id === myId), act_ = s.players.filter(p => p.on);
   $('#btnReady').textContent = me && me.ready ? 'Esperando a los demás' : (s.round >= s.rounds ? 'Ver resultados' : 'Listo');
-  $('#rvHint').textContent = `${act_.filter(p => p.ready).length} de ${act_.length} listos`;
+  $('#rvHint').textContent = s.solo ? '' : `${act_.filter(p => p.ready).length} de ${act_.length} listos`;
+  $('#rvHead span').textContent = s.solo ? 'Toca las respuestas que no valgan.' : 'Toca una respuesta si no vale.';
 }
 
 function renderResults(s) {
   const r = s.res || { rank: [], rounds: [] };
   const top = r.rank[0], winners = r.rank.filter(x => top && x.score === top.score);
   const nm = id => (s.players.find(p => p.id === id) || { name: '?' }).name;
-  $('#overTitle').textContent = !top ? 'Fin' : winners.length > 1 ? 'Empate' : (top.id === myId ? 'Has ganado' : 'Gana ' + nm(top.id));
+  $('#overTitle').textContent = s.solo && r.solo ? r.solo.score + ' puntos' : !top ? 'Fin' : winners.length > 1 ? 'Empate' : (top.id === myId ? 'Has ganado' : 'Gana ' + nm(top.id));
   $('#rank').innerHTML = r.rank.map((x, i) => {
     const p = s.players.find(q => q.id === x.id); if (!p) return '';
     const lines = r.rounds.map((rd, ri) => {
@@ -876,7 +908,8 @@ function renderResults(s) {
   }).join('');
   const b = $('#btnAgain'); b.textContent = 'Jugar de nuevo';
   b.onclick = () => { if (isHost) { const p = byId('host'); if (p) { p.back = true; push(); } } else act({ t: 'again' }); };
-  $('#btnExit').hidden = false; $('#overHint').textContent = '';
+  $('#btnExit').hidden = false;
+  $('#overHint').textContent = s.solo && r.solo ? (r.solo.isNew ? '¡Nuevo récord!' : 'Récord: ' + r.solo.rec + ' puntos') : '';
 }
 
 let msgTm = 0;
@@ -898,7 +931,7 @@ function showEvent(e) {
     $('#clock').textContent = st ? `Basta de ${st} · ${sec}` : sec + ' s';
     if (sec !== lastSec && sec <= 5 && sec > 0) play('tick', true);
   } else if (S.phase === 'collect') { $('#fuse').firstElementChild.style.width = '0%'; $('#clock').textContent = 'Recogiendo respuestas…'; }
-  else if (S.phase === 'review') $('#rvClock').textContent = sec + ' s';
+  else if (S.phase === 'review') { $('#rvClock').textContent = S.solo ? '' : sec + ' s'; $('#clock').textContent = ''; }
   lastSec = sec;
 })();
 
@@ -916,8 +949,9 @@ function getName() {
   if (!n) { setHome('Escribe tu nombre.', 'bad'); nameIn.focus(); return null; }
   localStorage.setItem('jt_name', n); myName = n; setHome(''); return n;
 }
-function busy() { for (const b of ['#btnCreate', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome('Conectando…'); }
+function busy() { for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome('Conectando…'); }
 $('#btnCreate').onclick = () => { if (getName()) { busy(); createRoom(); } };
+$('#btnSolo').onclick = startSolo;
 $('#btnJoinOpen').onclick = () => { $('#homeCreate').hidden = true; $('#homeJoin').hidden = false; setHome(''); $('#codeIn').focus(); };
 $('#btnJoinBack').onclick = () => { $('#homeJoin').hidden = true; $('#homeCreate').hidden = false; setHome(''); };
 $('#btnJoin').onclick = () => {
