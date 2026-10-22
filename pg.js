@@ -1,6 +1,6 @@
 // Estadísticas propias y anónimas de pg games (proyecto Supabase de pg games, sin terceros).
 // Guarda un identificador aleatorio en este navegador y eventos sueltos: visita, sala creada o unida,
-// partida empezada o terminada y fallos de conexión. No lee nombres, palabras ni textos de los jugadores.
+// partida empezada o terminada y fallos de conexión. Junto a las acciones de juego guarda el alias que el jugador escribe (máx. 14 caracteres), nada más: ni palabras ni textos.
 // Se desactiva con «No rastrear» del navegador, en localhost, en el navegador del administrador y en los dispositivos abiertos con ?notrack=1.
 (() => {
   const URL = 'https://acsrnjowxvjamiybsjkx.supabase.co';
@@ -19,8 +19,10 @@
   let sid = '', first = false;
   try { sid = sessionStorage.getItem('pg_sid') || ''; if (!/^[a-z0-9]{6,24}$/.test(sid)) { sid = rnd(12); sessionStorage.setItem('pg_sid', sid); first = true; } } catch (e) { sid = rnd(12); first = true; }
 
+  const alias = () => { try { return (localStorage.getItem('jt_name') || '').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 14); } catch (e) { return ''; } };
   const send = (kind, props) => {
     try {
+      if (kind !== 'view' && kind !== 'net_fail') { const nm = alias(); if (nm) props = Object.assign({}, props, { name: nm }); }
       fetch(URL + '/rest/v1/rpc/pg_log', {
         method: 'POST', keepalive: true,
         headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY },

@@ -121,6 +121,38 @@ main.load{opacity:.55}
 .feed .tm{color:var(--mute);font-size:13px;white-space:nowrap}
 .tag{display:inline-block;background:var(--wash);border-radius:99px;padding:1px 9px;font-size:13px;margin-left:6px}
 .tag.bad{background:#ff5c8a33;color:#a3123f}
+
+/* secciones */
+.tabs{display:flex;gap:6px;margin:4px 0 16px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{box-shadow:none;border-width:2px;border-radius:14px;padding:9px 16px;font-size:16px;background:var(--white);color:var(--ink);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--paper)}
+.tabs button:hover:not(:disabled){transform:none;box-shadow:none;background:var(--wash)}
+.tabs button[aria-selected=true]:hover:not(:disabled){background:var(--ink)}
+.tabs button:active:not(:disabled){transform:none;box-shadow:none}
+.pane{display:grid;gap:16px}
+.pane[hidden]{display:none}
+.kpis.four{grid-template-columns:repeat(2,1fr)}
+@media(min-width:720px){.kpis.four{grid-template-columns:repeat(4,1fr)}}
+.kpis.four .kpi.hero{grid-column:span 2}
+
+/* jugadores */
+.plist{display:grid;gap:8px}
+.pl{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:2px solid var(--ink);border-radius:14px;background:var(--white)}
+.pl.off{opacity:.5;background:var(--wash)}
+.pl .av{width:44px;height:44px;border-radius:12px;border:2px solid var(--ink);display:grid;place-items:center;font-weight:800;font-size:20px;background:var(--paper)}
+.pl .nm{font-weight:800;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.pl .meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-weight:700;font-size:13px;color:var(--mute);margin-top:2px}
+.pl .meta span{display:inline-flex;align-items:center;gap:4px}
+.pl .meta .ic{width:14px;height:14px;stroke-width:2.8}
+.pl .gs{display:inline-flex;gap:3px}
+.pl .gs i{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--ink);display:inline-block}
+.pl button{box-shadow:none;border-width:2px;border-radius:99px;padding:7px 9px;background:transparent;color:var(--ink);display:grid;place-items:center}
+.pl button:hover:not(:disabled){transform:none;box-shadow:none;background:var(--wash)}
+.pl button:active:not(:disabled){transform:none;box-shadow:none}
+.pbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.pbar .chips{flex-wrap:wrap}
+.pbar .cnt{margin-left:auto;font-weight:800;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -144,20 +176,30 @@ main.load{opacity:.55}
     <button class="icon alt" id="refresh" type="button" aria-label="Actualizar"><svg class="ic" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></svg></button>
     <button class="icon alt" id="out" type="button" aria-label="Salir"><svg class="ic" viewBox="0 0 24 24"><path d="M10 4H5v16h5"/><path d="M15 8l4 4-4 4"/><path d="M19 12H9"/></svg></button>
   </div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones"></nav>
   <main id="main" class="load">
-    <section class="kpis" id="kpis"></section>
-    <section class="card"><h2 id="trH"></h2><div class="chart" id="trend"></div></section>
-    <section class="grid" id="games"></section>
-    <div class="grid">
-      <section class="card"><h2 title="Horas" aria-label="Horas"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></h2><div id="heat"></div></section>
+    <div class="pane" id="p-home" role="tabpanel">
+      <section class="kpis four" id="kpisHome"></section>
+      <section class="card"><h2 id="trH"></h2><div class="chart" id="trend"></div></section>
+      <section class="grid" id="gamesMini"></section>
+      <section class="card"><h2 title="Actividad" aria-label="Actividad"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></h2><div class="feed" id="feed"></div></section>
+    </div>
+    <div class="pane" id="p-games" role="tabpanel" hidden>
+      <section class="grid" id="games"></section>
       <section class="card"><h2 title="Jugadores por sala" aria-label="Jugadores por sala"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14c2.5 0 4 2 4 5"/></svg></h2><div id="sizes"></div></section>
     </div>
-    <div class="grid">
-      <section class="card"><h2 title="Dispositivos" aria-label="Dispositivos"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></h2><div id="devices"></div></section>
-      <section class="card"><h2 title="Origen" aria-label="Origen"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12h12"/><path d="M12 6l6 6-6 6"/></svg></h2><div id="sources"></div></section>
-      <section class="card"><h2 title="Nuevos y recurrentes" aria-label="Nuevos y recurrentes"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/></svg></h2><div id="people"></div></section>
+    <div class="pane" id="p-traffic" role="tabpanel" hidden>
+      <section class="kpis four" id="kpisTraffic"></section>
+      <section class="card"><h2 title="Horas" aria-label="Horas"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></h2><div id="heat"></div></section>
+      <div class="grid">
+        <section class="card"><h2 title="Dispositivos" aria-label="Dispositivos"><svg class="ic" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></h2><div id="devices"></div></section>
+        <section class="card"><h2 title="Origen" aria-label="Origen"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12h12"/><path d="M12 6l6 6-6 6"/></svg></h2><div id="sources"></div></section>
+        <section class="card"><h2 title="Nuevos y recurrentes" aria-label="Nuevos y recurrentes"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/></svg></h2><div id="people"></div></section>
+      </div>
     </div>
-    <section class="card"><h2 title="Actividad" aria-label="Actividad"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></h2><div class="feed" id="feed"></div></section>
+    <div class="pane" id="p-players" role="tabpanel" hidden>
+      <section class="card"><div class="pbar" id="pbar"></div><div class="plist" id="plist"></div></section>
+    </div>
   </main>
 </div>
 <div class="tip" id="tip"></div>
@@ -196,6 +238,9 @@ const ICON = {
   bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4"/><path d="M12 13v4M8 20h8"/>',
   type: '<path d="M4 7V5h16v2M12 5v14M9 19h6"/>',
+  eyeoff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.3 6.8C3.8 8.5 2 12 2 12s3.6 7 10 7c1.5 0 2.8-.4 4-.9"/>',
+  home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  chart: '<path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'
 };
 const ic = (n, cls) => `<svg class="ic ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
@@ -237,7 +282,7 @@ async function load() {
 async function start() {
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) { showLogin(); return; }
-  showApp(); chips(); await load();
+  showApp(); chips(); tabs(); await load();
   clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(); }, 60000);
 }
 
@@ -281,6 +326,7 @@ function spark(vals, color) {
 const niceMax = v => { if (v <= 4) return 4; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; };
 const shortDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }); };
 const longDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }); };
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ago = t => {
   const s = (Date.now() - new Date(t).getTime()) / 1000;
   if (s < 90) return 'ahora'; if (s < 3600) return Math.round(s / 60) + ' min'; if (s < 86400) return Math.round(s / 3600) + ' h';
@@ -294,20 +340,23 @@ function renderKpis() {
   const fin = c.started ? Math.round(c.finished / c.started * 100) : null, finP = p.started ? Math.round(p.finished / p.started * 100) : null;
   const ret = c.visitors ? Math.round((c.visitors - data.new) / c.visitors * 100) : null;
   const retP = p.visitors ? Math.round((p.visitors - data.prev_new) / p.visitors * 100) : null;
-  const K = [
+  const html = K => K.map(([cls, i, l, v, d, s]) => `<div class="card kpi ${cls}"><div class="l">${ic(i)}${l}</div><div class="v">${v}</div>${d}${s}</div>`).join('');
+  $('#kpisHome').innerHTML = html([
     ['hero', 'play', 'Partidas', fmt(c.started), delta(c.started, p.started), spark(dl.map(x => x.g), PINK)],
     ['', 'eye', 'Visitantes', fmt(c.visitors), delta(c.visitors, p.visitors), spark(dl.map(x => x.v), INK)],
     ['', 'user', 'Jugadores', fmt(c.players), delta(c.players, p.players), ''],
-    ['', 'grid', 'Visitas', fmt(c.views), delta(c.views, p.views), spark(dl.map(x => x.pv), INK)],
     ['', 'door', 'Salas', fmt(c.rooms), delta(c.rooms, p.rooms), ''],
-    ['', 'users', 'Por sala', c.avg_n == null ? '–' : nf1.format(c.avg_n), delta(c.avg_n, p.avg_n), ''],
-    ['', 'clock', 'Duración', dur(c.avg_dur), delta(c.avg_dur, p.avg_dur), ''],
     ['', 'flag', 'Terminan', fin == null ? '–' : fin + ' %', delta(fin, finP), ''],
+    [c.fails > 0 ? 'warn' : '', 'warn', 'Fallos', fmt(c.fails), '', '']
+  ]);
+  $('#kpisTraffic').innerHTML = html([
+    ['hero', 'eye', 'Visitantes', fmt(c.visitors), delta(c.visitors, p.visitors), spark(dl.map(x => x.v), INK)],
+    ['', 'grid', 'Visitas', fmt(c.views), delta(c.views, p.views), spark(dl.map(x => x.pv), INK)],
     ['', 'spark', 'Nuevos', fmt(data.new), delta(data.new, data.prev_new), ''],
     ['', 'repeat', 'Vuelven', ret == null ? '–' : ret + ' %', delta(ret, retP), ''],
-    [c.fails > 0 ? 'warn' : '', 'warn', 'Fallos', fmt(c.fails), '', '']
-  ];
-  $('#kpis').innerHTML = K.map(([cls, i, l, v, d, s]) => `<div class="card kpi ${cls}"><div class="l">${ic(i)}${l}</div><div class="v">${v}</div>${d}${s}</div>`).join('');
+    ['', 'users', 'Por sala', c.avg_n == null ? '–' : nf1.format(c.avg_n), delta(c.avg_n, p.avg_n), ''],
+    ['', 'clock', 'Duración', dur(c.avg_dur), delta(c.avg_dur, p.avg_dur), '']
+  ]);
 }
 
 function drawTrend() {
@@ -360,6 +409,14 @@ function renderGames() {
       <div class="facts">${facts.map(([i, v, l]) => `<div><b>${v}</b><small>${ic(i)}${l}</small></div>`).join('')}</div></article>`;
   }).join('');
   for (const el of document.querySelectorAll('#games .split i')) { /* sin hover: las cifras están en la leyenda */ }
+}
+
+function renderGamesMini() {
+  const tot = data.games.reduce((a, g) => a + g.started, 0), max = Math.max(1, ...data.games.map(g => g.started));
+  $('#gamesMini').innerHTML = '<section class="card" style="grid-column:1/-1"><div class="rows">' + data.games.map(g => {
+    const G = GAMES[g.game];
+    return `<div class="r" style="grid-template-columns:150px 1fr 52px"><span style="display:flex;align-items:center;gap:8px"><span class="gi" style="width:28px;height:28px;border-radius:9px;border:2px solid ${INK};display:grid;place-items:center;background:${G.color}">${ic(GICON[g.game])}</span>${G.name}</span><div class="t"><i style="width:${g.started / max * 100}%;background:${G.color}"></i></div><b>${nf.format(g.started)}</b></div>`;
+  }).join('') + '</div></section>';
 }
 
 function renderHeat() {
@@ -418,14 +475,62 @@ function renderFeed() {
   host.innerHTML = data.recent.slice(0, 10).map(r => {
     const G = GAMES[r.g], [i, l] = K[r.k] || ['spark', r.k];
     const tag = r.k === 'net_fail' ? '' : r.solo ? `<span class="tag">${ic('user')}</span>` : r.n ? `<span class="tag">×${r.n}</span>` : '';
-    return `<div class="f"><div class="gi" style="background:${G ? G.color : WHITE}">${ic(G ? GICON[r.g] : 'grid')}</div><span class="w">${G ? G.name : ''} · ${l}${tag}</span><span class="tm">${ago(r.t)}</span></div>`;
+    const who = r.name ? `<b>${esc(r.name)}</b> · ` : '';
+    return `<div class="f"><div class="gi" style="background:${G ? G.color : WHITE}">${ic(G ? GICON[r.g] : 'grid')}</div><span class="w">${who}${G ? G.name : ''} · ${l}${tag}</span><span class="tm">${ago(r.t)}</span></div>`;
   }).join('');
 }
 
 function render() {
   $('#liveN').textContent = data.now; $('#live').classList.toggle('zero', !data.now);
-  renderKpis(); renderTrend(); renderGames(); renderHeat(); renderSizes(); renderDevices(); renderSources(); renderPeople(); renderFeed();
+  renderKpis(); renderTrend(); renderGamesMini(); renderGames(); renderHeat(); renderSizes(); renderDevices(); renderSources(); renderPeople(); renderFeed();
+  if (tab === 'players') loadPlayers();
 }
+
+/* ---------- pestañas ---------- */
+const TABS = [['home', 'home', 'Resumen'], ['games', 'play', 'Juegos'], ['traffic', 'chart', 'Tráfico'], ['players', 'users', 'Jugadores']];
+let tab = 'home';
+try { const t = localStorage.getItem('pg_admin_tab'); if (TABS.some(x => x[0] === t)) tab = t; } catch (e) {}
+function tabs() {
+  $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button type="button" role="tab" data-t="${k}" aria-selected="${k === tab}">${ic(i)}${l}</button>`).join('');
+  for (const [k] of TABS) $('#p-' + k).hidden = k !== tab;
+  if (data) drawTrend();
+}
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  tab = b.dataset.t; try { localStorage.setItem('pg_admin_tab', tab); } catch (x) {}
+  tabs(); if (tab === 'players') loadPlayers(); scrollTo({ top: 0 });
+});
+
+/* ---------- jugadores ---------- */
+let players = null, pfilter = 'real';
+async function loadPlayers() {
+  const { data: d, error } = await sb.rpc('admin_players', { p_days: days });
+  if (error) return;
+  players = d; renderPlayers();
+}
+function renderPlayers() {
+  if (!players) return;
+  const real = players.filter(p => !p.hidden), off = players.filter(p => p.hidden);
+  const F = [['real', 'Reales', real.length], ['off', 'Ocultos', off.length], ['all', 'Todos', players.length]];
+  $('#pbar').innerHTML = `<div class="chips" role="group" aria-label="Filtro">${F.map(([k, l, n]) => `<button type="button" data-f="${k}" aria-pressed="${k === pfilter}">${l} ${n}</button>`).join('')}</div>`;
+  const list = pfilter === 'real' ? real : pfilter === 'off' ? off : players;
+  if (!list.length) { $('#plist').innerHTML = '<div class="empty">–</div>'; return; }
+  $('#plist').innerHTML = list.map(p => {
+    const gs = (p.games || []).filter(g => GAMES[g]).map(g => `<i style="background:${GAMES[g].color}" title="${GAMES[g].name}"></i>`).join('');
+    const dv = p.dev && DEV[p.dev] ? `<span>${ic(p.dev === 'd' ? 'grid' : 'user')}${DEV[p.dev][0]}</span>` : '';
+    return `<div class="pl ${p.hidden ? 'off' : ''}"><div class="av">${esc(p.name.slice(0, 1).toUpperCase())}</div>
+      <div style="min-width:0"><div class="nm">${esc(p.name)}<span class="gs">${gs}</span></div>
+      <div class="meta"><span>${ic('play')}${p.hosted}</span><span>${ic('link')}${p.joined}</span><span>${ic('eye')}${p.visits}</span>${dv}<span>${ic('clock')}${ago(p.last)}</span></div></div>
+      <button type="button" data-v="${esc(p.vid)}" data-h="${p.hidden ? 0 : 1}" aria-label="${p.hidden ? 'Mostrar' : 'Ocultar'}" title="${p.hidden ? 'Mostrar' : 'Ocultar'}"><svg class="ic" viewBox="0 0 24 24">${ICON[p.hidden ? 'eye' : 'eyeoff']}</svg></button></div>`;
+  }).join('');
+}
+$('#pbar').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; pfilter = b.dataset.f; renderPlayers(); });
+$('#plist').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return; b.disabled = true;
+  const { error } = await sb.rpc('admin_hide', { p_vid: b.dataset.v, p_hide: b.dataset.h === '1' });
+  if (error) { b.disabled = false; return; }
+  await Promise.all([loadPlayers(), (busy = false, load())]);
+});
 
 start();
 })();
