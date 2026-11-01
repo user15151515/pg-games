@@ -447,7 +447,7 @@ const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>La partida</h3>
 <p>En cada turno aparece una sílaba de 2 o 3 letras. Quien tiene la bomba escribe una palabra en castellano que contenga esas letras seguidas, en cualquier posición: con <span class="ex">ent</span> valen <span class="ex">gente</span>, <span class="ex">entrada</span> o <span class="ex">cliente</span>.</p>
-<p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida; sin vidas quedas eliminado y gana quien se queda en pie.</p>
+<p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida y el siguiente recibe la bomba con la misma sílaba; sin vidas quedas eliminado y gana quien se queda en pie.</p>
 <p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS].join(' ').toUpperCase()}</b>.</p>
 <p>El diccionario tiene unas 636.000 formas, con plurales y conjugaciones, aunque puede que alguna palabra falte.</p>
 <h3>Individual</h3>
@@ -686,7 +686,11 @@ function checkEnd() {
 // kind: 'pass' (palabra correcta), 'boom' (explota), 'leave' (se va el que tenía la bomba)
 function advance(kind) {
   if (checkEnd()) return;
-  H.turn = pickNext(kind); H.syl = pickSyl(); H.typing = '';
+  const prev = H.turn;
+  H.turn = pickNext(kind);
+  // si explota, la sílaba que nadie ha resuelto pasa al siguiente (en individual, o si repite el mismo, sale otra)
+  if (!(kind === 'boom' && !H.solo && H.turn !== prev)) H.syl = pickSyl();
+  H.typing = '';
   if (kind === 'boom') newFuse(); else if (!(H.solo && isRush(H.settings))) passFuse(kind === 'pass');
   push();
 }
