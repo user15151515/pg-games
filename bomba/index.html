@@ -447,7 +447,7 @@ const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>La partida</h3>
 <p>En cada turno aparece una sílaba de 2 o 3 letras. Quien tiene la bomba escribe una palabra en castellano que contenga esas letras seguidas, en cualquier posición: con <span class="ex">ent</span> valen <span class="ex">gente</span>, <span class="ex">entrada</span> o <span class="ex">cliente</span>.</p>
-<p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida y el siguiente recibe la bomba con la misma sílaba; sin vidas quedas eliminado y gana quien se queda en pie.</p>
+<p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida y el siguiente recibe la bomba con la misma sílaba, salvo que ya la haya intentado: entonces sale otra; sin vidas quedas eliminado y gana quien se queda en pie.</p>
 <p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS].join(' ').toUpperCase()}</b>.</p>
 <p>El diccionario tiene unas 636.000 formas, con plurales y conjugaciones, aunque puede que alguna palabra falte.</p>
 <h3>Individual</h3>
@@ -646,7 +646,7 @@ function startGame() {
   for (const p of H.players) { p.lives = H.settings.lives; p.alive = true; p.spec = false; p.back = false; p.letters = ''; p.words = 0; p.streak = 0; p.bestStreak = 0; p.log = []; }
   H.used = new Set(); H.recent = []; H.winner = null; H.res = null; H.fails = []; H.out = []; H.phase = 'playing'; H.dir = 1; PGT.start(ps.length, !!H.solo);
   H.turn = H.players[Math.random() * H.players.length | 0].id;
-  H.syl = pickSyl(); H.typing = '';
+  H.syl = pickSyl(); H.typing = ''; H.tried = new Set();
   if (H.solo && isRush(H.settings)) { for (const p of H.players) p.lives = 1; setFuse(H.settings.total * 1000); } else newFuse();
   push();
 }
@@ -688,8 +688,11 @@ function advance(kind) {
   if (checkEnd()) return;
   const prev = H.turn;
   H.turn = pickNext(kind);
-  // si explota, la sílaba que nadie ha resuelto pasa al siguiente (en individual, o si repite el mismo, sale otra)
-  if (!(kind === 'boom' && !H.solo && H.turn !== prev)) H.syl = pickSyl();
+  // si explota, la sílaba que nadie ha resuelto pasa al siguiente; sale otra si ya la ha intentado
+  // (le explotó con ella), en individual o si repite el mismo
+  if (!H.tried) H.tried = new Set();
+  if (kind === 'boom') H.tried.add(prev);
+  if (kind === 'boom' && !H.solo && H.turn !== prev && !H.tried.has(H.turn)) {} else { H.syl = pickSyl(); H.tried = new Set(); }
   H.typing = '';
   if (kind === 'boom') newFuse(); else if (!(H.solo && isRush(H.settings))) passFuse(kind === 'pass');
   push();
