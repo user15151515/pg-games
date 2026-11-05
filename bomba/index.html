@@ -440,17 +440,18 @@ const SCHEMA = [
   { k: 'floor',   ctx: 'multi', label: 'Mínimo al recibir la bomba', vals: [4, 5, 6, 8], labels: ['4', '5', '6', '8'], off: c => c.mode === 'turn' },
   { k: 'order',   ctx: 'multi', label: 'Orden de pase',              vals: ['ring', 'bounce', 'random'], labels: ['Círculo', 'Rebote', 'Azar'] },
   { k: 'after',   ctx: 'multi', label: 'Tras explotar',              vals: ['next', 'same'], labels: ['Pasa al siguiente', 'Repite el mismo'] },
+  { k: 'ramp',    ctx: 'multi', label: 'Más difícil con cada eliminado', vals: [1, 0], labels: ['Sí', 'No'] },
   { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'], hide: c => c.smode === 'rush' },
   { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
 ];
-const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 4, order: 'ring', after: 'next', letters: 1, show: 0, smode: 'word', total: 30 };
+const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 4, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 0, smode: 'word', total: 30 };
 const DEF_SOLO = { ...DEF, lives: 3, mode: 'turn', min: 10, max: 10, show: 1 };
 const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 
 const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>La partida</h3>
 <p>En cada turno aparece una sílaba de 2 o 3 letras. Quien tiene la bomba escribe una palabra en castellano que contenga esas letras seguidas, en cualquier posición: con <span class="ex">ent</span> valen <span class="ex">gente</span>, <span class="ex">entrada</span> o <span class="ex">cliente</span>.</p>
-<p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida y el siguiente recibe la bomba con la misma sílaba, salvo que ya la haya intentado: entonces sale otra; sin vidas quedas eliminado y gana quien se queda en pie.</p>
+<p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida y el siguiente recibe la bomba con la misma sílaba, salvo que ya la haya intentado: entonces sale otra; sin vidas quedas eliminado y gana quien se queda en pie. Con el ajuste «Más difícil con cada eliminado» (activado por defecto), cada jugador que cae hace que las sílabas sean un poco más difíciles, para que el final no se alargue.</p>
 <p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS].join(' ').toUpperCase()}</b>.</p>
 <p>El diccionario tiene unas 636.000 formas, con plurales y conjugaciones, aunque puede que alguna palabra falte.</p>
 <h3>Individual</h3>
@@ -593,7 +594,12 @@ function addPlayer(id, name) {
 }
 
 function pickSyl() {
-  const c = H.settings, w = [[1,0,0],[.7,.3,0],[.2,.5,.3]][c.diff] || [1,0,0], r = Math.random();
+  const c = H.settings, w = ([[1,0,0],[.7,.3,0],[.2,.5,.3]][c.diff] || [1,0,0]).slice(), r = Math.random();
+  // cada jugador eliminado sube un poco la dificultad: pasa parte de las fáciles a normales y de las normales a difíciles
+  if (!H.solo && c.ramp !== 0 && H.out && H.out.length) {
+    const k = Math.min(.6, H.out.length * .08), a = w[0] * k, b = w[1] * k / 2;
+    w[0] -= a; w[1] += a - b; w[2] += b;
+  }
   const filt = a => c.len ? a.filter(s => s.length === c.len) : a;
   let pool = filt(r < w[0] ? SYL.easy : r < w[0] + w[1] ? SYL.normal : SYL.hard);
   if (!pool.length) pool = filt(SYL.easy);
