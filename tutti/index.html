@@ -108,6 +108,8 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .stepper button:disabled{opacity:.35;cursor:default}
 .stepper b{min-width:64px;text-align:center;font-size:20px}
 #cfgMore .body{padding-top:4px}
+#gameSw{margin:18px 0 4px}
+#gameSw .lbl{display:block;font-weight:800;font-size:14px;margin:0 0 6px}
 #lobbyHint{text-align:center;font-weight:600;margin:14px 0 0;min-height:24px}
 #soloRec{font-weight:600;margin:0 0 16px}
 #cfgSum{font-weight:600;margin:0 0 18px;opacity:.75}
@@ -287,6 +289,7 @@ button.pink{background:var(--pink);color:var(--ink)}
   <p id="cfgSum"></p>
   <button id="btnStart" class="big" hidden>Empezar</button>
   <div id="soloRec" hidden></div>
+  <div id="gameSw" hidden></div>
   <p id="lobbyHint" role="status"></p>
   <details class="panel" id="cfgMore"><summary>Ajustes</summary><div class="body">
     <div id="cfgSet"></div>
@@ -732,10 +735,10 @@ function hostRecv(m, f) {
 function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
 function fail(msg) { if (/Sin conexión/.test(msg)) PGT.ev('net_fail'); netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
 
-async function createRoom() {
-  room = randCode(); myId = 'host'; isHost = true; solo = false;
+async function createRoom(code) {
+  room = code || randCode(); myId = 'host'; isHost = true; solo = false;
   net.onMsg = hostRecv;
-  try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
+  try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; } PGT.room = room;
   H = newH(); addPlayer('host', myName);
   PGT.ev('room_create');
   history.replaceState(null, '', '?sala=' + room);
@@ -749,21 +752,22 @@ async function createRoom() {
 function startSolo() {
   myName = nameIn.value.trim() || 'Tú';
   if (nameIn.value.trim()) localStorage.setItem('jt_name', myName);
-  solo = true; isHost = true; myId = 'host'; room = '';
+  solo = true; isHost = true; myId = 'host'; room = ''; PGT.room = '';
   H = newH(); H.solo = true; addPlayer('host', myName);
   history.replaceState(null, '', location.pathname);
   setHome(''); push();
 }
 async function joinRoom(code) {
-  room = code; isHost = false; solo = false; myId = uid(10); lastV = -1; gotState = false;
+  room = code; isHost = false; solo = false; PGT.room = code; myId = uid(10); lastV = -1; gotState = false;
   net.onMsg = onMsg;
   try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   lastHeard = now();
   const hello = () => netPub('host', { t: 'hello', name: myName, pv: PGT.vid || '' });
   hello(); let tries = 0;
   const h = setInterval(() => {
-    if (gotState) { clearInterval(h); return; }
-    if (++tries > 6) { clearInterval(h); fail('No se encontró esa sala. Revisa el código.'); return; }
+    // se sigue saludando hasta aparecer en la sala (al cambiar de juego, el estado puede llegar antes de que el anfitrión nos haya oído)
+    if (gotState && S && S.players && S.players.some(p => p.id === myId)) { clearInterval(h); return; }
+    if (!gotState && ++tries > (autoJoin ? 14 : 6)) { clearInterval(h); fail('No se encontró esa sala. Revisa el código.'); return; }
     hello();
   }, 1500);
   net.timers.push(h);
@@ -780,6 +784,23 @@ function hostGone(why) {
   const b = $('#btnAgain'); b.textContent = 'Salir'; b.onclick = goHome;
 }
 function goHome() { location.href = location.pathname; }
+// ---------- cambiar de juego sin salir de la sala ----------
+// El anfitrión avisa a todos con «goto»; cada uno abre el otro juego con el mismo código y vuelve a entrar solo.
+const GAMES_SW = [['bomba', 'Bomba'], ['tutti', 'Tutti frutti'], ['teclazo', 'Teclazo']];
+const THIS_GAME = TOPIC.split(':')[1];
+let switching = false, autoJoin = false;
+function renderSwitch(on) {
+  const el = $('#gameSw'); if (!el) return;
+  el.hidden = !on; if (!on) return;
+  const cc = $('#codecard'); if (cc && cc.nextElementSibling !== el) cc.after(el);
+  el.innerHTML = `<span class="lbl">Juego</span><div class="fchips">${GAMES_SW.map(([k, n]) => `<button type="button" data-g="${k}" class="${k === THIS_GAME ? 'on' : ''}" aria-pressed="${k === THIS_GAME}">${n}</button>`).join('')}</div>`;
+}
+function switchGame(g) {
+  if (!isHost || solo || !room || switching || g === THIS_GAME || !GAMES_SW.some(x => x[0] === g)) return;
+  switching = true; bcast({ t: 'goto', g });
+  setTimeout(() => { location.href = '../' + g + '/?host=' + room; }, 450);
+}
+
 function leave() {
   if (isHost && !solo && H && H.players.some(p => p.on && p.id !== 'host') && !confirm('Si sales, la sala se cierra para todos. ¿Salir?')) return;
   if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' });
@@ -787,6 +808,7 @@ function leave() {
 }
 function onMsg(m) {
   if (!m) return;
+  if (m.t === 'goto' && !isHost && room && GAMES_SW.some(x => x[0] === m.g) && m.g !== THIS_GAME) { switching = true; location.href = '../' + m.g + '/?sala=' + room + '&go=1'; return; }
   if (!isHost) lastHeard = now();
   if (m.t === 'state') {
     if (m.s.v <= lastV) return;
@@ -820,6 +842,7 @@ function ctlSeg(k, vals, labels, val) {
 }
 function renderLobby() {
   if (!S) return;
+  renderSwitch(isHost && !solo);
   const ended = S.phase === 'ended', c = S.settings;
   const sl = !!S.solo;
   $('#lobbyCode').textContent = room;
@@ -952,6 +975,7 @@ nameIn.value = localStorage.getItem('jt_name') || '';
 const params = new URLSearchParams(location.search);
 const inviteCode = (params.get('sala') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
 if (inviteCode.length === 4) { $('#homeCreate').hidden = true; $('#homeInvite').hidden = false; $('#inviteCode').textContent = inviteCode; }
+$('#gameSw').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (b) switchGame(b.dataset.g); });
 if (params.get('e') === 'k') setHome('Te han expulsado de la sala.', 'bad');
 
 function getName() {
@@ -1008,7 +1032,12 @@ addEventListener('pointerdown', unlock, true);
 addEventListener('keydown', unlock, true);
 paintSnd();
 $('#codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnJoin').click(); });
-addEventListener('pagehide', () => { if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' }); });
+{
+  const hostCode = (params.get('host') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  if (hostCode.length === 4 && nameIn.value.trim()) { getName(); busy(); createRoom(hostCode); }
+  else if (inviteCode.length === 4 && params.get('go') === '1' && nameIn.value.trim()) { getName(); busy(); autoJoin = true; joinRoom(inviteCode); }
+}
+addEventListener('pagehide', () => { if (net.clients.length && !switching) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' }); });
 nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') (inviteCode.length === 4 ? $('#btnJoinInvite') : $('#btnCreate')).click(); });
 })();
 </script>

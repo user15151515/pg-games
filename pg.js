@@ -27,6 +27,7 @@
   const send = (kind, props) => {
     try {
       if (kind !== 'view' && kind !== 'net_fail') { const nm = alias(); if (nm) props = Object.assign({}, props, { name: nm }); }
+      if (kind !== 'view' && window.PGT && /^[A-Z]{4}$/.test(window.PGT.room || '')) props = Object.assign({}, props, { room: window.PGT.room });
       fetch(URL + '/rest/v1/rpc/pg_log', {
         method: 'POST', keepalive: true,
         headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY },
@@ -48,6 +49,7 @@
   const game_ = d => {
     try {
       if (d && d.dur == null && lastDur != null) d.dur = lastDur;
+      if (d && !d.solo && /^[A-Z]{4}$/.test(window.PGT.room || '')) d.room = window.PGT.room;
       let body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d });
       if (body.length > 60000) { for (const p of d.pl || []) delete p.log; body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d }); }
       if (body.length > 60000) return;
@@ -55,7 +57,7 @@
     } catch (e) {}
   };
   window.PGT = {
-    vid, game: game_,
+    vid, game: game_, room: '',
     ev: send,
     start(n, solo) { t0 = Date.now(); send('game_start', { n, solo: !!solo }); },
     end(n, solo, m) {

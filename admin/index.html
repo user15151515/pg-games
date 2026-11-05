@@ -195,6 +195,16 @@ main.load{opacity:.55}
 .wd{background:var(--wash);border-radius:8px;padding:2px 8px;font-weight:700;font-size:14px}
 .wd u{text-decoration:none;color:#d6215a}
 .fx{background:#ff5c8a33;color:#a3123f;border-radius:8px;padding:2px 8px;font-weight:800;font-size:14px;text-transform:uppercase}
+.day{font-weight:800;font-size:13px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;margin:16px 2px 8px}
+.day:first-child{margin-top:4px}
+.ses .code{font-family:inherit;font-weight:800;letter-spacing:.08em;background:var(--ink);color:var(--paper);border-radius:6px;padding:1px 6px;font-size:13px;margin-left:6px}
+.gseq{display:flex;gap:3px;flex-wrap:wrap}
+.gseq i{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--ink);display:inline-block}
+.ppl{display:flex;flex-wrap:wrap;gap:6px}
+.ppl span{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:14px;background:var(--wash);border-radius:99px;padding:2px 10px 2px 3px}
+.gl{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;font-weight:700;font-size:14px;padding:6px 0;border-top:1px dashed #17140f22}
+.gl .gi{width:28px;height:28px;border-radius:8px}
+.gb .gm{margin:0}
 .tx{background:var(--wash);border-radius:10px;padding:8px 10px;font-weight:600;font-size:14px;line-height:1.4}
 .pbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .pbar .chips{flex-wrap:wrap}
@@ -242,6 +252,9 @@ main.load{opacity:.55}
         <section class="card"><h2 title="Origen" aria-label="Origen"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12h12"/><path d="M12 6l6 6-6 6"/></svg></h2><div id="sources"></div></section>
         <section class="card"><h2 title="Nuevos y recurrentes" aria-label="Nuevos y recurrentes"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/></svg></h2><div id="people"></div></section>
       </div>
+    </div>
+    <div class="pane" id="p-activity" role="tabpanel" hidden>
+      <section class="card"><div class="pbar" id="abar"></div><div id="alist"></div></section>
     </div>
     <div class="pane" id="p-players" role="tabpanel" hidden>
       <section class="card"><div class="pbar" id="pbar"></div><div class="plist" id="plist"></div></section>
@@ -531,10 +544,11 @@ function render() {
   $('#liveN').textContent = data.now; $('#live').classList.toggle('zero', !data.now);
   renderKpis(); renderTrend(); renderGamesMini(); renderGames(); renderHeat(); renderSizes(); renderDevices(); renderSources(); renderPeople(); renderFeed();
   if (tab === 'players') loadPlayers();
+  if (tab === 'activity') loadActivity();
 }
 
 /* ---------- pestañas ---------- */
-const TABS = [['home', 'home', 'Resumen'], ['games', 'play', 'Juegos'], ['traffic', 'chart', 'Tráfico'], ['players', 'users', 'Jugadores']];
+const TABS = [['home', 'home', 'Resumen'], ['activity', 'door', 'Actividad'], ['games', 'play', 'Juegos'], ['traffic', 'chart', 'Tráfico'], ['players', 'users', 'Jugadores']];
 let tab = 'home';
 try { const t = localStorage.getItem('pg_admin_tab'); if (TABS.some(x => x[0] === t)) tab = t; } catch (e) {}
 function tabs() {
@@ -545,7 +559,7 @@ function tabs() {
 $('#tabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   tab = b.dataset.t; try { localStorage.setItem('pg_admin_tab', tab); } catch (x) {}
-  tabs(); if (tab === 'players') loadPlayers(); scrollTo({ top: 0 });
+  tabs(); if (tab === 'players') loadPlayers(); if (tab === 'activity') loadActivity(); scrollTo({ top: 0 });
 });
 
 /* ---------- jugadores ---------- */
@@ -651,6 +665,83 @@ function teclazoView(d, me) {
   if (d.txt) body += `<div><h4>Texto</h4><div class="tx">${esc(d.txt)}</div></div>`;
   return { res, body };
 }
+
+/* ---------- actividad: salas y partidas ---------- */
+let act = null, afilter = 'all';
+async function loadActivity() {
+  const { data, error } = await sb.rpc('admin_activity', { p_days: days });
+  if (error) return;
+  act = data; renderActivity();
+}
+function buildActivity(a) {
+  const ev = a.events || [], logs = a.logs || [], items = [], used = new Set(), T = x => new Date(x).getTime();
+  // salas: eventos con código, agrupados por código mientras no pasen 3 h sin actividad
+  const open = {};
+  for (const e of ev) {
+    if (e.solo) continue;
+    const key = e.room || (e.k === 'room_create' || e.k === 'game_start' ? '~' + e.v : null);
+    if (!key) continue;
+    let s = open[key];
+    if (!s || T(e.t) - s.end > 3 * 3600e3) { s = open[key] = { type: 'room', room: e.room || '', start: T(e.t), end: T(e.t), host: null, people: new Map(), games: [] }; items.push(s); }
+    s.end = Math.max(s.end, T(e.t));
+    if (e.k === 'room_create' && !s.host) s.host = e.v;
+    if (e.nm || e.v) s.people.set(e.v, e.nm || '');
+    if (e.k === 'game_start') s.games.push({ t: T(e.t), g: e.g, n: e.n, v: e.v, log: null });
+  }
+  // resúmenes de partidas en sala: se asignan a la partida empezada más cercana del mismo juego y sala
+  for (const l of logs) {
+    if (l.solo) continue;
+    const key = l.room || '~' + l.v, s = items.find(x => x.type === 'room' && (x.room ? x.room === l.room : '~' + x.host === key) && T(l.ts) >= x.start - 60e3 && T(l.ts) <= x.end + 2 * 3600e3);
+    if (!s) continue;
+    const g = s.games.filter(x => x.g === l.game && !x.log && x.t <= T(l.ts)).pop();
+    if (g) g.log = l; else s.games.push({ t: T(l.ts), g: l.game, n: (l.d.pl || []).length, v: l.v, log: l });
+    for (const p of l.d.pl || []) if (p.pv && !s.people.has(p.pv)) s.people.set(p.pv, p.nm); else if (!p.pv) s.people.set('nm:' + p.nm, p.nm);
+    s.end = Math.max(s.end, T(l.ts)); used.add(l.id);
+  }
+  // individuales: con resumen si lo hay
+  const soloStarts = ev.filter(e => e.solo && e.k === 'game_start');
+  for (const l of logs.filter(x => x.solo)) {
+    const i = soloStarts.findIndex(e => e.v === l.v && e.g === l.game && T(e.t) <= T(l.ts) && T(l.ts) - T(e.t) < 3600e3);
+    if (i >= 0) soloStarts.splice(i, 1);
+    items.push({ type: 'solo', start: T(l.ts), log: l });
+  }
+  for (const e of soloStarts) items.push({ type: 'solo', start: T(e.t), ev: e });
+  return items.sort((x, y) => y.start - x.start);
+}
+const hm = t => new Date(t).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+const dayLabel = t => { const d = new Date(t), n = new Date(), k = x => x.toDateString(); if (k(d) === k(n)) return 'Hoy'; n.setDate(n.getDate() - 1); if (k(d) === k(n)) return 'Ayer'; return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }); };
+function renderActivity() {
+  if (!act) return;
+  const all = buildActivity(act), rooms = all.filter(x => x.type === 'room'), solos = all.filter(x => x.type === 'solo');
+  const F = [['all', 'Todo', all.length], ['room', 'Salas', rooms.length], ['solo', 'Individual', solos.length]];
+  $('#abar').innerHTML = `<div class="chips" role="group" aria-label="Filtro">${F.map(([k, l, n]) => `<button type="button" data-f="${k}" aria-pressed="${k === afilter}">${l} ${n}</button>`).join('')}</div>`;
+  const list = afilter === 'room' ? rooms : afilter === 'solo' ? solos : all;
+  if (!list.length) { $('#alist').innerHTML = '<div class="empty">–</div>'; return; }
+  let h = '', last = '';
+  for (const it of list) {
+    const dl = dayLabel(it.start); if (dl !== last) { h += `<div class="day">${dl}</div>`; last = dl; }
+    h += it.type === 'room' ? roomCard(it) : soloCard(it);
+  }
+  $('#alist').innerHTML = h;
+}
+function roomCard(s) {
+  const ppl = [...s.people.entries()], hostNm = s.host ? (s.people.get(s.host) || '') : '';
+  const seq = s.games.map(g => `<i style="background:${(GAMES[g.g] || {}).color || WHITE}" title="${(GAMES[g.g] || {}).name || ''}"></i>`).join('');
+  const kinds = [...new Set(s.games.map(g => g.g))];
+  const mainG = GAMES[kinds[0]] || GAMES[(act.events.find(e => e.room === s.room && e.k === 'room_create') || {}).g] || { color: WHITE };
+  const span = s.end - s.start > 60e3 ? `${hm(s.start)}–${hm(s.end)}` : hm(s.start);
+  const names = ppl.map(([, n]) => n || 'sin nombre');
+  const body = `<div><h4>Jugadores</h4><div class="ppl">${ppl.map(([v, n], i) => `<span>${dot(i, n)}${n ? esc(n) : '<i>sin nombre</i>'}${v === s.host ? ' · anfitrión' : ''}</span>`).join('') || '–'}</div></div>` +
+    `<div><h4>Partidas</h4>${s.games.length ? s.games.map(g => g.log ? gameCard({ ts: g.log.ts, game: g.log.game, host: false, solo: false, d: g.log.d }, '') :
+      `<div class="gl"><div class="gi" style="background:${(GAMES[g.g] || {}).color || WHITE};border:2px solid var(--ink);display:grid;place-items:center">${ic(GICON[g.g] || 'grid')}</div><span>${(GAMES[g.g] || {}).name || g.g} · ${hm(g.t)}${g.n ? ' · ' + g.n + ' jugadores' : ''}</span><span class="t2">sin detalle</span></div>`).join('') : '<div class="t2">Ninguna partida</div>'}</div>`;
+  return `<details class="gm ses"><summary><div class="gi" style="background:${mainG.color}">${ic('door')}</div><div><div class="t1">Sala${s.room ? `<span class="code">${esc(s.room)}</span>` : ''}</div><div class="t2">${span} · ${esc(names.slice(0, 4).join(', '))}${names.length > 4 ? ' +' + (names.length - 4) : ''}</div></div><div class="res" style="display:grid;justify-items:end;gap:4px">${s.games.length} ${s.games.length === 1 ? 'partida' : 'partidas'}<span class="gseq">${seq}</span></div></summary><div class="gb">${body}</div></details>`;
+}
+function soloCard(it) {
+  if (it.log) { const nm = ((it.log.d.pl || [])[0] || {}).nm || ''; return gameCard({ ts: it.log.ts, game: it.log.game, host: true, solo: true, d: it.log.d }, it.log.v).replace('<div class="t1">', `<div class="t1">${esc(nm)} · `); }
+  const e = it.ev, G = GAMES[e.g] || { name: e.g, color: WHITE };
+  return `<div class="gm"><div style="display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:10px 12px"><div class="gi" style="background:${G.color}">${ic(GICON[e.g] || 'grid')}</div><div><div class="t1">${e.nm ? esc(e.nm) + ' · ' : ''}${G.name}</div><div class="t2">${when(e.t)} · individual</div></div><div class="t2">sin detalle</div></div></div>`;
+}
+$('#abar').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; afilter = b.dataset.f; renderActivity(); });
 
 start();
 })();

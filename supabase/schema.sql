@@ -276,3 +276,33 @@ begin
 end $$;
 revoke all on function public.admin_player_games(text, int) from public, anon;
 grant execute on function public.admin_player_games(text, int) to authenticated;
+
+-- Actividad: eventos de salas y partidas, y los resúmenes de partida, para agrupar por sala en el panel. Sin dispositivos ocultos.
+create or replace function public.admin_activity(p_days int default 7)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  tz constant text := 'Europe/Madrid';
+  d  int := greatest(1, least(coalesce(p_days, 7), 365));
+  t0 timestamptz := (((now() at time zone tz)::date - (d - 1))::timestamp) at time zone tz;
+  res jsonb;
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  select jsonb_build_object(
+    'events', (
+      select coalesce(jsonb_agg(jsonb_build_object('t', e.ts, 'k', e.kind, 'g', e.game, 'v', e.vid,
+               'nm', coalesce(nullif(e.p ->> 'name', ''), pl.name), 'room', e.p ->> 'room',
+               'n', case when e.p ->> 'n' ~ '^[0-9]{1,3}$' then (e.p ->> 'n')::int end,
+               'solo', coalesce(e.p ->> 'solo', 'false') = 'true') order by e.ts), '[]'::jsonb)
+      from (select * from events where ts >= t0 and kind in ('room_create', 'room_join', 'game_start', 'game_end')
+              and vid not in (select vid from hidden_vids) order by ts desc limit 3000) e
+      left join players pl on pl.vid = e.vid
+    ),
+    'logs', (
+      select coalesce(jsonb_agg(jsonb_build_object('id', g.id, 'ts', g.ts, 'game', g.game, 'v', g.vid, 'solo', g.solo, 'room', g.d ->> 'room', 'd', g.d) order by g.ts), '[]'::jsonb)
+      from (select * from game_logs where ts >= t0 and vid not in (select vid from hidden_vids) order by ts desc limit 400) g
+    )
+  ) into res;
+  return res;
+end $$;
+revoke all on function public.admin_activity(int) from public, anon;
+grant execute on function public.admin_activity(int) to authenticated;
