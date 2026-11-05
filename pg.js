@@ -2,7 +2,7 @@
 // Guarda un identificador aleatorio en este navegador y eventos sueltos: visita, sala creada o unida,
 // partida empezada o terminada y fallos de conexión. Junto a las acciones de juego guarda el alias que el jugador escribe (máx. 14 caracteres).
 // Al terminar cada partida, quien la ha creado envía un resumen (jugadores, puntos y respuestas o palabras) para el panel de administración.
-// Se desactiva con «No rastrear» del navegador, en localhost, en el navegador del administrador y en los dispositivos abiertos con ?notrack=1.
+// Se desactiva con «No rastrear» del navegador, en localhost y en los dispositivos abiertos con ?notrack=1.
 (() => {
   const URL = 'https://acsrnjowxvjamiybsjkx.supabase.co';
   const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';

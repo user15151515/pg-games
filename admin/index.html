@@ -313,7 +313,7 @@ try { const d = +localStorage.getItem('pg_admin_days'); if (RANGES.some(r => r[0
 
 /* ---------- acceso ---------- */
 function showLogin(msg) { $('#app').hidden = true; $('#login').hidden = false; $('#err').textContent = msg || ''; clearInterval(timer); }
-function showApp() { $('#login').hidden = true; $('#app').hidden = false; try { localStorage.setItem('pg_notrack2', '1'); } catch (e) {} }
+function showApp() { $('#login').hidden = true; $('#app').hidden = false; }
 $('#form').addEventListener('submit', async e => {
   e.preventDefault();
   const b = $('#go'); b.disabled = true; $('#err').textContent = '';
@@ -676,13 +676,14 @@ async function loadActivity() {
 function buildActivity(a) {
   const ev = a.events || [], logs = a.logs || [], items = [], used = new Set(), T = x => new Date(x).getTime();
   // salas: eventos con código, agrupados por código mientras no pasen 3 h sin actividad
-  const open = {};
+  const open = {}, hid = new Set(a.hidden || []);
   for (const e of ev) {
     if (e.solo) continue;
-    const key = e.room || (e.k === 'room_create' || e.k === 'game_start' ? '~' + e.v : null);
-    if (!key) continue;
+    // con código de sala se agrupa por código; sin código (eventos antiguos) por juego, mientras no pasen 20 min sin actividad
+    const key = e.room ? 'R' + e.room : 'G' + e.g, gap = e.room ? 3 * 3600e3 : 20 * 60e3;
     let s = open[key];
-    if (!s || T(e.t) - s.end > 3 * 3600e3) { s = open[key] = { type: 'room', room: e.room || '', start: T(e.t), end: T(e.t), host: null, people: new Map(), games: [] }; items.push(s); }
+    const otherHost = s && !e.room && e.k === 'room_create' && s.host && s.host !== e.v && T(e.t) - s.end > 5 * 60e3;
+    if (!s || T(e.t) - s.end > gap || otherHost) { s = open[key] = { type: 'room', room: e.room || '', g: e.g, start: T(e.t), end: T(e.t), host: null, people: new Map(), games: [] }; items.push(s); }
     s.end = Math.max(s.end, T(e.t));
     if (e.k === 'room_create' && !s.host) s.host = e.v;
     if (e.nm || e.v) s.people.set(e.v, e.nm || '');
@@ -691,7 +692,7 @@ function buildActivity(a) {
   // resúmenes de partidas en sala: se asignan a la partida empezada más cercana del mismo juego y sala
   for (const l of logs) {
     if (l.solo) continue;
-    const key = l.room || '~' + l.v, s = items.find(x => x.type === 'room' && (x.room ? x.room === l.room : '~' + x.host === key) && T(l.ts) >= x.start - 60e3 && T(l.ts) <= x.end + 2 * 3600e3);
+    const s = items.find(x => x.type === 'room' && (l.room ? x.room === l.room : !x.room && x.g === l.game) && T(l.ts) >= x.start - 60e3 && T(l.ts) <= x.end + (l.room ? 2 * 3600e3 : 20 * 60e3));
     if (!s) continue;
     const g = s.games.filter(x => x.g === l.game && !x.log && x.t <= T(l.ts)).pop();
     if (g) g.log = l; else s.games.push({ t: T(l.ts), g: l.game, n: (l.d.pl || []).length, v: l.v, log: l });
@@ -700,12 +701,14 @@ function buildActivity(a) {
   }
   // individuales: con resumen si lo hay
   const soloStarts = ev.filter(e => e.solo && e.k === 'game_start');
-  for (const l of logs.filter(x => x.solo)) {
+  // las salas en las que solo hay dispositivos ocultos (pruebas propias) no se muestran; las individuales de ocultos tampoco
+  for (let i = items.length - 1; i >= 0; i--) { const s = items[i]; if ([...s.people.keys()].every(v => hid.has(v))) items.splice(i, 1); else s.hid = hid; }
+  for (const l of logs.filter(x => x.solo && !hid.has(x.v))) {
     const i = soloStarts.findIndex(e => e.v === l.v && e.g === l.game && T(e.t) <= T(l.ts) && T(l.ts) - T(e.t) < 3600e3);
     if (i >= 0) soloStarts.splice(i, 1);
     items.push({ type: 'solo', start: T(l.ts), log: l });
   }
-  for (const e of soloStarts) items.push({ type: 'solo', start: T(e.t), ev: e });
+  for (const e of soloStarts) if (!hid.has(e.v)) items.push({ type: 'solo', start: T(e.t), ev: e });
   return items.sort((x, y) => y.start - x.start);
 }
 const hm = t => new Date(t).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
@@ -728,13 +731,13 @@ function roomCard(s) {
   const ppl = [...s.people.entries()], hostNm = s.host ? (s.people.get(s.host) || '') : '';
   const seq = s.games.map(g => `<i style="background:${(GAMES[g.g] || {}).color || WHITE}" title="${(GAMES[g.g] || {}).name || ''}"></i>`).join('');
   const kinds = [...new Set(s.games.map(g => g.g))];
-  const mainG = GAMES[kinds[0]] || GAMES[(act.events.find(e => e.room === s.room && e.k === 'room_create') || {}).g] || { color: WHITE };
+  const mainG = GAMES[kinds[0]] || GAMES[s.g] || { color: WHITE };
   const span = s.end - s.start > 60e3 ? `${hm(s.start)}–${hm(s.end)}` : hm(s.start);
   const names = ppl.map(([, n]) => n || 'sin nombre');
-  const body = `<div><h4>Jugadores</h4><div class="ppl">${ppl.map(([v, n], i) => `<span>${dot(i, n)}${n ? esc(n) : '<i>sin nombre</i>'}${v === s.host ? ' · anfitrión' : ''}</span>`).join('') || '–'}</div></div>` +
+  const body = `<div><h4>Jugadores</h4><div class="ppl">${ppl.map(([v, n], i) => `<span style="${s.hid && s.hid.has(v) ? 'opacity:.5' : ''}">${dot(i, n)}${n ? esc(n) : '<i>sin nombre</i>'}${v === s.host ? ' · anfitrión' : ''}${s.hid && s.hid.has(v) ? ' · oculto' : ''}</span>`).join('') || '–'}</div>${!s.host ? '<div class="t2" style="margin-top:6px">El anfitrión no está registrado (tenía «no rastrear»), así que no hay datos de sus partidas.</div>' : ''}</div>` +
     `<div><h4>Partidas</h4>${s.games.length ? s.games.map(g => g.log ? gameCard({ ts: g.log.ts, game: g.log.game, host: false, solo: false, d: g.log.d }, '') :
       `<div class="gl"><div class="gi" style="background:${(GAMES[g.g] || {}).color || WHITE};border:2px solid var(--ink);display:grid;place-items:center">${ic(GICON[g.g] || 'grid')}</div><span>${(GAMES[g.g] || {}).name || g.g} · ${hm(g.t)}${g.n ? ' · ' + g.n + ' jugadores' : ''}</span><span class="t2">sin detalle</span></div>`).join('') : '<div class="t2">Ninguna partida</div>'}</div>`;
-  return `<details class="gm ses"><summary><div class="gi" style="background:${mainG.color}">${ic('door')}</div><div><div class="t1">Sala${s.room ? `<span class="code">${esc(s.room)}</span>` : ''}</div><div class="t2">${span} · ${esc(names.slice(0, 4).join(', '))}${names.length > 4 ? ' +' + (names.length - 4) : ''}</div></div><div class="res" style="display:grid;justify-items:end;gap:4px">${s.games.length} ${s.games.length === 1 ? 'partida' : 'partidas'}<span class="gseq">${seq}</span></div></summary><div class="gb">${body}</div></details>`;
+  return `<details class="gm ses"><summary><div class="gi" style="background:${mainG.color}">${ic('door')}</div><div><div class="t1">Sala${s.room ? `<span class="code">${esc(s.room)}</span>` : (GAMES[s.g] ? ' · ' + GAMES[s.g].name : '')}</div><div class="t2">${span} · ${esc(names.slice(0, 4).join(', '))}${names.length > 4 ? ' +' + (names.length - 4) : ''}</div></div><div class="res" style="display:grid;justify-items:end;gap:4px">${s.games.length} ${s.games.length === 1 ? 'partida' : 'partidas'}<span class="gseq">${seq}</span></div></summary><div class="gb">${body}</div></details>`;
 }
 function soloCard(it) {
   if (it.log) { const nm = ((it.log.d.pl || [])[0] || {}).nm || ''; return gameCard({ ts: it.log.ts, game: it.log.game, host: true, solo: true, d: it.log.d }, it.log.v).replace('<div class="t1">', `<div class="t1">${esc(nm)} · `); }

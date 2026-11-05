@@ -277,7 +277,8 @@ end $$;
 revoke all on function public.admin_player_games(text, int) from public, anon;
 grant execute on function public.admin_player_games(text, int) to authenticated;
 
--- Actividad: eventos de salas y partidas, y los resúmenes de partida, para agrupar por sala en el panel. Sin dispositivos ocultos.
+-- Actividad: eventos de salas y partidas, y los resúmenes de partida, para agrupar por sala en el panel.
+-- Incluye a los ocultos (marcados) para no perder salas mixtas; el panel quita las salas en las que solo hay ocultos.
 create or replace function public.admin_activity(p_days int default 7)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
@@ -294,13 +295,14 @@ begin
                'n', case when e.p ->> 'n' ~ '^[0-9]{1,3}$' then (e.p ->> 'n')::int end,
                'solo', coalesce(e.p ->> 'solo', 'false') = 'true') order by e.ts), '[]'::jsonb)
       from (select * from events where ts >= t0 and kind in ('room_create', 'room_join', 'game_start', 'game_end')
-              and vid not in (select vid from hidden_vids) order by ts desc limit 3000) e
+              order by ts desc limit 3000) e
       left join players pl on pl.vid = e.vid
     ),
     'logs', (
       select coalesce(jsonb_agg(jsonb_build_object('id', g.id, 'ts', g.ts, 'game', g.game, 'v', g.vid, 'solo', g.solo, 'room', g.d ->> 'room', 'd', g.d) order by g.ts), '[]'::jsonb)
-      from (select * from game_logs where ts >= t0 and vid not in (select vid from hidden_vids) order by ts desc limit 400) g
-    )
+      from (select * from game_logs where ts >= t0 order by ts desc limit 400) g
+    ),
+    'hidden', (select coalesce(jsonb_agg(vid), '[]'::jsonb) from hidden_vids)
   ) into res;
   return res;
 end $$;
