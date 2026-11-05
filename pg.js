@@ -1,11 +1,12 @@
 // Estadísticas propias y anónimas de pg games (proyecto Supabase de pg games, sin terceros).
 // Guarda un identificador aleatorio en este navegador y eventos sueltos: visita, sala creada o unida,
-// partida empezada o terminada y fallos de conexión. Junto a las acciones de juego guarda el alias que el jugador escribe (máx. 14 caracteres), nada más: ni palabras ni textos.
+// partida empezada o terminada y fallos de conexión. Junto a las acciones de juego guarda el alias que el jugador escribe (máx. 14 caracteres).
+// Al terminar cada partida, quien la ha creado envía un resumen (jugadores, puntos y respuestas o palabras) para el panel de administración.
 // Se desactiva con «No rastrear» del navegador, en localhost, en el navegador del administrador y en los dispositivos abiertos con ?notrack=1.
 (() => {
   const URL = 'https://acsrnjowxvjamiybsjkx.supabase.co';
   const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
-  const noop = { ev() {}, start() {}, end() {} };
+  const noop = { ev() {}, start() {}, end() {}, game() {}, vid: '' };
   // Para ignorar un dispositivo: abrir la web una vez con ?notrack=1 (y ?notrack=0 para volver a contar).
   try { const q = new URLSearchParams(location.search).get('notrack'); if (q === '1') localStorage.setItem('pg_notrack', '1'); else if (q === '0') localStorage.removeItem('pg_notrack'); } catch (e) {}
   let off = /^(localhost|127\.|\[::1\])/.test(location.hostname) || navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true;
@@ -40,13 +41,23 @@
   const coarse = window.matchMedia && matchMedia('(pointer:coarse)').matches;
   const dev = coarse ? (Math.min(screen.width, screen.height) < 700 ? 'm' : 't') : 'd';
 
-  let t0 = 0;
+  let t0 = 0, lastDur = null;
+  const game_ = d => {
+    try {
+      if (d && d.dur == null && lastDur != null) d.dur = lastDur;
+      let body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d });
+      if (body.length > 60000) { for (const p of d.pl || []) delete p.log; body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d }); }
+      if (body.length > 60000) return;
+      fetch(URL + '/rest/v1/rpc/pg_game', { method: 'POST', keepalive: body.length < 60000, headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY }, body }).catch(() => {});
+    } catch (e) {}
+  };
   window.PGT = {
+    vid, game: game_,
     ev: send,
     start(n, solo) { t0 = Date.now(); send('game_start', { n, solo: !!solo }); },
     end(n, solo, m) {
       if (!t0) return;
-      const dur = Math.round((Date.now() - t0) / 1000); t0 = 0;
+      const dur = Math.round((Date.now() - t0) / 1000); t0 = 0; lastDur = dur;
       send('game_end', Object.assign({ n, solo: !!solo, dur }, m != null && isFinite(m) ? { m } : {}));
     }
   };

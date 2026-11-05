@@ -230,3 +230,49 @@ begin
 end $$;
 revoke all on function public.admin_hide(text, boolean) from public, anon;
 grant execute on function public.admin_hide(text, boolean) to authenticated;
+
+-- Resumen de cada partida (jugadores, puntos, respuestas o palabras). Lo envía quien crea la partida al terminarla.
+create table if not exists public.game_logs (
+  id   bigint generated always as identity primary key,
+  ts   timestamptz not null default now(),
+  game text not null,
+  vid  text not null,
+  solo boolean not null default false,
+  d    jsonb not null
+);
+create index if not exists game_logs_vid_ts_idx on public.game_logs (vid, ts);
+create index if not exists game_logs_d_idx on public.game_logs using gin (d jsonb_path_ops);
+alter table public.game_logs enable row level security;
+revoke all on public.game_logs from anon, authenticated;
+
+create or replace function public.pg_game(p_game text, p_vid text, p_detail jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_game is null or p_game not in ('bomba', 'tutti', 'teclazo') then return; end if;
+  if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return; end if;
+  if p_detail is null or jsonb_typeof(p_detail) <> 'object' or jsonb_typeof(p_detail -> 'pl') <> 'array' then return; end if;
+  if jsonb_array_length(p_detail -> 'pl') not between 1 and 8 or length(p_detail::text) > 64000 then return; end if;
+  if jsonb_typeof(p_detail -> 'solo') is distinct from 'boolean' then return; end if;
+  if (select count(*) from game_logs where vid = p_vid and ts > now() - interval '1 minute') >= 10 then return; end if;
+  if (select count(*) from (select 1 from game_logs where ts > now() - interval '1 minute' limit 600) x) >= 600 then return; end if;
+  insert into game_logs (game, vid, solo, d) values (p_game, p_vid, (p_detail ->> 'solo')::boolean, p_detail);
+exception when others then return;
+end $$;
+revoke all on function public.pg_game(text, text, jsonb) from public;
+grant execute on function public.pg_game(text, text, jsonb) to anon, authenticated;
+
+-- Partidas de un jugador (las que ha creado y aquellas en las que ha jugado como invitado), con todo el detalle.
+create or replace function public.admin_player_games(p_vid text, p_limit int default 40)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare res jsonb;
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return '[]'::jsonb; end if;
+  select coalesce(jsonb_agg(jsonb_build_object('id', g.id, 'ts', g.ts, 'game', g.game, 'host', g.vid = p_vid, 'solo', g.solo, 'd', g.d) order by g.ts desc), '[]'::jsonb) into res
+  from (select * from game_logs
+        where vid = p_vid or d @> jsonb_build_object('pl', jsonb_build_array(jsonb_build_object('pv', p_vid)))
+        order by ts desc limit greatest(1, least(coalesce(p_limit, 40), 200))) g;
+  return res;
+end $$;
+revoke all on function public.admin_player_games(text, int) from public, anon;
+grant execute on function public.admin_player_games(text, int) to authenticated;

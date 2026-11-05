@@ -191,7 +191,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #over .big+.big{margin-top:12px}
 #overHint{text-align:center;font-weight:600;margin:12px 0 0}
 </style>
-<script>window.PGT={ev(){},start(){},end(){}}</script>
+<script>window.PGT={ev(){},start(){},end(){},game(){},vid:''}</script>
 <script src="../pg.js" defer></script>
 </head>
 <body>
@@ -676,7 +676,16 @@ function buildRes() {
   }
   return res;
 }
-function endGame() { clearTimeout(H.tm); H.phase = 'ended'; H.turn = null; H.typing = ''; H.res = buildRes(); PGT.end(H.players.length, !!H.solo, H.res.rank[0] ? H.res.rank[0].words : null); push(); }
+function endGame() { clearTimeout(H.tm); H.phase = 'ended'; H.turn = null; H.typing = ''; H.res = buildRes(); PGT.end(H.players.length, !!H.solo, H.res.rank[0] ? H.res.rank[0].words : null); sendDetail(); push(); }
+// resumen para el panel de administración: jugadores, palabras de cada uno y sílabas que explotaron
+function sendDetail() {
+  try {
+    const order = H.res.rank.map(r => r.id);
+    PGT.game({ v: 1, solo: !!H.solo, set: H.settings, fails: H.fails.slice(0, 60),
+      pl: H.players.map(p => ({ nm: p.name, pv: p.id === 'host' ? (PGT.vid || '') : (p.pv || ''), h: p.id === 'host' ? 1 : 0, w: p.words || 0, bs: p.bestStreak || 0,
+        pos: order.includes(p.id) ? order.indexOf(p.id) + 1 : null, log: (p.log || []).slice(0, 300) })) });
+  } catch (e) {}
+}
 function checkEnd() {
   if (H.solo) { const p = H.players[0]; if (!p || !p.alive) { H.winner = null; endGame(); return true; } return false; }
   const alive = H.players.filter(p => p.alive && p.on);
@@ -756,7 +765,7 @@ function hostRecv(m, f) {
     const p = byId(f);
     if (p) { netPub('to/' + f, { t: 'state', s: pub() }); return; }
     if (H.players.filter(x => x.on).length >= MAX_PLAYERS) { netPub('to/' + f, { t: 'full' }); return; }
-    addPlayer(f, m.name); evt({ k: 'join', name: byId(f).name }); push();
+    addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; evt({ k: 'join', name: byId(f).name }); push();
   } else if (m.t === 'bye') hostLeft(f);
   else if (byId(f)) fromPlayer(f, m);
 }
@@ -842,7 +851,7 @@ async function joinRoom(code) {
   net.onMsg = onMsg;
   try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   lastHeard = now();
-  const hello = () => netPub('host', { t: 'hello', name: myName });
+  const hello = () => netPub('host', { t: 'hello', name: myName, pv: PGT.vid || '' });
   hello(); let tries = 0;
   const h = setInterval(() => {
     if (gotState) { clearInterval(h); return; }

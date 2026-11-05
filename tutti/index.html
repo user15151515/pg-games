@@ -235,7 +235,7 @@ button.pink{background:var(--pink);color:var(--ink)}
 .rline{margin:10px 0 2px 28px;font-size:15px;font-weight:600;line-height:1.3}
 .rline .z{text-decoration:line-through;opacity:.5}
 </style>
-<script>window.PGT={ev(){},start(){},end(){}}</script>
+<script>window.PGT={ev(){},start(){},end(){},game(){},vid:''}</script>
 <script src="../pg.js" defer></script>
 </head>
 <body>
@@ -645,12 +645,22 @@ function endGame() {
     return { letter: h.letter, by };
   });
   H.res = { rank, rounds };
+  sendDetail();
   if (H.solo && H.players[0]) {
     const rec = loadRec(), k = recKey(H.settings), prev = rec[k] || 0, sc = H.players[0].score;
     if (sc > prev) { rec[k] = sc; saveRec(rec); }
     H.res.solo = { score: sc, rec: Math.max(prev, sc), isNew: sc > prev && sc > 0 };
   }
   push();
+}
+// resumen para el panel de administración: categorías, respuestas de cada uno y sus puntos
+function sendDetail() {
+  try {
+    const ids = H.players.map(p => p.id);
+    PGT.game({ v: 1, solo: !!H.solo, set: { rounds: H.settings.rounds, time: H.settings.time }, cats: H.settings.cats,
+      pl: H.players.map(p => ({ nm: p.name, pv: p.id === 'host' ? (PGT.vid || '') : (p.pv || ''), h: p.id === 'host' ? 1 : 0, sc: p.score })),
+      rounds: H.hist.map(h => ({ l: h.letter, r: h.cats.flatMap((c, ci) => c.rows.map(x => [ids.indexOf(x.id), ci, x.a, x.pts])) })) });
+  } catch (e) {}
 }
 function allIn(list) { return list.every(id => { const p = byId(id); return !p || !p.on || H.fin.has(id); }); }
 
@@ -713,7 +723,7 @@ function hostRecv(m, f) {
     if (p) { netPub('to/' + f, { t: 'state', s: pub() }); return; }
     if (H.phase !== 'lobby' && H.phase !== 'ended') { netPub('to/' + f, { t: 'started' }); return; }
     if (H.players.filter(x => x.on).length >= MAX_PLAYERS) { netPub('to/' + f, { t: 'full' }); return; }
-    addPlayer(f, m.name); evt({ k: 'join', name: byId(f).name }); push();
+    addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; evt({ k: 'join', name: byId(f).name }); push();
   } else if (m.t === 'bye') hostLeft(f);
   else if (byId(f)) fromPlayer(f, m);
 }
@@ -749,7 +759,7 @@ async function joinRoom(code) {
   net.onMsg = onMsg;
   try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   lastHeard = now();
-  const hello = () => netPub('host', { t: 'hello', name: myName });
+  const hello = () => netPub('host', { t: 'hello', name: myName, pv: PGT.vid || '' });
   hello(); let tries = 0;
   const h = setInterval(() => {
     if (gotState) { clearInterval(h); return; }
