@@ -8,9 +8,12 @@
   const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
   const noop = { ev() {}, start() {}, end() {}, game() {}, vid: '' };
   // Para ignorar un dispositivo: abrir la web una vez con ?notrack=1 (y ?notrack=0 para volver a contar).
-  try { const q = new URLSearchParams(location.search).get('notrack'); if (q === '1') localStorage.setItem('pg_notrack', '1'); else if (q === '0') localStorage.removeItem('pg_notrack'); } catch (e) {}
+  // la clave lleva versión: al cambiarla se reactivan de golpe todos los dispositivos marcados antes
+  const NT = 'pg_notrack2';
+  try { localStorage.removeItem('pg_notrack'); } catch (e) {}
+  try { const q = new URLSearchParams(location.search).get('notrack'); if (q === '1') localStorage.setItem(NT, '1'); else if (q === '0') localStorage.removeItem(NT); } catch (e) {}
   let off = /^(localhost|127\.|\[::1\])/.test(location.hostname) || navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true;
-  try { if (localStorage.getItem('pg_notrack') === '1') off = true; } catch (e) {}
+  try { if (localStorage.getItem(NT) === '1') off = true; } catch (e) {}
   if (off) { window.PGT = noop; return; }
 
   const game = (location.pathname.match(/\/(bomba|tutti|teclazo)(\/|$)/) || [])[1] || '';

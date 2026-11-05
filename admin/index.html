@@ -300,7 +300,7 @@ try { const d = +localStorage.getItem('pg_admin_days'); if (RANGES.some(r => r[0
 
 /* ---------- acceso ---------- */
 function showLogin(msg) { $('#app').hidden = true; $('#login').hidden = false; $('#err').textContent = msg || ''; clearInterval(timer); }
-function showApp() { $('#login').hidden = true; $('#app').hidden = false; try { localStorage.setItem('pg_notrack', '1'); } catch (e) {} }
+function showApp() { $('#login').hidden = true; $('#app').hidden = false; try { localStorage.setItem('pg_notrack2', '1'); } catch (e) {} }
 $('#form').addEventListener('submit', async e => {
   e.preventDefault();
   const b = $('#go'); b.disabled = true; $('#err').textContent = '';

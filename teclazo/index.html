@@ -508,9 +508,9 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>Reglas</h3>
 <p>En los ajustes se activa o desactiva por separado cada exigencia. Con todas desactivadas es el modo cómodo, ideal para el móvil; con todas activadas hay que escribir el texto exactamente como está.</p>
 <dl>
-<dt>Tildes</dt><dd>Si no se exigen, «camión» y «camion» valen igual. Si se exigen, hay que poner la tilde; si no la pones, cuenta como error.</dd>
-<dt>Puntuación</dt><dd>Si no se exige, las comas, los puntos y demás signos se saltan solos y no hace falta escribirlos. Si se exige, hay que teclearlos.</dd>
-<dt>Mayúsculas</dt><dd>Si no se exigen, da igual escribir en mayúsculas o minúsculas.</dd>
+<dt>Tildes</dt><dd>Si se quitan, el texto sale sin tildes («camion») y no hay que ponerlas. Si se exigen, hay que poner la tilde; si no la pones, cuenta como error.</dd>
+<dt>Puntuación</dt><dd>Si se quita, el texto sale sin comas, puntos ni demás signos. Si se exige, hay que teclearlos.</dd>
+<dt>Mayúsculas</dt><dd>Si se quitan, el texto sale todo en minúsculas y da igual cómo lo escribas.</dd>
 </dl>
 <h3>Resultados</h3>
 <p>La velocidad se mide en pulsaciones por minuto (ppm): cada 5 caracteres correctos cuentan como una palabra. La precisión es el porcentaje de pulsaciones que no han sido errores.</p>
@@ -808,11 +808,17 @@ function openRecords() { show('records'); renderRecords(); }
 function show(id) { for (const s of ['home', 'lobby', 'game', 'records']) $('#' + s).hidden = s !== id; $('#bar').hidden = id === 'home' || id === 'records'; }
 function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
 
-// texto objetivo según las reglas: lo que no se exige se pliega (minúsculas, sin tildes) o se salta (puntuación)
+// texto objetivo según las reglas: lo que no se exige ni se muestra (sin mayúsculas, sin tildes, sin puntuación)
 const stripAcc = s => { let o = ''; for (const ch of s) o += (ch === 'ñ' || ch === 'Ñ') ? ch : ch.normalize('NFD')[0]; return o; };
 const fold = (s, c) => { if (!c.cas) s = s.toLowerCase(); if (!c.acc) s = stripAcc(s); return s; };
 const isTypable = k => /^[\p{L}\p{N} ]$/u.test(k);
+function shown(txt, c) {
+  let s = fold(String(txt), c);
+  if (!c.pun) s = s.replace(/[^\p{L}\p{N} ]/gu, ' ').replace(/ {2,}/g, ' ').trim();
+  return s;
+}
 function target(txt, c) {
+  txt = shown(txt, c);
   const cells = [], keys = []; let ti = 0;
   for (const ch of txt) {
     const k = fold(ch, c);
@@ -865,9 +871,9 @@ function renderLobby() {
   $('#cfgBasic').innerHTML = `<div class="set"><span class="lbl">Texto</span>${ctlSeg('src', SRC.map(x => x[0]), SRC.map(x => x[1]), c.src)}</div>`;
   $('#cfgMoreBody').innerHTML =
     (c.src === 'palabras' ? `<div class="set"><span class="lbl">Número de palabras</span>${ctlSeg('n', N_OPTS, N_OPTS.map(String), c.n)}</div>` : '') +
-    `<div class="set"><span class="lbl">Tildes</span>${ctlSeg('acc', [0, 1], ['Ignorar', 'Exigir'], c.acc)}</div>` +
-    `<div class="set"><span class="lbl">Puntuación</span>${ctlSeg('pun', [0, 1], ['Ignorar', 'Exigir'], c.pun)}</div>` +
-    `<div class="set"><span class="lbl">Mayúsculas</span>${ctlSeg('cas', [0, 1], ['Ignorar', 'Exigir'], c.cas)}</div>`;
+    `<div class="set"><span class="lbl">Tildes</span>${ctlSeg('acc', [0, 1], ['Quitar', 'Exigir'], c.acc)}</div>` +
+    `<div class="set"><span class="lbl">Puntuación</span>${ctlSeg('pun', [0, 1], ['Quitar', 'Exigir'], c.pun)}</div>` +
+    `<div class="set"><span class="lbl">Mayúsculas</span>${ctlSeg('cas', [0, 1], ['Quitar', 'Exigir'], c.cas)}</div>`;
   $('#cfgSum').textContent = cfgSummary(S);
   if (sl) {
     const r = loadRec()[recKey(c)];
