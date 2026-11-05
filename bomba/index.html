@@ -595,12 +595,18 @@ function pickSyl() {
   let pool = filt(r < w[0] ? SYL.easy : r < w[0] + w[1] ? SYL.normal : SYL.hard);
   if (!pool.length) pool = filt(SYL.easy);
   if (!pool.length) pool = SYL.easy;
-  for (let k = 0; k < 25; k++) {
-    const s = pool[Math.random() * pool.length | 0];
-    if (!H.recent.includes(s)) { H.recent.push(s); if (H.recent.length > 8) H.recent.shift(); return s; }
-  }
-  return pool[0];
+  // no se repite ninguna sílaba hasta haber salido todas las de su grupo; la memoria se guarda en este navegador,
+  // así que tampoco se repiten entre partidas seguidas
+  let seen; try { seen = new Set(JSON.parse(localStorage.getItem(SEEN_KEY)) || []); } catch (e) { seen = new Set(); }
+  for (const x of H.recent) seen.add(x);
+  let free = pool.filter(x => !seen.has(x));
+  if (!free.length) { for (const x of pool) seen.delete(x); free = pool.filter(x => !H.recent.includes(x)); if (!free.length) free = pool; }
+  const s = free[Math.random() * free.length | 0];
+  seen.add(s); H.recent.push(s); if (H.recent.length > 8) H.recent.shift();
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-1500))); } catch (e) {}
+  return s;
 }
+const SEEN_KEY = 'pg_bomba_seen';
 
 // mecha
 function schedule() { clearTimeout(H.tm); H.tm = setTimeout(explode, Math.max(0, H.fuseEnd - now())); }
@@ -778,6 +784,9 @@ async function loadData() {
       fetch('examples.json').then(r => r.json()).catch(() => null)
     ]);
     DICT = new Set(t.split('\n')); SYL = j; EX = ex;
+    // sílabas de dos letras que salen como «normal» por número de palabras pero que son fáciles de resolver
+    const EXTRA = ['ye', 'yo', 'yu', 'oy', 'ño', 'ñe', 'ñi', 'iñ', 'uñ', 'zu', 'oz', 'uz', 'ji', 'eu', 'oh', 'ae'];
+    SYL.easy = [...new Set([...SYL.easy, ...EXTRA])]; SYL.normal = SYL.normal.filter(x => !EXTRA.includes(x));
   } catch (e) { $('#lobbyHint').textContent = 'No se pudo cargar el diccionario. Recarga la página.'; }
   dictLoading = false; renderLobby();
 }
