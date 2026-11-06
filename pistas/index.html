@@ -88,6 +88,11 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .team.mine{box-shadow:5px 5px 0 var(--tc)}
 .team.empty{border-style:dashed;box-shadow:none;background:transparent}
 .team h3{margin:0 0 4px;display:flex;align-items:center;gap:8px;font-size:24px;font-weight:800;font-stretch:75%;line-height:1}
+.team .ord{font-size:15px;font-weight:800;font-stretch:100%;border:2px solid var(--ink);border-radius:99px;padding:1px 7px;line-height:1.2}
+.team .mv{display:flex;gap:6px;margin-top:8px}
+.team .mv button{flex:1;padding:4px 2px;font-size:13px;border-width:2px;border-radius:10px;box-shadow:none;background:transparent;color:var(--ink);white-space:nowrap}
+.team .mv button:hover:not(:disabled),.team .mv button:active:not(:disabled){transform:none;box-shadow:none;background:var(--tc)}
+.team .mv button:disabled{opacity:.25}
 .dot{width:16px;height:16px;border-radius:50%;background:var(--tc);border:2px solid var(--ink);flex:0 0 auto;display:inline-block}
 .mem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;font-weight:700;font-size:17px;margin-top:8px}
 .mem .nm{display:grid;min-width:0;line-height:1.15}
@@ -502,7 +507,7 @@ function clueCheck(raw, x) {
 
 const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>Equipos</h3>
-<p>Se juega por parejas, o en equipos más grandes. Con dos jugadores sois un solo equipo y jugáis contra vuestro récord; con más, los equipos se turnan y gana el que más puntos sume.</p>
+<p>Se juega por parejas, o en equipos más grandes. Con dos jugadores sois un solo equipo y jugáis contra vuestro récord; con más, los equipos se turnan en el orden que marque el anfitrión y gana el que más puntos sume.</p>
 <h3>El turno</h3>
 <p>En cada turno, uno del equipo da las pistas y el resto adivina. Sale una lista de letras y para cada una hay una palabra secreta que solo ve quien da las pistas (y los otros equipos, que miran). Con la C podría ser <span class="ex">cohete</span>; con la Ñ y la X la palabra contiene la letra, no empieza por ella.</p>
 <p>Quien da las pistas las escribe en el chat, de una o dos palabras cada una: <span class="ex">nave espacial</span>, <span class="ex">despegue</span>. No vale escribir la palabra, nada que la contenga o se le parezca mucho, letras sueltas ni números. Quien adivina escribe en grande y prueba tantas veces como quiera; fallar no resta.</p>
@@ -510,7 +515,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>Puntos</h3>
 <p>Cada palabra vale 10 puntos si la sacáis con una pista y uno menos por cada pista más, como mínimo 3. Si completáis todas las letras antes de que acabe el tiempo, cada segundo que sobra es un punto más.</p>
 <h3>Rondas</h3>
-<p>En cada ronda juega una vez cada equipo. Cada uno puede elegir en la sala si prefiere dar pistas, adivinar o turnarse; si no, quien da las pistas va rotando. Las palabras no se repiten en la misma sala. El anfitrión elige en Ajustes cuántas letras, cuánto tiempo, cuántas rondas y la dificultad de las palabras.</p>
+<p>En cada ronda juega una vez cada equipo. Cada uno puede elegir en la sala si prefiere dar pistas, adivinar o turnarse; si no, quien da las pistas va rotando. Las palabras no se repiten en la misma sala y, en lo posible, tampoco a quien ya las ha visto en otras partidas. El anfitrión elige en Ajustes cuántas letras, cuánto tiempo, cuántas rondas y la dificultad de las palabras.</p>
 </div>`;
 
 // ---------- palabras ----------
@@ -536,12 +541,25 @@ function loadCfg() {
     if (ROUND_OPTS.includes(c.rounds)) d.rounds = c.rounds; if (DIFF_OPTS.includes(c.diff)) d.diff = c.diff; } catch (e) {}
   return d;
 }
+// palabras que ya ha visto esta persona (en cualquier sala): se guardan en su navegador y se mandan al anfitrión al entrar
+const SEEN_KEY = 'pg_pistas_seen', SEEN_MAX = 1200;
+function loadSeen() { try { const a = JSON.parse(localStorage.getItem(SEEN_KEY)); return Array.isArray(a) ? a.filter(x => typeof x === 'string').slice(-SEEN_MAX) : []; } catch (e) { return []; } }
+let seenMine = loadSeen();
+function markSeen(ws) {
+  const have = new Set(seenMine); let add = false;
+  for (const w of ws) { const k = flat(w); if (k && !have.has(k)) { have.add(k); seenMine.push(k); add = true; } }
+  if (!add) return;
+  seenMine = seenMine.slice(-SEEN_MAX);
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify(seenMine)); } catch (e) {}
+  if (isHost && H) { const p = byId('host'); if (p) p.seen = new Set(seenMine); }
+}
+const cleanSeen = a => new Set(Array.isArray(a) ? a.filter(x => typeof x === 'string' && x.length <= 30).slice(-SEEN_MAX) : []);
 // palabras ya salidas en esta sala: no se repiten entre partidas (ni al cambiar de juego y volver)
 const usedKey = () => 'pg_pistas_used_' + room;
 function loadUsed() { try { return new Set(JSON.parse(sessionStorage.getItem(usedKey())) || []); } catch (e) { return new Set(); } }
 function saveUsed() { try { sessionStorage.setItem(usedKey(), JSON.stringify([...H.used])); } catch (e) {} }
 function newH() {
-  return { phase: 'lobby', players: [], settings: loadCfg(), T: [], seq: [], ti: -1, cur: null, last: null, hist: [], used: loadUsed(), rl: [],
+  return { phase: 'lobby', players: [], settings: loadCfg(), T: [], seq: [], ti: -1, cur: null, last: null, hist: [], used: loadUsed(), rl: [], order: [0, 1, 2, 3],
            endAt: 0, total: 1, tm: 0, v: 0, res: null, clueAt: 0 };
 }
 const byId = id => H.players.find(p => p.id === id);
@@ -556,7 +574,7 @@ function pub() {
   return {
     v: ++H.v, phase: H.phase, settings: H.settings, rounds: H.settings.rounds, ti: H.ti, nt: H.seq.length,
     left: Math.max(0, Math.round(H.endAt - now())), total: Math.round(H.total),
-    teams: H.T.map(t => ({ k: t.k, ids: t.ids, score: t.score })), cur: pubCur(), last: H.last,
+    order: H.order, teams: H.T.map(t => ({ k: t.k, ids: t.ids, score: t.score })), cur: pubCur(), last: H.last,
     res: H.phase === 'ended' ? H.res : null,
     players: H.players.map(p => ({ id: p.id, name: p.name, color: p.color, on: p.on, back: p.back, team: p.team, role: p.role || '' }))
   };
@@ -604,6 +622,15 @@ function setTeam(id, k) {
   if (!p || !setupPhase() || !(k >= 0 && k < TEAMS.length) || p.team === k) return;
   p.team = k; push();
 }
+// orden de juego: el anfitrión mueve un equipo antes o después (entre los que tienen gente)
+function moveTeam(k, dir) {
+  if (!setupPhase()) return;
+  const cnt = teamCounts(), full = H.order.filter(x => cnt[x] > 0), i = full.indexOf(k), j = i + dir;
+  if (i < 0 || j < 0 || j >= full.length) return;
+  [full[i], full[j]] = [full[j], full[i]];
+  H.order = full.concat(H.order.filter(x => !full.includes(x)));
+  push();
+}
 function mixTeams() {
   if (!setupPhase()) return;
   const ps = shuffle(H.players.filter(p => p.on)), nt = Math.max(1, Math.min(TEAMS.length, Math.floor(ps.length / 2)));
@@ -629,20 +656,24 @@ function pickLetters(n) {
   const pick = new Set(shuffle(ALPHA.split('')).slice(0, n));
   return ALPHA.split('').filter(l => pick.has(l));
 }
+// se elige entre las palabras que menos «molestan»: nunca una ya salida en la sala si hay otra,
+// y entre el resto, las que menos jugadores de la sala hayan visto antes
 function pickWord(l) {
   const W = WORDS[l] || { f: [], d: [] }, d = H.settings.diff;
   const pool = d === 'f' ? W.f : d === 'd' ? W.d : W.f.concat(W.d), all = W.f.concat(W.d);
-  let opts = pool.filter(e => !H.used.has(e));
-  if (!opts.length) opts = all.filter(e => !H.used.has(e));
-  if (!opts.length) opts = pool.length ? pool : all;
-  const e = opts[Math.random() * opts.length | 0]; H.used.add(e); saveUsed();
+  const ps = H.players.filter(p => p.on);
+  const cost = e => { const k = flat(e.split('|')[0]); return (H.used.has(e) ? 1000 : 0) + ps.reduce((n, p) => n + (p.seen && p.seen.has(k) ? 1 : 0), 0); };
+  const best = list => { let m = Infinity, o = []; for (const e of list) { const c = cost(e); if (c < m) { m = c; o = [e]; } else if (c === m) o.push(e); } return { m, o }; };
+  let b = best(pool.length ? pool : all);
+  if (b.m > 0) { const b2 = best(all); if (b2.m < b.m) b = b2; }   // si en la dificultad elegida ya no quedan nuevas, se tira de la otra
+  const e = b.o[Math.random() * b.o.length | 0]; H.used.add(e); saveUsed();
   const [w, ...alts] = e.split('|');
   return { w, alts };
 }
 function startGame() {
   if (!WORDS || !setupPhase()) return;
   const ps = H.players.filter(p => p.on);
-  const T = TEAMS.map((_, k) => ({ k, ids: ps.filter(p => p.team === k).map(p => p.id), score: 0 })).filter(t => t.ids.length);
+  const T = H.order.map(k => ({ k, ids: ps.filter(p => p.team === k).map(p => p.id), score: 0 })).filter(t => t.ids.length);
   if (!T.length || T.some(t => t.ids.length < 2)) return;
   H.players = ps; for (const p of ps) p.back = false;
   H.T = T; H.seq = [];
@@ -777,9 +808,9 @@ function hostRecv(m, f) {
   lastSeen[f] = now();
   if (m.t === 'hello') {
     const p = byId(f);
-    if (p) { netPub('to/' + f, { t: 'state', s: pub() }); sendWord(true, f); return; }
+    if (p) { if (m.seen) p.seen = cleanSeen(m.seen); netPub('to/' + f, { t: 'state', s: pub() }); sendWord(true, f); return; }
     if (!setupPhase()) { netPub('to/' + f, { t: 'started' }); return; }
-    addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; evt({ k: 'join', name: byId(f).name }); push();
+    addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; byId(f).seen = cleanSeen(m.seen); evt({ k: 'join', name: byId(f).name }); push();
   } else if (m.t === 'bye') hostLeft(f);
   else if (byId(f)) fromPlayer(f, m);
 }
@@ -793,7 +824,7 @@ async function createRoom(code) {
   net.onMsg = hostRecv;
   loadWords();
   try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; } PGT.room = room;
-  H = newH(); addPlayer('host', myName);
+  H = newH(); addPlayer('host', myName); byId('host').seen = new Set(seenMine);
   PGT.ev('room_create');
   history.replaceState(null, '', '?sala=' + room);
   net.timers.push(setInterval(() => {
@@ -808,7 +839,7 @@ async function joinRoom(code) {
   net.onMsg = onMsg;
   try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
   lastHeard = now();
-  const hello = () => netPub('host', { t: 'hello', name: myName, pv: PGT.vid || '' });
+  const hello = () => netPub('host', { t: 'hello', name: myName, pv: PGT.vid || '', seen: seenMine });
   hello(); let tries = 0;
   const h = setInterval(() => {
     // se sigue saludando hasta aparecer en la sala (al cambiar de juego, el estado puede llegar antes de que el anfitrión nos haya oído)
@@ -881,6 +912,8 @@ const role = () => !S || !S.cur ? 'v' : S.cur.d === myId ? 'd' : S.cur.g.include
 function applyState(s) {
   const prev = S ? S.phase : null;
   S = s; endAt = now() + s.left; total = Math.max(1, s.total || 1);
+  if (s.last) markSeen(s.last.L.map(x => x.w));   // al acabar cada turno se enseñan todas sus palabras
+  if (s.res && s.res.hist) for (const h of s.res.hist) markSeen(h.L.map(x => x.w));
   if (s.phase === 'ended' && prev !== 'ended' && s.res) {
     const top = s.res.rank[0], mine = top && top.ids.includes(myId) && !(s.res.rank[1] && s.res.rank[1].score === top.score);
     play((s.res.solo ? s.res.solo.isNew : mine) ? 'win' : 'lose');
@@ -906,7 +939,9 @@ function renderLobby() {
   let shown = groups.map((g, k) => k).filter(k => groups[k].length);
   const empty = groups.findIndex(g => !g.length);
   if (empty >= 0 && on.length > 1) shown.push(empty);
-  shown.sort((a, b) => a - b);
+  const ord = S.order || [0, 1, 2, 3], pos = k => ord.indexOf(k);
+  shown.sort((a, b) => (groups[b].length > 0) - (groups[a].length > 0) || pos(a) - pos(b));
+  const full = shown.filter(k => groups[k].length);
   $('#teams').innerHTML = shown.map(k => {
     const g = groups[k], mine = me && me.team === k;
     const mem = g.map(p => {
@@ -918,7 +953,7 @@ function renderLobby() {
       return `<div class="mem ${wait ? 'wait' : ''}">${tok(p, 'xs')}<div class="nm"><span>${esc(p.name)}</span>${tag ? `<small>${tag}</small>` : ''}</div>${kick}</div>`;
     }).join('') || '<div class="none">Vacío</div>';
     const here = !mine && me ? `<button type="button" class="here" data-team="${k}">Unirme</button>` : '';
-    return `<div class="team ${mine ? 'mine' : ''} ${g.length ? '' : 'empty'}" style="${tcol(k)}"><h3><span class="dot"></span>${TEAMS[k][0]}</h3>${mem}${here}</div>`;
+    return `<div class="team ${mine ? 'mine' : ''} ${g.length ? '' : 'empty'}" style="${tcol(k)}"><h3><span class="dot"></span>${TEAMS[k][0]}${full.length > 1 && g.length ? `<span class="ord">${full.indexOf(k) + 1}º</span>` : ''}</h3>${mem}${here}${isHost && full.length > 1 && g.length ? `<div class="mv"><button type="button" data-mv="${k}" data-d="-1" ${full.indexOf(k) === 0 ? 'disabled' : ''}>‹ Antes</button><button type="button" data-mv="${k}" data-d="1" ${full.indexOf(k) === full.length - 1 ? 'disabled' : ''}>Después ›</button></div>` : ''}</div>`;
   }).join('');
   $('#btnMix').hidden = !isHost || on.length < 3;
   const mr = me && !(ended && !me.back) ? me.role || '' : null;
@@ -1108,6 +1143,7 @@ $('#cfgSet').addEventListener('click', e => {
 });
 $('#teams').addEventListener('click', e => {
   const k = e.target.closest('[data-kick]'); if (k && isHost) { kick(k.dataset.kick); return; }
+  const mv = e.target.closest('[data-mv]'); if (mv && isHost) { moveTeam(+mv.dataset.mv, +mv.dataset.d); return; }
   const t = e.target.closest('[data-team]'); if (t) act({ t: 'team', k: +t.dataset.team });
 });
 $('#btnGo').onclick = () => act({ t: 'go' });
