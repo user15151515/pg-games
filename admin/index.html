@@ -660,12 +660,14 @@ function bombaView(d, me) {
   return { res, body };
 }
 function pistasView(d, me) {
+  // d.set.mode: t por turnos, s a la vez, p Password
   const pl = d.pl || [], teams = d.teams || [], mt = me >= 0 ? (pl[me] || {}).tm : -1;
   const order = teams.map((t, i) => ({ i, ...t })).sort((a, b) => (b.sc || 0) - (a.sc || 0));
   const myPos = order.findIndex(x => x.i === mt) + 1;
   const res = mt >= 0 && teams[mt] ? `${teams[mt].sc || 0} pts${teams.length > 1 ? ' · ' + myPos + 'º' : ''}` : '';
   const members = ti => pl.map((p, i) => p.tm === ti ? p.nm : null).filter(Boolean).join(', ');
-  let body = `<div><h4>${teams.length > 1 ? 'Clasificación' : 'Resultado'}</h4><div class="rk">${order.map((t, k) =>
+  const ml = { s: ' · a la vez', p: ' · Password' }[(d.set || {}).mode] || '';
+  let body = `<div><h4>${teams.length > 1 ? 'Clasificación' + ml : 'Resultado'}</h4><div class="rk">${order.map((t, k) =>
     `<div class="${t.i === mt ? 'me' : ''}"><b>${teams.length > 1 ? k + 1 : ''}</b><i style="width:16px;height:16px;border-radius:50%;border:2px solid var(--ink);background:${['#ff5c8a', '#3b5bff', '#2fd08a', '#ff8a3d'][t.k] || '#fff'}"></i><span>${esc(t.nm || '')} · ${esc(members(t.i))}</span><b>${t.sc || 0} pts</b></div>`).join('')}</div></div>`;
   for (const tu of d.turns || []) {
     const t = teams[tu.t] || {}, dn = (pl[tu.d] || {}).nm || '?';

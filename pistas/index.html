@@ -113,6 +113,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #board{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0 12px}
 .tb{display:flex;align-items:center;gap:7px;border:var(--line);border-radius:99px;padding:3px 13px 3px 5px;background:var(--white);font-weight:700;font-size:15px;transition:transform .2s}
 .tb b{font-size:22px;font-weight:800;font-stretch:75%;line-height:1}
+.tb small{font-size:13px;font-weight:700;opacity:.7}
 .tb.on{box-shadow:var(--hard);transform:rotate(-2deg) scale(1.06)}
 #prepCard{background:var(--white);border:var(--line);border-radius:26px;box-shadow:6px 6px 0 var(--tc);padding:18px 18px 22px;text-align:center;transform:rotate(-.8deg);margin-top:6px}
 #prepCard .k{font-weight:700;font-size:16px}
@@ -130,10 +131,13 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .wl .ok{background:var(--mint)}
 .wl .z{opacity:.5;text-decoration:line-through}
 #roles{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;font-weight:700;font-size:15px;margin:0 0 8px}
+#roles .tn{display:inline-flex;align-items:center;gap:5px;font-weight:800}
+#roles .tn .dot{width:13px;height:13px}
 #roles .me{background:var(--ink);color:var(--paper);border-radius:99px;padding:1px 10px}
 #rosco{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:0 0 6px}
 #rosco span{width:27px;height:29px;border-radius:8px;display:grid;place-items:center;font-size:15px;font-weight:800;border:2px solid var(--ink);background:var(--white);transition:transform .2s}
 #rosco .ok{background:var(--mint)}
+#rosco .x{opacity:.35;text-decoration:line-through}
 #rosco .ps{border-style:dashed;background:transparent}
 #rosco .cur{background:var(--ink);color:var(--paper);transform:scale(1.2)}
 #stage{container-type:inline-size;background:var(--white);border:var(--line);border-radius:26px;box-shadow:var(--hard);
@@ -150,6 +154,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #clues{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin:14px 0 6px;min-height:46px}
 .clue{background:var(--paper);border:var(--line);border-radius:12px;padding:3px 12px;font-weight:800;font-size:22px;line-height:1.25;overflow-wrap:anywhere}
 .clue.new{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+.clue .dot{width:12px;height:12px;margin-right:6px;vertical-align:1px}
 .clue i{font-style:normal;font-size:12px;font-weight:700;opacity:.55;margin-right:6px;vertical-align:2px}
 .cwait{font-weight:600;opacity:.6}
 #entry{position:relative;margin-top:10px;min-height:1.4em}
@@ -171,6 +176,11 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #cform{display:flex;gap:10px;margin-top:16px}
 #cform input{flex:1;min-width:0;font-size:20px}
 #cform button{padding:13px 18px}
+#cform input:disabled{opacity:.6}
+.role.tline{gap:8px;font-size:17px;flex-wrap:wrap;justify-content:center}
+.role.tline b{font-weight:800}
+#lastT h4 .dot{width:13px;height:13px;vertical-align:-1px}
+#cfgSet .rnote{display:block;margin-top:2px}
 #btnPass{margin-top:12px;background:var(--pink);color:var(--ink)}
 #msg{display:block;width:fit-content;min-height:30px;margin:14px auto 0;padding:2px 14px;border-radius:99px;font-weight:700;font-size:17px}
 #msg.ok{background:var(--mint)}
@@ -462,6 +472,13 @@ const CONTAINS = 'ÑX';                         // con estas dos la palabra «co
 const TEAMS = [['Rosa', '#ff5c8a', '#17140f'], ['Azul', '#3b5bff', '#fffef8'], ['Verde', '#2fd08a', '#17140f'], ['Naranja', '#ff8a3d', '#17140f']];
 const LET_OPTS = [8, 12, 16, 26], TIME_OPTS = [60, 90, 120, 150], ROUND_OPTS = [1, 2, 3, 4], DIFF_OPTS = ['f', 'm', 'd'];
 const DIFF_LBL = { f: 'Fáciles', m: 'Mezcla', d: 'Difíciles' };
+const MODES = ['t', 's', 'p'], MODE_LBL = { t: 'Por turnos', s: 'A la vez', p: 'Password' };
+const MODE_HINT = {
+  t: 'Juega un equipo y el resto mira. El orden lo marca el anfitrión.',
+  s: 'Todos los equipos juegan a la vez, con las mismas letras y palabras distintas; al final se comparan los puntos.',
+  p: 'Una sola palabra para todos. Cada equipo da una pista por turno y su compañero tiene un intento; si falla, pasa al otro.'
+};
+const PW_CLUE_T = 25000, PW_GUESS_T = 20000, PW_MAX = 8;   // Password: segundos para dar la pista y para responder; pistas como mucho por palabra
 const PREP_MAX = 45000, CLUE_GAP = 350, MAX_CLUES = 15;
 const CFG_KEY = 'pg_pistas_cfg', REC_KEY = 'pg_pistas_rec_v1';
 const loadRec = () => { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } };
@@ -514,6 +531,8 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <p>Al acertar se pasa sola a la siguiente letra. Con «Pasapalabra» la letra se salta y vuelve al final, con las pistas que ya llevaba.</p>
 <h3>Puntos</h3>
 <p>Cada palabra vale 10 puntos si la sacáis con una pista y uno menos por cada pista más, como mínimo 3. Si completáis todas las letras antes de que acabe el tiempo, cada segundo que sobra es un punto más.</p>
+<h3>Modos</h3>
+<p>Con dos equipos o más, el anfitrión elige en Ajustes cómo se juega. <b>Por turnos</b>: juega un equipo y los demás miran. <b>A la vez</b>: todos juegan al mismo tiempo, con las mismas letras y palabras distintas, y se ve en directo cuántas lleva cada uno. <b>Password</b>: una sola palabra para todos; el equipo de turno da una pista y su compañero tiene un intento; si falla, el otro equipo da otra pista, y así hasta que alguien la saque. Cada pista que das también ayuda al rival. Gana los puntos quien la acierta (10 con una pista, uno menos por cada pista dada por cualquiera) y no hay pasapalabra ni puntos por tiempo; hay 25 segundos para dar la pista y 20 para responder.</p>
 <h3>Rondas</h3>
 <p>En cada ronda juega una vez cada equipo. Cada uno puede elegir en la sala si prefiere dar pistas, adivinar o turnarse; si no, quien da las pistas va rotando. Las palabras no se repiten en la misma sala y, en lo posible, tampoco a quien ya las ha visto en otras partidas. El anfitrión elige en Ajustes cuántas letras, cuánto tiempo, cuántas rondas y la dificultad de las palabras.</p>
 </div>`;
@@ -529,16 +548,16 @@ function loadWords() {
 // ---------- estado local ----------
 let isHost = false, room = '', myId = null, myName = '';
 let S = null, lastV = -1, endAt = 0, total = 1, lastHeard = 0, gotState = false, lastSec = -1;
-let myWord = { k: '', w: '' }, live = { k: '', text: '' }, typed = '', lastClue = '', focusK = '', lastLetterK = '', clueSeen = { k: '', n: 0 };
+let myWords = {}, live = {}, pwEnd = 0, typed = '', lastClue = '', focusK = '', lastLetterK = '', clueSeen = { k: '', n: 0 };
 const lastSeen = {};
 
 // ---------- estado del anfitrión ----------
 let H = null;
 function loadCfg() {
-  const d = { letters: 12, time: 90, rounds: 2, diff: 'm' };
+  const d = { letters: 12, time: 90, rounds: 2, diff: 'm', mode: 't' };
   try { const c = JSON.parse(localStorage.getItem(CFG_KEY)) || {};
     if (LET_OPTS.includes(c.letters)) d.letters = c.letters; if (TIME_OPTS.includes(c.time)) d.time = c.time;
-    if (ROUND_OPTS.includes(c.rounds)) d.rounds = c.rounds; if (DIFF_OPTS.includes(c.diff)) d.diff = c.diff; } catch (e) {}
+    if (ROUND_OPTS.includes(c.rounds)) d.rounds = c.rounds; if (DIFF_OPTS.includes(c.diff)) d.diff = c.diff; if (MODES.includes(c.mode)) d.mode = c.mode; } catch (e) {}
   return d;
 }
 // palabras que ya ha visto esta persona (en cualquier sala): se guardan en su navegador y se mandan al anfitrión al entrar
@@ -560,19 +579,31 @@ function loadUsed() { try { return new Set(JSON.parse(sessionStorage.getItem(use
 function saveUsed() { try { sessionStorage.setItem(usedKey(), JSON.stringify([...H.used])); } catch (e) {} }
 function newH() {
   return { phase: 'lobby', players: [], settings: loadCfg(), T: [], seq: [], ti: -1, cur: null, last: null, hist: [], used: loadUsed(), rl: [], order: [0, 1, 2, 3],
-           endAt: 0, total: 1, tm: 0, v: 0, res: null, clueAt: 0 };
+           endAt: 0, total: 1, tm: 0, stm: 0, v: 0, res: null, clueAt: 0, mode: 't' };
 }
 const byId = id => H.players.find(p => p.id === id);
 const alive = id => { const p = byId(id); return !!(p && p.on); };
 
+// ---------- partida (anfitrión) ----------
+// Un turno tiene una o varias «partes» en juego:
+//  · por turnos: una carrera, la de un equipo, y el resto mira
+//  · a la vez: una carrera por equipo, todas al mismo tiempo, mismas letras y palabras distintas
+//  · Password: una sola palabra para todos; el equipo de turno da una pista y su compañero tiene un intento
+const mkRun = (t, d, ids) => ({ t, d, g: ids.filter(id => id !== d), L: [], q: [], i: 0, pts: 0, tries: [], typ: '', done: false, bonus: 0 });
+const pubL = x => ({ l: x.l, c: x.c, st: x.st, n: x.n, cl: x.cl, pts: x.pts, by: x.by, w: x.st === 'ok' || x.st === 'x' ? x.w : '' });
 function pubCur() {
   const c = H.cur; if (!c) return null;
-  return { r: c.r, t: c.t, d: c.d, g: c.g, i: c.i, nq: c.q.length, pts: c.pts, tries: c.tries,
-           L: c.L.map(x => ({ l: x.l, c: x.c, st: x.st, n: x.n, cl: x.cl, w: x.st === 'ok' ? x.w : '' })) };
+  const o = { r: c.r, m: c.m };
+  if (c.pw) {
+    const p = c.pw;
+    o.pw = { ts: p.ts.map(z => ({ t: z.t, d: z.d, g: z.g, pts: z.pts })), i: p.i, who: p.who, step: p.step,
+             sl: Math.max(0, Math.round(p.stepEnd - now())), tries: p.tries, L: p.L.map(pubL) };
+  } else o.runs = c.runs.map(u => ({ t: u.t, d: u.d, g: u.g, i: u.i, nq: u.q.length, pts: u.pts, tries: u.tries, done: u.done, bonus: u.bonus, L: u.L.map(pubL) }));
+  return o;
 }
 function pub() {
   return {
-    v: ++H.v, phase: H.phase, settings: H.settings, rounds: H.settings.rounds, ti: H.ti, nt: H.seq.length,
+    v: ++H.v, phase: H.phase, settings: H.settings, rounds: H.settings.rounds, ti: H.ti, nt: H.seq.length, mode: H.mode || 't',
     left: Math.max(0, Math.round(H.endAt - now())), total: Math.round(H.total),
     order: H.order, teams: H.T.map(t => ({ k: t.k, ids: t.ids, score: t.score })), cur: pubCur(), last: H.last,
     res: H.phase === 'ended' ? H.res : null,
@@ -581,15 +612,33 @@ function pub() {
 }
 function bcast(m) { netPub('all', m); }
 function reply(id, m) { if (id === 'host') onMsg(m); else netPub('to/' + id, m); }
-// la palabra secreta no va en el estado común: se manda aparte a cada uno de los que no adivinan
-let wordSentK = '';
-const curKey = () => H.cur && H.phase === 'play' ? H.ti + ':' + H.cur.i : '';
+// la palabra secreta no va en el estado común: se manda aparte a quien da las pistas y a quien solo mira
+const runKey = u => H.ti + ':' + u.t + ':' + u.i;
+const pwKey = () => H.ti + ':p:' + H.cur.pw.i;
+let wordSent = new Set();
+function wordMsgs() {
+  const c = H.cur, out = []; if (!c || H.phase !== 'play') return out;
+  const on = H.players.filter(p => p.on);
+  if (c.pw) {
+    const p = c.pw, x = p.L[p.i]; if (!x) return out;
+    const gs = new Set(p.ts.flatMap(z => z.g));
+    for (const q of on) if (!gs.has(q.id)) out.push([q.id, { t: 'word', k: pwKey(), w: x.w }]);
+  } else {
+    const inRun = new Set(c.runs.flatMap(u => [u.d, ...u.g]));
+    for (const u of c.runs) {
+      const x = u.L[u.i]; if (u.done || !x) continue;
+      const m = { t: 'word', k: runKey(u), w: x.w };
+      for (const q of on) if (q.id === u.d || !inRun.has(q.id)) out.push([q.id, m]);
+    }
+  }
+  return out;
+}
 function sendWord(force, only) {
-  const k = curKey(); if (!k) return;
-  if (!force && k === wordSentK) return;
-  wordSentK = k;
-  const c = H.cur, m = { t: 'word', k, w: c.L[c.i].w };
-  for (const p of H.players) if (p.on && !c.g.includes(p.id) && (!only || p.id === only)) reply(p.id, m);
+  for (const [id, m] of wordMsgs()) {
+    if (only && id !== only) continue;
+    const k = id + '|' + m.k; if (!force && wordSent.has(k)) continue;
+    wordSent.add(k); reply(id, m);
+  }
 }
 function push() { const s = pub(); sendWord(false); applyState(s); bcast({ t: 'state', s }); }
 function evt(e) { showEvent(e); bcast({ t: 'evt', e }); }
@@ -598,7 +647,7 @@ const setupPhase = () => H.phase === 'lobby' || H.phase === 'ended';
 
 function setSetting(k, v) {
   if (!H || !setupPhase()) return;
-  const ok = { letters: LET_OPTS, time: TIME_OPTS, rounds: ROUND_OPTS, diff: DIFF_OPTS }[k];
+  const ok = { letters: LET_OPTS, time: TIME_OPTS, rounds: ROUND_OPTS, diff: DIFF_OPTS, mode: MODES }[k];
   if (!ok || !ok.includes(v)) return;
   H.settings[k] = v;
   try { localStorage.setItem(CFG_KEY, JSON.stringify(H.settings)); } catch (e) {}
@@ -677,20 +726,25 @@ function startGame() {
   if (!T.length || T.some(t => t.ids.length < 2)) return;
   H.players = ps; for (const p of ps) p.back = false;
   H.T = T; H.seq = [];
-  for (let r = 0; r < H.settings.rounds; r++) for (let t = 0; t < T.length; t++) H.seq.push({ r, t, d: pickDesc(T[t].ids, r) });
+  H.mode = T.length > 1 ? H.settings.mode : 't';   // con una sola pareja siempre es por turnos
+  for (let r = 0; r < H.settings.rounds; r++) {
+    if (H.mode === 't') for (let t = 0; t < T.length; t++) H.seq.push({ r, ts: [t] });
+    else H.seq.push({ r, ts: T.map((_, t) => t) });
+  }
   H.ti = -1; H.hist = []; H.last = null; H.rl = []; H.res = null;
   PGT.start(ps.length, false);
   nextTurn();
 }
 function nextTurn() {
-  clearTimeout(H.tm);
+  clearTimeout(H.tm); clearTimeout(H.stm);
   for (;;) {
     H.ti++;
     if (H.ti >= H.seq.length) { endGame(); return; }
-    const s = H.seq[H.ti], on = H.T[s.t].ids.filter(alive);
-    if (on.length < 2) continue;   // un equipo que se ha quedado sin pareja pierde el turno
-    const d = alive(s.d) ? s.d : pickDesc(on, s.r);
-    H.cur = { r: s.r, t: s.t, d, g: on.filter(id => id !== d), L: [], q: [], i: 0, pts: 0, tries: [], typ: '' };
+    const s = H.seq[H.ti];
+    // un equipo que se ha quedado sin pareja pierde el turno (y Password necesita al menos dos equipos)
+    const parts = s.ts.map(t => ({ t, on: H.T[t].ids.filter(alive) })).filter(x => x.on.length >= 2);
+    if (!parts.length || (H.mode === 'p' && parts.length < 2)) continue;
+    H.cur = { r: s.r, m: H.mode, runs: parts.map(x => mkRun(x.t, pickDesc(x.on, s.r), x.on)), pw: null };
     break;
   }
   H.phase = 'prep'; H.total = PREP_MAX; H.endAt = now() + PREP_MAX; at(beginTurn); push();
@@ -698,34 +752,80 @@ function nextTurn() {
 function beginTurn() {
   if (H.phase !== 'prep') return;
   const c = H.cur;
-  if (!H.rl[c.r]) H.rl[c.r] = pickLetters(H.settings.letters);   // en una ronda, todos los equipos tienen las mismas letras (y palabras distintas)
-  c.L = H.rl[c.r].map(l => { const { w, alts } = pickWord(l); return { l, c: CONTAINS.includes(l), w, alts, st: 'p', n: 0, pts: 0, cl: [] }; });
-  c.q = c.L.map((_, i) => i); c.i = 0;
-  H.phase = 'play'; H.total = H.settings.time * 1000; H.endAt = now() + H.total; at(() => endTurn(false));
+  if (!H.rl[c.r]) H.rl[c.r] = pickLetters(H.settings.letters);   // en una ronda, todos los equipos tienen las mismas letras
+  const mkL = () => H.rl[c.r].map(l => { const { w, alts } = pickWord(l); return { l, c: CONTAINS.includes(l), w, alts, st: 'p', n: 0, pts: 0, cl: [], by: -1 }; });
+  wordSent = new Set();
+  H.phase = 'play'; H.total = H.settings.time * 1000; H.endAt = now() + H.total; at(() => endTurn(true));
+  if (c.m === 'p') {
+    c.pw = { ts: c.runs.map(u => ({ t: u.t, d: u.d, g: u.g, pts: 0 })), L: mkL(), i: 0, who: c.r % c.runs.length, step: 'c', stepEnd: 0, tries: [], typ: '' };
+    c.runs = null;
+    pwStep('c');
+  } else for (const u of c.runs) { u.L = mkL(); u.q = u.L.map((_, i) => i); u.i = 0; }
   evt({ k: 'go' }); push();
 }
-function advance() {
-  const c = H.cur; c.q.shift(); c.tries = []; c.typ = '';
-  if (!c.q.length) { endTurn(true); return; }
-  c.i = c.q[0]; push();
+// --- carreras (por turnos y a la vez) ---
+function runOf(id, as) {
+  const c = H.cur; if (!c || !c.runs) return null;
+  return c.runs.find(u => !u.done && (as === 'd' ? u.d === id : as === 'g' ? u.g.includes(id) : u.d === id || u.g.includes(id))) || null;
 }
-function endTurn(all) {
+function advance(u) {
+  u.q.shift(); u.tries = []; u.typ = '';
+  if (!u.q.length) { finishRun(u, true); return; }
+  u.i = u.q[0]; push();
+}
+function finishRun(u, all) {
+  if (u.done) return;
+  u.done = true; u.bonus = all ? Math.ceil(Math.max(0, H.endAt - now()) / 1000) : 0;
+  if (all) evt({ k: 'all', bonus: u.bonus, t: u.t });
+  if (H.cur.runs.every(z => z.done)) endTurn(false); else push();
+}
+// --- Password ---
+function pwStep(step, who) {
+  const p = H.cur.pw; if (who !== undefined) p.who = who;
+  p.step = step; p.typ = ''; p.stepEnd = now() + (step === 'c' ? PW_CLUE_T : PW_GUESS_T);
+  clearTimeout(H.stm); H.stm = setTimeout(pwTimeout, Math.max(0, p.stepEnd - now()));
+}
+const pwNext = () => (H.cur.pw.who + 1) % H.cur.pw.ts.length;
+function pwTimeout() {   // quien no da la pista o no responde a tiempo pierde el turno de esa palabra
+  if (H.phase !== 'play' || !H.cur || !H.cur.pw) return;
+  const p = H.cur.pw;
+  evt({ k: 'slow', t: p.ts[p.who].t, step: p.step });
+  pwStep('c', pwNext()); push();
+}
+function pwNextWord() {
+  const p = H.cur.pw; p.tries = [];
+  if (p.i + 1 >= p.L.length) { endTurn(false); return; }
+  p.i++; pwStep('c', (H.cur.r + p.i) % p.ts.length);   // empieza cada palabra un equipo distinto
+  push();
+}
+function endTurn(timeUp) {
   if (H.phase !== 'play') return;
-  clearTimeout(H.tm);
-  const c = H.cur, bonus = all ? Math.ceil(Math.max(0, H.endAt - now()) / 1000) : 0, tot = c.pts + bonus;
-  H.T[c.t].score += tot;
-  const rec = { r: c.r, t: c.t, d: c.d, g: c.g.slice(), bonus, pts: c.pts, total: tot,
-                L: c.L.map(x => ({ l: x.l, w: x.w, ok: x.st === 'ok', n: x.n, pts: x.pts })) };
-  H.hist.push(rec); H.last = rec; H.cur = null;
-  if (all) evt({ k: 'all', bonus }); else evt({ k: 'time' });
+  clearTimeout(H.tm); clearTimeout(H.stm);
+  const c = H.cur, recs = [];
+  let miss = [];
+  if (c.pw) {
+    const p = c.pw;
+    for (const z of p.ts) {
+      H.T[z.t].score += z.pts;
+      recs.push({ r: c.r, t: z.t, d: z.d, g: z.g.slice(), bonus: 0, pts: z.pts, total: z.pts,
+                  L: p.L.filter(x => x.by === z.t).map(x => ({ l: x.l, w: x.w, ok: true, n: x.n, pts: x.pts })) });
+    }
+    miss = p.L.filter(x => x.by < 0).map(x => x.w);
+  } else for (const u of c.runs) {
+    const tot = u.pts + u.bonus; H.T[u.t].score += tot;
+    recs.push({ r: c.r, t: u.t, d: u.d, g: u.g.slice(), bonus: u.bonus, pts: u.pts, total: tot,
+                L: u.L.map(x => ({ l: x.l, w: x.w, ok: x.st === 'ok', n: x.n, pts: x.pts })) });
+  }
+  H.hist.push(...recs); H.last = { m: c.m, recs, miss }; H.cur = null;
+  if (timeUp) evt({ k: 'time' });
   nextTurn();
 }
 function endGame() {
-  clearTimeout(H.tm); H.phase = 'ended'; H.cur = null;
+  clearTimeout(H.tm); clearTimeout(H.stm); H.phase = 'ended'; H.cur = null;
   const best = H.T.length ? Math.max(...H.T.map(t => t.score)) : 0;
   PGT.end(H.players.length, false, best);
   const rank = H.T.map((t, i) => ({ i, k: t.k, ids: t.ids, score: t.score })).sort((a, b) => b.score - a.score);
-  H.res = { rank, hist: H.hist };
+  H.res = { rank, hist: H.hist, mode: H.mode };
   if (H.T.length === 1 && H.hist.length) {   // una sola pareja: juega contra su récord (guardado en el navegador del anfitrión)
     const rec = loadRec(), k = recKey(H.settings), prev = rec[k] || 0, sc = H.T[0].score;
     if (sc > prev) { rec[k] = sc; saveRec(rec); }
@@ -737,45 +837,60 @@ function endGame() {
 function sendDetail() {
   try {
     const ids = H.players.map(p => p.id), team = id => H.T.findIndex(t => t.ids.includes(id));
-    PGT.game({ v: 1, solo: false, set: { letters: H.settings.letters, time: H.settings.time, rounds: H.settings.rounds, diff: H.settings.diff },
+    PGT.game({ v: 1, solo: false, set: { letters: H.settings.letters, time: H.settings.time, rounds: H.settings.rounds, diff: H.settings.diff, mode: H.mode },
       teams: H.T.map(t => ({ k: t.k, nm: TEAMS[t.k][0], sc: t.score })),
       pl: H.players.map(p => ({ nm: p.name, pv: p.id === 'host' ? (PGT.vid || '') : (p.pv || ''), h: p.id === 'host' ? 1 : 0, tm: team(p.id), sc: (H.T[team(p.id)] || {}).score || 0 })),
       turns: H.hist.map(h => ({ t: h.t, d: ids.indexOf(h.d), b: h.bonus, s: h.total, L: h.L.map(x => [x.l, x.w, x.ok ? 1 : 0, x.n, x.pts]) })) });
   } catch (e) {}
 }
 
+function clueIn(id, raw, x, done) {   // común a los modos: comprueba la pista y, si vale, la apunta
+  const r = clueCheck(raw, x);
+  if (!r.s) { if (r.e) reply(id, { t: 'nope', why: r.e }); return; }
+  if (x.cl.length >= MAX_CLUES) { reply(id, { t: 'nope', why: 'Demasiadas pistas: prueba Pasapalabra' }); return; }
+  const t = now(); if (t - H.clueAt < CLUE_GAP) { reply(id, { t: 'nope', why: '' }); return; }
+  H.clueAt = t; x.n++; done(r.s); push();
+}
+const cleanW = w => String(w || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+function typEvt(k, text) { const e = { t: 'typ', k, text }; onMsg(e); bcast(e); }
 function fromPlayer(id, m) {
   if (!m || typeof m !== 'object') return;
-  const c = H.cur, t = now();
+  const c = H.cur;
   if (m.t === 'team') setTeam(id, m.k);
   else if (m.t === 'role') setRole(id, String(m.r || ''));
-  else if (m.t === 'go') { if (H.phase === 'prep' && c && (id === c.d || id === 'host')) beginTurn(); }
-  else if (m.t === 'clue') {
-    if (H.phase !== 'play' || !c || id !== c.d) return;
-    const x = c.L[c.i], r = clueCheck(m.c, x);
-    if (!r.s) { if (r.e) reply(id, { t: 'nope', why: r.e }); return; }
-    if (x.cl.length >= MAX_CLUES) { reply(id, { t: 'nope', why: 'Demasiadas pistas: prueba Pasapalabra' }); return; }
-    if (t - H.clueAt < CLUE_GAP) { reply(id, { t: 'nope', why: '' }); return; }
-    H.clueAt = t; x.n++; x.cl.push(r.s); push();
-  } else if (m.t === 'guess') {
-    if (H.phase !== 'play' || !c || !c.g.includes(id)) return;
-    const w = String(m.w || '').replace(/\s+/g, ' ').trim().slice(0, 30); if (!w) return;
-    const x = c.L[c.i];
-    if (isRight(w, x)) { x.st = 'ok'; x.pts = ptsFor(x.n); c.pts += x.pts; evt({ k: 'ok', w: x.w, pts: x.pts }); advance(); }
-    else {
-      c.tries = c.tries.concat(w).slice(-6); c.typ = '';
-      const e = { t: 'typ', k: curKey(), text: '' }; onMsg(e); bcast(e);
-      evt({ k: 'no', id }); push();
-    }
+  else if (m.t === 'go') { if (H.phase === 'prep' && c && (id === 'host' || c.runs.some(u => u.d === id))) beginTurn(); }
+  else if (m.t === 'again') { const p = byId(id); if (p && H.phase === 'ended') { p.back = true; push(); } }
+  else if (H.phase !== 'play' || !c) return;
+  else if (c.pw) fromPw(id, m);
+  else if (m.t === 'clue') { const u = runOf(id, 'd'); if (u) clueIn(id, m.c, u.L[u.i], s => u.L[u.i].cl.push(s)); }
+  else if (m.t === 'guess') {
+    const u = runOf(id, 'g'), w = cleanW(m.w); if (!u || !w) return;
+    const x = u.L[u.i];
+    if (isRight(w, x)) { x.st = 'ok'; x.pts = ptsFor(x.n); u.pts += x.pts; evt({ k: 'ok', w: x.w, pts: x.pts, t: u.t }); advance(u); }
+    else { u.tries = u.tries.concat(w).slice(-6); u.typ = ''; typEvt(runKey(u), ''); evt({ k: 'no', t: u.t }); push(); }
   } else if (m.t === 'pass') {
-    if (H.phase !== 'play' || !c || !(id === c.d || c.g.includes(id)) || c.q.length < 2) return;
-    c.L[c.i].st = 'ps'; c.q.push(c.q.shift()); c.i = c.q[0]; c.tries = []; c.typ = '';
-    evt({ k: 'pass' }); push();
-  } else if (m.t === 'typing') {
-    if (H.phase !== 'play' || !c || !c.g.includes(id)) return;
-    c.typ = String(m.text || '').slice(0, 30);
-    const e = { t: 'typ', k: curKey(), text: c.typ }; onMsg(e); bcast(e);
-  } else if (m.t === 'again') { const p = byId(id); if (p && H.phase === 'ended') { p.back = true; push(); } }
+    const u = runOf(id); if (!u || u.q.length < 2) return;
+    u.L[u.i].st = 'ps'; u.q.push(u.q.shift()); u.i = u.q[0]; u.tries = []; u.typ = '';
+    evt({ k: 'pass', t: u.t }); push();
+  } else if (m.t === 'typing') { const u = runOf(id, 'g'); if (u) { u.typ = String(m.text || '').slice(0, 30); typEvt(runKey(u), u.typ); } }
+}
+function fromPw(id, m) {
+  const p = H.cur.pw, z = p.ts[p.who], x = p.L[p.i];
+  if (m.t === 'clue') {
+    if (!p.ts.some(q => q.d === id)) return;
+    if (z.d !== id || p.step !== 'c') { reply(id, { t: 'nope', why: 'Espera tu turno' }); return; }
+    clueIn(id, m.c, x, s => { x.cl.push({ t: z.t, s }); pwStep('g'); });
+  } else if (m.t === 'guess') {
+    const w = cleanW(m.w); if (!w || p.step !== 'g' || !z.g.includes(id)) return;
+    if (isRight(w, x)) {
+      x.st = 'ok'; x.by = z.t; x.pts = ptsFor(x.n); z.pts += x.pts;
+      evt({ k: 'ok', w: x.w, pts: x.pts, t: z.t }); pwNextWord();
+    } else {
+      p.tries = p.tries.concat({ t: z.t, w }).slice(-6); typEvt(pwKey(), ''); evt({ k: 'no', t: z.t });
+      if (x.n >= PW_MAX) { x.st = 'x'; evt({ k: 'miss', w: x.w }); pwNextWord(); }
+      else { pwStep('c', pwNext()); push(); }
+    }
+  } else if (m.t === 'typing') { if (p.step === 'g' && z.g.includes(id)) { p.typ = String(m.text || '').slice(0, 30); typEvt(pwKey(), p.typ); } }
 }
 function hostLeft(id, kicked) {
   delete lastSeen[id]; netDrop(id);
@@ -785,15 +900,23 @@ function hostLeft(id, kicked) {
   p.on = false;
   if (H.phase === 'prep' || H.phase === 'play') {
     if (H.players.filter(x => x.on).length < 2) { endGame(); return; }
-    const c = H.cur;
-    if (c && (c.d === id || c.g.includes(id))) {
-      const on = H.T[c.t].ids.filter(alive);
-      if (on.length < 2) { if (H.phase === 'play') endTurn(false); else nextTurn(); return; }
-      if (c.d === id) {
-        if (H.phase === 'play') { endTurn(false); return; }   // sin quien da las pistas, el turno acaba con lo que haya
-        c.d = pickDesc(on, c.r);
+    const c = H.cur, parts = c ? (c.pw ? c.pw.ts : c.runs) : [];
+    const z = parts.find(u => u.d === id || u.g.includes(id));
+    if (z) {
+      const on = H.T[z.t].ids.filter(alive);
+      if (H.phase === 'prep') {
+        if (on.length < 2) {
+          c.runs = c.runs.filter(u => u !== z);
+          if (!c.runs.length || (c.m === 'p' && c.runs.length < 2)) { nextTurn(); return; }
+        } else { if (z.d === id) z.d = pickDesc(on, c.r); z.g = on.filter(x => x !== z.d); }
+      } else if (c.pw) {
+        if (on.length < 2) { endTurn(false); return; }   // en Password no se puede seguir sin una pareja completa por equipo
+        if (z.d === id) z.d = pickDesc(on, c.r);
+        z.g = on.filter(x => x !== z.d);
+      } else {
+        if (on.length < 2 || z.d === id) { finishRun(z, false); return; }   // sin quien da las pistas, esa carrera acaba con lo que haya
+        z.g = on.filter(x => x !== z.d);
       }
-      c.g = on.filter(x => x !== c.d);
     }
   }
   push();
@@ -890,8 +1013,8 @@ function onMsg(m) {
     if (m.s.v <= lastV) return;
     lastV = m.s.v; if (!gotState) PGT.ev('room_join'); gotState = true; applyState(m.s);
   } else if (m.t === 'evt') showEvent(m.e);
-  else if (m.t === 'word') { myWord = { k: String(m.k), w: String(m.w || '') }; if (S && S.phase === 'play') renderGame(); }
-  else if (m.t === 'typ') { live = { k: String(m.k), text: String(m.text || '') }; if (S && S.phase === 'play' && role() !== 'g') renderTiles(); }
+  else if (m.t === 'word') { myWords[String(m.k)] = String(m.w || ''); if (S && S.phase === 'play') renderGame(); }
+  else if (m.t === 'typ') { live[String(m.k)] = String(m.text || ''); if (S && S.phase === 'play') renderTiles(); }
   else if (m.t === 'nope') { if (m.why) { $('#clueIn').value = lastClue; play('bad'); say(m.why, 'bad'); } }
   else if (m.t === 'full') fail('La sala está llena.');
   else if (m.t === 'started') fail('La partida ya ha empezado.');
@@ -905,14 +1028,35 @@ function show(id) { for (const s of ['home', 'lobby', 'game']) $('#' + s).hidden
 function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
 const pl = id => (S && S.players.find(p => p.id === id)) || { name: '?', color: 0 };
 const names = ids => { const n = ids.map(id => pl(id).name); return n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0] || ''; };
-const sKey = () => S && S.cur && S.phase === 'play' ? S.ti + ':' + S.cur.i : '';
-// d = da las pistas, g = adivina, v = mira
-const role = () => !S || !S.cur ? 'v' : S.cur.d === myId ? 'd' : S.cur.g.includes(myId) ? 'g' : 'v';
+const tname = t => S && S.teams[t] ? TEAMS[S.teams[t].k][0] : '';
+const tk = t => S && S.teams[t] ? S.teams[t].k : 0;
+const parts = c => c ? (c.pw ? c.pw.ts : c.runs || []) : [];
+// mi parte en el turno y mi papel: d = da las pistas, g = adivina, v = mira
+function mine() {
+  for (const z of parts(S && S.cur)) { if (z.d === myId) return { z, r: 'd' }; if (z.g.includes(myId)) return { z, r: 'g' }; }
+  return { z: null, r: 'v' };
+}
+const role = () => mine().r;
+// la carrera que se ve en pantalla: la mía o, si miro, la primera que siga en juego
+function viewRun() { const c = S && S.cur; if (!c || !c.runs) return null; return mine().z || c.runs.find(u => !u.done) || c.runs[0]; }
+function sKey() {
+  const c = S && S.cur; if (!c || S.phase !== 'play') return '';
+  if (c.pw) return S.ti + ':p:' + c.pw.i;
+  const u = viewRun(); return u ? S.ti + ':' + u.t + ':' + u.i : '';
+}
+// ¿puedo dar una pista / responder ahora mismo?
+function can() {
+  const c = S && S.cur, m = mine(); if (!c || S.phase !== 'play' || !m.z) return { clue: false, guess: false };
+  if (c.pw) { const z = c.pw.ts[c.pw.who], my = z.t === m.z.t; return { clue: my && m.r === 'd' && c.pw.step === 'c', guess: my && m.r === 'g' && c.pw.step === 'g' }; }
+  return { clue: m.r === 'd' && !m.z.done, guess: m.r === 'g' && !m.z.done };
+}
+const lastWords = l => l ? l.recs.flatMap(r => r.L.map(x => x.w)).concat(l.miss || []) : [];
 
 function applyState(s) {
   const prev = S ? S.phase : null;
   S = s; endAt = now() + s.left; total = Math.max(1, s.total || 1);
-  if (s.last) markSeen(s.last.L.map(x => x.w));   // al acabar cada turno se enseñan todas sus palabras
+  pwEnd = s.cur && s.cur.pw ? now() + s.cur.pw.sl : 0;
+  if (s.last) markSeen(lastWords(s.last));   // al acabar cada turno se enseñan todas sus palabras
   if (s.res && s.res.hist) for (const h of s.res.hist) markSeen(h.L.map(x => x.w));
   if (s.phase === 'ended' && prev !== 'ended' && s.res) {
     const top = s.res.rank[0], mine = top && top.ids.includes(myId) && !(s.res.rank[1] && s.res.rank[1].score === top.score);
@@ -942,6 +1086,7 @@ function renderLobby() {
   const ord = S.order || [0, 1, 2, 3], pos = k => ord.indexOf(k);
   shown.sort((a, b) => (groups[b].length > 0) - (groups[a].length > 0) || pos(a) - pos(b));
   const full = shown.filter(k => groups[k].length);
+  const showOrd = full.length > 1 && c.mode !== 's';   // a la vez no hay orden: juegan todos juntos
   $('#teams').innerHTML = shown.map(k => {
     const g = groups[k], mine = me && me.team === k;
     const mem = g.map(p => {
@@ -953,7 +1098,7 @@ function renderLobby() {
       return `<div class="mem ${wait ? 'wait' : ''}">${tok(p, 'xs')}<div class="nm"><span>${esc(p.name)}</span>${tag ? `<small>${tag}</small>` : ''}</div>${kick}</div>`;
     }).join('') || '<div class="none">Vacío</div>';
     const here = !mine && me ? `<button type="button" class="here" data-team="${k}">Unirme</button>` : '';
-    return `<div class="team ${mine ? 'mine' : ''} ${g.length ? '' : 'empty'}" style="${tcol(k)}"><h3><span class="dot"></span>${TEAMS[k][0]}${full.length > 1 && g.length ? `<span class="ord">${full.indexOf(k) + 1}º</span>` : ''}</h3>${mem}${here}${isHost && full.length > 1 && g.length ? `<div class="mv"><button type="button" data-mv="${k}" data-d="-1" ${full.indexOf(k) === 0 ? 'disabled' : ''}>‹ Antes</button><button type="button" data-mv="${k}" data-d="1" ${full.indexOf(k) === full.length - 1 ? 'disabled' : ''}>Después ›</button></div>` : ''}</div>`;
+    return `<div class="team ${mine ? 'mine' : ''} ${g.length ? '' : 'empty'}" style="${tcol(k)}"><h3><span class="dot"></span>${TEAMS[k][0]}${showOrd && g.length ? `<span class="ord">${full.indexOf(k) + 1}º</span>` : ''}</h3>${mem}${here}${isHost && showOrd && g.length ? `<div class="mv"><button type="button" data-mv="${k}" data-d="-1" ${full.indexOf(k) === 0 ? 'disabled' : ''}>‹ Antes</button><button type="button" data-mv="${k}" data-d="1" ${full.indexOf(k) === full.length - 1 ? 'disabled' : ''}>Después ›</button></div>` : ''}</div>`;
   }).join('');
   $('#btnMix').hidden = !isHost || on.length < 3;
   const mr = me && !(ended && !me.back) ? me.role || '' : null;
@@ -967,14 +1112,15 @@ function renderLobby() {
         `<button type="button" data-role="${v}" class="${mr === v ? 'on' : ''}" aria-pressed="${mr === v}">${l}</button>`).join('') +
       `</div>${note ? `<small class="rnote">${note}</small>` : ''}`;
   }
-  $('#cfgSum').textContent = `${c.letters >= ALPHA.length ? 'Todas las' : c.letters} letras · ${c.time} s · ${c.rounds} ${c.rounds > 1 ? 'rondas' : 'ronda'} · ${DIFF_LBL[c.diff].toLowerCase()}`;
+  const used = groups.filter(g => g.length);
+  const single = used.length === 1;
+  $('#cfgSum').textContent = `${!single ? MODE_LBL[c.mode] + ' · ' : ''}${c.letters >= ALPHA.length ? 'Todas las' : c.letters} letras · ${c.time} s · ${c.rounds} ${c.rounds > 1 ? 'rondas' : 'ronda'} · ${DIFF_LBL[c.diff].toLowerCase()}`;
   $('#cfgSet').innerHTML =
+    `<div class="set"><span class="lbl">Modo</span>${ctlSeg('mode', MODES, MODES.map(m => MODE_LBL[m]), c.mode)}<small class="rnote">${MODE_HINT[c.mode]}</small></div>` +
     `<div class="set"><span class="lbl">Letras por turno</span>${ctlSeg('letters', LET_OPTS, LET_OPTS.map(n => n >= ALPHA.length ? 'Todas' : String(n)), c.letters)}</div>` +
     `<div class="set"><span class="lbl">Tiempo por turno</span>${ctlSeg('time', TIME_OPTS, TIME_OPTS.map(t => t + ' s'), c.time)}</div>` +
     `<div class="set"><span class="lbl">Rondas</span>${ctlSeg('rounds', ROUND_OPTS, ROUND_OPTS.map(String), c.rounds)}</div>` +
     `<div class="set"><span class="lbl">Palabras</span>${ctlSeg('diff', DIFF_OPTS, DIFF_OPTS.map(d => DIFF_LBL[d]), c.diff)}</div>`;
-  const used = groups.filter(g => g.length);
-  const single = used.length === 1;
   $('#recLine').hidden = !(isHost && single);
   if (isHost && single) {
     const r = loadRec()[recKey(c)];
@@ -988,9 +1134,15 @@ function renderLobby() {
   } else $('#lobbyHint').textContent = 'Esperando al anfitrión…';
 }
 
-function renderBoard(s, curT) {
-  $('#board').innerHTML = s.teams.length > 1 ? s.teams.map((t, i) =>
-    `<div class="tb ${i === curT ? 'on' : ''}" style="${tcol(t.k)}"><span class="dot"></span>${TEAMS[t.k][0]}<b>${t.score}</b></div>`).join('') : '';
+function renderBoard(s, c) {
+  if (s.teams.length < 2) { $('#board').innerHTML = ''; return; }
+  const lv = {};   // durante el turno: puntos que se van sumando y, a la vez, cuántas lleva cada equipo
+  if (c && s.phase === 'play') {
+    if (c.pw) c.pw.ts.forEach((z, i) => { lv[z.t] = { on: i === c.pw.who, add: z.pts }; });
+    else for (const u of c.runs) lv[u.t] = { on: c.runs.length === 1, add: u.pts + u.bonus, prog: c.runs.length > 1 ? `${u.L.filter(x => x.st === 'ok').length}/${u.L.length}` : '' };
+  } else if (c && c.m === 't') for (const z of parts(c)) lv[z.t] = { on: true };
+  $('#board').innerHTML = s.teams.map((t, i) => { const v = lv[i] || {};
+    return `<div class="tb ${v.on ? 'on' : ''}" style="${tcol(t.k)}"><span class="dot"></span>${TEAMS[t.k][0]}<b>${t.score + (v.add || 0)}</b>${v.prog ? `<small>${v.prog}</small>` : ''}</div>`; }).join('');
 }
 function wordList(L, withPts) {
   return `<div class="wl">${L.map(x => `<span class="${x.ok ? 'ok' : 'z'}">${esc(x.w)}${withPts && x.ok ? `<em>${x.pts}</em>` : ''}</span>`).join('')}</div>`;
@@ -998,62 +1150,117 @@ function wordList(L, withPts) {
 function renderGame() {
   const s = S, c = s.cur;
   $('#gCode').textContent = room;
-  const rd = c ? c.r + 1 : s.rounds;
-  $('#gInfo').textContent = s.teams.length > 1 || s.rounds > 1 ? `Ronda ${rd}/${s.rounds}` : '';
-  renderBoard(s, c ? c.t : -1);
+  $('#gInfo').textContent = s.teams.length > 1 || s.rounds > 1 ? `${s.mode !== 't' && s.teams.length > 1 ? MODE_LBL[s.mode] + ' · ' : ''}Ronda ${c ? c.r + 1 : s.rounds}/${s.rounds}` : '';
+  renderBoard(s, c);
   $('#prep').hidden = s.phase !== 'prep'; $('#play').hidden = s.phase !== 'play';
   if (s.phase === 'prep' && c) renderPrep(s, c);
-  if (s.phase === 'play' && c) renderPlay(s, c);
+  if (s.phase === 'play' && c) { if (c.pw) renderPw(s, c.pw); else renderRun(s, c); }
   const over = $('#over');
   if (s.phase === 'ended') { over.hidden = false; renderResults(s); } else over.hidden = true;
 }
 function renderPrep(s, c) {
-  const tk = s.teams[c.t].k, r = role();
-  $('#prepCard').style.cssText = tcol(tk);
-  $('#prepTeam').textContent = s.teams.length > 1 ? TEAMS[tk][0] : (r === 'v' ? names([c.d, ...c.g]) : 'Vosotros');
-  if (s.teams.length === 1) $('#prepCard .k').textContent = s.rounds > 1 ? `Ronda ${c.r + 1}` : 'Preparados';
-  else $('#prepCard .k').textContent = 'Turno de';
-  $('#prepRoles').innerHTML = `<div class="role">${tok(pl(c.d), 'sm')}<span>${esc(pl(c.d).name)} <small>da las pistas</small></span></div>` +
-    `<div class="role">${c.g.map(id => tok(pl(id), 'sm')).join('')}<span>${esc(names(c.g))} <small>${c.g.length > 1 ? 'adivinan' : 'adivina'}</small></span></div>`;
+  const r = role(), zs = parts(c), solo = s.teams.length === 1;
+  const card = $('#prepCard'), k = $('#prepCard .k');
+  if (c.m === 't') {
+    const z = zs[0];
+    card.style.cssText = tcol(tk(z.t));
+    k.textContent = solo ? (s.rounds > 1 ? `Ronda ${c.r + 1}` : 'Preparados') : 'Turno de';
+    $('#prepTeam').textContent = !solo ? tname(z.t) : (r === 'v' ? names([z.d, ...z.g]) : 'Vosotros');
+    $('#prepRoles').innerHTML = `<div class="role">${tok(pl(z.d), 'sm')}<span>${esc(pl(z.d).name)} <small>da las pistas</small></span></div>` +
+      `<div class="role">${z.g.map(id => tok(pl(id), 'sm')).join('')}<span>${esc(names(z.g))} <small>${z.g.length > 1 ? 'adivinan' : 'adivina'}</small></span></div>`;
+  } else {
+    card.style.cssText = mine().z ? tcol(tk(mine().z.t)) : '--tc:var(--ink)';
+    k.textContent = c.m === 's' ? 'Todos a la vez' : 'Password';
+    $('#prepTeam').textContent = `Ronda ${c.r + 1}`;
+    $('#prepRoles').innerHTML = zs.map(z => `<div class="role tline" style="${tcol(tk(z.t))}"><span class="dot"></span><b>${tname(z.t)}</b><span>${esc(pl(z.d).name)} <small>da pistas</small> · ${esc(names(z.g))} <small>${z.g.length > 1 ? 'adivinan' : 'adivina'}</small></span></div>`).join('');
+  }
   $('#prepMe').textContent = r === 'd' ? 'Tú das las pistas' : r === 'g' ? 'Tú adivinas' : 'Os toca mirar';
   const b = $('#btnGo'); b.hidden = !(r === 'd' || isHost); b.textContent = r === 'd' ? '¡Empezar!' : 'Empezar ya';
-  const l = s.last;
-  $('#lastT').innerHTML = l ? `<h4>${s.teams.length > 1 ? TEAMS[s.teams[l.t].k][0] + ': ' : 'Último turno: '}${l.total} puntos${l.bonus ? ` (${l.bonus} por tiempo)` : ''}</h4>${wordList(l.L, true)}` : '';
+  $('#lastT').innerHTML = lastHtml(s.last, s);
 }
-function renderPlay(s, c) {
-  const r = role(), x = c.L[c.i], k = sKey();
-  if (k !== lastLetterK) {   // letra nueva: se borra lo escrito y se recoloca el foco
-    lastLetterK = k; typed = ''; $('#word').value = ''; live = { k, text: '' };
-    const L = $('#letter'); L.classList.remove('pop'); void L.offsetWidth; L.classList.add('pop');
+function lastHtml(l, s) {
+  if (!l) return '';
+  const solo = s.teams.length === 1;
+  return l.recs.map(r => `<h4>${solo ? 'Último turno: ' : `<span class="dot" style="${tcol(tk(r.t))}"></span> ${tname(r.t)}: `}${r.total} puntos${r.bonus ? ` (${r.bonus} por tiempo)` : ''}</h4>${r.L.length ? wordList(r.L, true) : ''}`).join('') +
+    (l.miss && l.miss.length ? `<h4>Sin acertar</h4>${wordList(l.miss.map(w => ({ w, ok: false })), false)}` : '');
+}
+function newLetter(k) {   // letra nueva: se borra lo escrito y se recoloca el foco
+  if (k === lastLetterK) return;
+  lastLetterK = k; typed = ''; $('#word').value = '';
+  const L = $('#letter'); L.classList.remove('pop'); void L.offsetWidth; L.classList.add('pop');
+}
+function paintClues(cl, k, r, waitTxt) {
+  const fresh = clueSeen.k === k && cl.length > clueSeen.n;
+  if (fresh && r === 'g') play('turn');
+  $('#clues').innerHTML = cl.length ? cl.map((c, i) => {
+    const t = typeof c === 'string' ? c : c.s, dot = typeof c === 'string' ? '' : `<span class="dot" style="${tcol(tk(c.t))}"></span>`;
+    return `<span class="clue ${fresh && i === cl.length - 1 ? 'new' : ''}">${dot}<i>${i + 1}</i>${esc(t)}</span>`; }).join('')
+    : `<span class="cwait">${waitTxt}</span>`;
+  clueSeen = { k, n: cl.length };
+}
+function setControls(r, cn, opts) {
+  const w = $('#word');
+  w.disabled = !cn.guess; $('#send').hidden = !cn.guess;
+  $('#cform').hidden = r !== 'd';
+  const ci = $('#clueIn'), cb = $('#cform button');
+  ci.disabled = !cn.clue; cb.disabled = !cn.clue; ci.placeholder = cn.clue ? 'Una o dos palabras' : (opts.waitClue || 'Espera');
+  $('#btnPass').hidden = !opts.pass; $('#btnPass').disabled = !!opts.passOff;
+  renderTiles();
+  const fk = sKey() + r + (cn.clue ? 'c' : '') + (cn.guess ? 'g' : '');
+  if (focusK !== fk) {
+    focusK = fk;
+    if (cn.guess) setTimeout(() => w.focus(), 30);
+    else if (cn.clue) setTimeout(() => ci.focus(), 30);
   }
-  $('#roles').innerHTML = `<span class="${r === 'd' ? 'me' : ''}">${esc(pl(c.d).name)} da pistas</span>·<span class="${r === 'g' ? 'me' : ''}">${esc(names(c.g))} ${c.g.length > 1 ? 'adivinan' : 'adivina'}</span>`;
-  $('#rosco').innerHTML = c.L.map((y, i) => `<span class="${i === c.i ? 'cur' : y.st === 'ok' ? 'ok' : y.st === 'ps' ? 'ps' : ''}">${y.l}</span>`).join('');
+}
+function renderRun(s, c) {
+  const u = viewRun(), r = role(), k = sKey(), cn = can();
+  if (!u) return;
+  const multi = c.runs.length > 1;
+  $('#roles').innerHTML = (multi ? `<span class="tn" style="${tcol(tk(u.t))}"><span class="dot"></span>${tname(u.t)}</span>` : '') +
+    `<span class="${r === 'd' ? 'me' : ''}">${esc(pl(u.d).name)} da pistas</span>·<span class="${r === 'g' ? 'me' : ''}">${esc(names(u.g))} ${u.g.length > 1 ? 'adivinan' : 'adivina'}</span>`;
+  $('#rosco').innerHTML = u.L.map((y, i) => `<span class="${!u.done && i === u.i ? 'cur' : y.st === 'ok' ? 'ok' : y.st === 'ps' ? 'ps' : ''}">${y.l}</span>`).join('');
+  const sec = $('#secret');
+  if (u.done) {   // a la vez: este equipo ya ha terminado y espera al resto
+    $('#lmode').textContent = 'Terminado';
+    $('#letter').textContent = `${u.L.filter(x => x.st === 'ok').length}/${u.L.length}`;
+    sec.hidden = true; $('#tries').innerHTML = '';
+    $('#clues').innerHTML = `<span class="cwait">${u.bonus ? `+${u.bonus} por tiempo · ` : ''}esperando al resto</span>`;
+    setControls(r, cn, { pass: false }); return;
+  }
+  const x = u.L[u.i];
+  newLetter(k);
+  $('#lmode').textContent = x.c ? 'Contiene la' : 'Empieza por';
+  $('#letter').textContent = x.l;
+  sec.hidden = r === 'g';
+  if (r !== 'g') sec.textContent = myWords[k] || '…';
+  paintClues(x.cl, k, r, r === 'd' ? 'Escribe la primera pista' : 'Esperando pista…');
+  $('#tries').innerHTML = u.tries.map(t => `<span>${esc(t)}</span>`).join('');
+  setControls(r, cn, { pass: r !== 'v', passOff: u.nq < 2 });
+}
+function renderPw(s, p) {
+  const r = role(), k = sKey(), cn = can(), x = p.L[p.i], z = p.ts[p.who];
+  if (!x) return;
+  newLetter(k);
+  const mineT = mine().z ? mine().z.t : -1, act = z.t === mineT;
+  $('#roles').innerHTML = `<span class="tn" style="${tcol(tk(z.t))}"><span class="dot"></span>${tname(z.t)}</span>` +
+    `<span class="${act && r === 'd' && p.step === 'c' ? 'me' : ''}">${p.step === 'c' ? 'pista de ' : 'pista: '}${esc(pl(z.d).name)}</span>·` +
+    `<span class="${act && r === 'g' && p.step === 'g' ? 'me' : ''}">${p.step === 'g' ? 'responde ' : 'luego '}${esc(names(z.g))}</span>`;
+  $('#rosco').innerHTML = p.L.map((y, i) => `<span class="${i === p.i ? 'cur' : y.st === 'ok' ? 'ok' : y.st === 'x' ? 'x' : ''}" ${y.st === 'ok' && y.by >= 0 ? `style="background:${TEAMS[tk(y.by)][1]};color:${TEAMS[tk(y.by)][2]}"` : ''}>${y.l}</span>`).join('');
   $('#lmode').textContent = x.c ? 'Contiene la' : 'Empieza por';
   $('#letter').textContent = x.l;
   const sec = $('#secret'); sec.hidden = r === 'g';
-  if (r !== 'g') sec.textContent = myWord.k === k ? myWord.w : '…';
-  const cl = x.cl;
-  const fresh = clueSeen.k === k && cl.length > clueSeen.n;
-  if (fresh && r === 'g') play('turn');
-  $('#clues').innerHTML = cl.length ? cl.map((t, i) => `<span class="clue ${fresh && i === cl.length - 1 ? 'new' : ''}"><i>${i + 1}</i>${esc(t)}</span>`).join('')
-    : `<span class="cwait">${r === 'd' ? 'Escribe la primera pista' : 'Esperando pista…'}</span>`;
-  clueSeen = { k, n: cl.length };
-  $('#tries').innerHTML = c.tries.map(t => `<span>${esc(t)}</span>`).join('');
-  const w = $('#word'); w.disabled = r !== 'g'; $('#send').hidden = r !== 'g';
-  $('#cform').hidden = r !== 'd'; $('#btnPass').hidden = r === 'v'; $('#btnPass').disabled = c.nq < 2;
-  renderTiles();
-  if (focusK !== k + r) {
-    focusK = k + r;
-    if (r === 'g') setTimeout(() => w.focus(), 30);
-    else if (r === 'd') setTimeout(() => $('#clueIn').focus(), 30);
-  }
+  if (r !== 'g') sec.textContent = myWords[k] || '…';
+  paintClues(x.cl, k, r, act && r === 'd' ? 'Te toca: escribe una pista' : `Esperando la pista de ${tname(z.t)}…`);
+  $('#tries').innerHTML = p.tries.map(t => `<span style="text-decoration-color:${TEAMS[tk(t.t)][1]}">${esc(t.w)}</span>`).join('');
+  setControls(r, cn, { pass: false, waitClue: act && p.step === 'g' ? 'Ahora responde tu equipo' : 'Espera tu turno' });
 }
 function renderTiles() {
   if (!S || S.phase !== 'play') return;
-  const r = role(), mine = r === 'g', txt = mine ? typed : (live.k === sKey() ? live.text : '');
+  const mineT = can().guess, txt = mineT ? typed : (live[sKey()] || '');
   let h = '';
   for (const ch of txt) h += ch === ' ' ? '<span class="t sp"></span>' : `<span class="t">${esc(ch)}</span>`;
-  if (mine) h += (!typed && document.activeElement !== $('#word')) ? '<span class="hint">Toca para escribir</span>' : '<span class="caret"></span>';
+  if (mineT) h += (!typed && document.activeElement !== $('#word')) ? '<span class="hint">Toca para escribir</span>' : '<span class="caret"></span>';
   const el = $('#tiles'); el.innerHTML = h; el.style.setProperty('--n', Math.max(7, txt.length + 1));
 }
 
@@ -1063,7 +1270,7 @@ function renderResults(s) {
   $('#overTitle').textContent = r.solo ? r.solo.score + ' puntos' : !top ? 'Fin' : tie ? 'Empate' : top.ids.includes(myId) ? 'Habéis ganado' : 'Gana ' + TEAMS[top.k][0];
   $('#rank').innerHTML = r.rank.map((x, i) => {
     const turns = r.hist.filter(h => h.t === x.i).map(h =>
-      `<div class="tl"><p>${s.rounds > 1 ? `Ronda ${h.r + 1} · ` : ''}pistas de ${esc(pl(h.d).name)}: <b>${h.total}</b>${h.bonus ? ` (${h.bonus} por tiempo)` : ''}</p>${wordList(h.L, true)}</div>`).join('');
+      `<div class="tl"><p>${s.rounds > 1 ? `Ronda ${h.r + 1} · ` : ''}pistas de ${esc(pl(h.d).name)}: <b>${h.total}</b>${h.bonus ? ` (${h.bonus} por tiempo)` : ''}</p>${h.L.length ? wordList(h.L, true) : ''}</div>`).join('');
     return `<li><details class="who" ${r.rank.length === 1 ? 'open' : ''}><summary><span class="n">${r.rank.length > 1 ? i + 1 : ''}</span><span class="dot" style="${tcol(x.k)}"></span>` +
       `<div><b>${r.rank.length > 1 ? TEAMS[x.k][0] : esc(names(x.ids))}</b><small>${r.rank.length > 1 ? esc(names(x.ids)) + ' · ' : ''}${x.score} puntos</small></div></summary>${turns}</details></li>`;
   }).join('');
@@ -1076,14 +1283,19 @@ function renderResults(s) {
 let msgTm = 0;
 function say(text, cls) { const m = $('#msg'); m.textContent = text; m.className = cls || ''; clearTimeout(msgTm); msgTm = setTimeout(() => { m.textContent = ''; m.className = ''; }, 2600); }
 function stageFx(cls) { const st = $('#stage'); st.classList.remove('shake', 'win'); void st.offsetWidth; st.classList.add(cls); }
+// a la vez, cada uno solo ve los efectos de la carrera que tiene en pantalla; del resto, un aviso
+const here = t => { const c = S && S.cur; if (!c || c.pw || t === undefined) return true; const u = viewRun(); return !u || u.t === t; };
 function showEvent(e) {
   if (e.k === 'join') { play('join'); say(e.name + ' entra'); }
   else if (e.k === 'left') { play('left'); say(e.name + (e.kicked ? ' expulsado' : ' se va')); }
   else if (e.k === 'go') play('turn');
-  else if (e.k === 'ok') { play('ok'); say(`${e.w} · +${e.pts}`, 'ok'); stageFx('win'); }
-  else if (e.k === 'no') { play('bad'); stageFx('shake'); }
-  else if (e.k === 'pass') { play('left'); say('Pasapalabra'); }
-  else if (e.k === 'all') { play('bonus'); say(`¡Todas! +${e.bonus} por tiempo`, 'ok'); }
+  else if (e.k === 'ok') {
+    if (here(e.t)) { play('ok'); say(`${e.w} · +${e.pts}${S && S.cur && S.cur.pw ? ' para ' + tname(e.t) : ''}`, 'ok'); stageFx('win'); }
+  } else if (e.k === 'no') { if (here(e.t)) { play('bad'); stageFx('shake'); } }
+  else if (e.k === 'pass') { if (here(e.t)) { play('left'); say('Pasapalabra'); } }
+  else if (e.k === 'all') { if (here(e.t)) { play('bonus'); say(`¡Todas! +${e.bonus} por tiempo`, 'ok'); } else say(`${tname(e.t)} ha terminado`); }
+  else if (e.k === 'slow') { play('left'); say(`${tname(e.t)} no ${e.step === 'c' ? 'da la pista' : 'responde'} a tiempo`); }
+  else if (e.k === 'miss') { play('boom'); say(`Nadie la saca: ${e.w}`, 'bad'); }
   else if (e.k === 'time') play('boom');
 }
 
@@ -1091,10 +1303,13 @@ function showEvent(e) {
 (function loop() {
   requestAnimationFrame(loop);
   if (!S) return;
-  const rem = Math.max(0, endAt - now()), sec = Math.ceil(rem / 1000);
-  if (S.phase === 'play' && S.cur) {
+  const rem = Math.max(0, endAt - now()), sec = Math.ceil(rem / 1000), c = S.cur;
+  if (S.phase === 'play' && c) {
     $('#fuse').firstElementChild.style.width = Math.max(0, Math.min(100, rem / total * 100)) + '%';
-    $('#clock').textContent = `${sec} s · ${S.cur.pts} puntos`;
+    if (c.pw) {
+      const z = c.pw.ts[c.pw.who], ss = Math.ceil(Math.max(0, pwEnd - now()) / 1000);
+      $('#clock').textContent = `${sec} s · ${tname(z.t)} ${c.pw.step === 'c' ? 'da pista' : 'responde'}: ${ss} s`;
+    } else { const u = viewRun(); $('#clock').textContent = u && u.done ? `${sec} s` : `${sec} s · ${u ? u.pts : 0} puntos`; }
     if (sec !== lastSec && sec <= 5 && sec > 0) play('tick', true);
   } else if (S.phase === 'prep') $('#prepClock').textContent = sec > 0 ? `Empieza solo en ${sec} s` : '';
   lastSec = sec;
@@ -1139,7 +1354,7 @@ $('#btnMix').onclick = () => { if (isHost) mixTeams(); };
 $('#cfgSet').addEventListener('click', e => {
   const b = e.target.closest('button[data-k]'); if (!b || !isHost) return;
   const k = b.dataset.k, i = +b.dataset.i;
-  setSetting(k, { letters: LET_OPTS, time: TIME_OPTS, rounds: ROUND_OPTS, diff: DIFF_OPTS }[k][i]);
+  setSetting(k, { letters: LET_OPTS, time: TIME_OPTS, rounds: ROUND_OPTS, diff: DIFF_OPTS, mode: MODES }[k][i]);
 });
 $('#teams').addEventListener('click', e => {
   const k = e.target.closest('[data-kick]'); if (k && isHost) { kick(k.dataset.kick); return; }
@@ -1150,14 +1365,14 @@ $('#btnGo').onclick = () => act({ t: 'go' });
 $('#btnPass').onclick = () => { if (!$('#btnPass').disabled) act({ t: 'pass' }); };
 $('#cform').addEventListener('submit', e => {
   e.preventDefault();
-  const v = $('#clueIn').value.trim(); if (!v || role() !== 'd') return;
-  const x = S.cur.L[S.cur.i], r = clueCheck(v, { w: '', alts: [] });   // la comprobación de la palabra la hace el anfitrión
+  const v = $('#clueIn').value.trim(); if (!v || !can().clue) return;
+  const r = clueCheck(v, { w: '', alts: [] });   // la comprobación contra la palabra la hace el anfitrión
   if (r.e) { play('bad'); say(r.e, 'bad'); return; }
   lastClue = v; $('#clueIn').value = ''; act({ t: 'clue', c: v });
-  if (x) $('#clueIn').focus();
+  $('#clueIn').focus();
 });
 $('#word').addEventListener('input', e => {
-  if (role() !== 'g') { e.target.value = ''; typed = ''; renderTiles(); return; }
+  if (!can().guess) { e.target.value = ''; typed = ''; renderTiles(); return; }
   typed = e.target.value.slice(0, 30); renderTiles(); sendTyping();
 });
 let typAt = 0, typTm = 0;
@@ -1169,7 +1384,7 @@ function sendTyping() {   // como mucho cuatro avisos por segundo: los demás so
 }
 $('#gform').addEventListener('submit', e => {
   e.preventDefault();
-  const v = $('#word').value.trim(); if (!v || role() !== 'g') return;
+  const v = $('#word').value.trim(); if (!v || !can().guess) return;
   clearTimeout(typTm); act({ t: 'guess', w: v });
   $('#word').value = ''; typed = ''; renderTiles();
 });
@@ -1179,13 +1394,13 @@ $('#word').addEventListener('blur', renderTiles);
 document.addEventListener('click', e => {
   if (!S || S.phase !== 'play' || $('#game').hidden || !$('#over').hidden) return;
   if (e.target.closest('button, a, summary, details, input')) return;
-  if (role() === 'g') $('#word').focus(); else if (role() === 'd' && e.target.closest('#stage')) $('#clueIn').focus();
+  const cn = can(); if (cn.guess) $('#word').focus(); else if (cn.clue && e.target.closest('#stage')) $('#clueIn').focus();
 });
 addEventListener('keydown', e => {
   if (!S || S.phase !== 'play' || e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
-  const r = role(), a = document.activeElement;
-  if (r === 'g' && a !== $('#word')) $('#word').focus();
-  else if (r === 'd' && a !== $('#clueIn')) $('#clueIn').focus();
+  const cn = can(), a = document.activeElement;
+  if (cn.guess && a !== $('#word')) $('#word').focus();
+  else if (cn.clue && a !== $('#clueIn')) $('#clueIn').focus();
 });
 for (const b of document.querySelectorAll('.snd')) b.onclick = () => {
   unlock(); SND.mute = !SND.mute;
