@@ -89,15 +89,18 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .team.empty{border-style:dashed;box-shadow:none;background:transparent}
 .team h3{margin:0 0 4px;display:flex;align-items:center;gap:8px;font-size:24px;font-weight:800;font-stretch:75%;line-height:1}
 .dot{width:16px;height:16px;border-radius:50%;background:var(--tc);border:2px solid var(--ink);flex:0 0 auto;display:inline-block}
-.mem{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;margin-top:8px;min-width:0}
+.mem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;font-weight:700;font-size:17px;margin-top:8px}
+.mem .nm{display:grid;min-width:0;line-height:1.15}
 .mem span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mem small{font-size:12px;font-weight:600;opacity:.7;white-space:nowrap}
+.mem small{font-size:12px;font-weight:600;opacity:.7;overflow-wrap:anywhere}
 .mem.wait{opacity:.45}
-.mem .kick{margin-left:auto;padding:2px 9px;font-size:13px;box-shadow:none;background:transparent;color:var(--ink);border-width:2px;border-radius:10px}
+.mem .kick{padding:2px 8px;font-size:13px;box-shadow:none;background:transparent;color:var(--ink);border-width:2px;border-radius:10px}
 .mem .kick:hover:not(:disabled),.mem .kick:active:not(:disabled){transform:none;box-shadow:none;background:var(--pink)}
 .team .here{margin-top:10px;width:100%;padding:6px 8px;font-size:15px;box-shadow:none;background:transparent;color:var(--ink);border-width:2px}
 .team .here:hover:not(:disabled),.team .here:active:not(:disabled){transform:none;box-shadow:none;background:var(--tc)}
 .team .none{font-size:14px;font-weight:600;opacity:.6;margin-top:8px}
+#myRole{margin:8px 0 16px}
+.rnote{font-size:14px;font-weight:600;opacity:.7}
 #teamTools{display:flex;justify-content:center;margin:0 0 18px;min-height:8px}
 
 /* partida */
@@ -237,6 +240,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   </div>
   <div id="gameSw" hidden></div>
   <div class="teams" id="teams"></div>
+  <div class="set" id="myRole" hidden></div>
   <div id="teamTools"><button type="button" class="linkbtn" id="btnMix" hidden>Mezclar parejas</button></div>
   <p id="cfgSum"></p>
   <div id="recLine" hidden></div>
@@ -506,7 +510,7 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>Puntos</h3>
 <p>Cada palabra vale 10 puntos si la sacáis con una pista y uno menos por cada pista más, como mínimo 3. Si completáis todas las letras antes de que acabe el tiempo, cada segundo que sobra es un punto más.</p>
 <h3>Rondas</h3>
-<p>En cada ronda juega una vez cada equipo, y quien da las pistas va rotando. El anfitrión elige en Ajustes cuántas letras, cuánto tiempo, cuántas rondas y la dificultad de las palabras.</p>
+<p>En cada ronda juega una vez cada equipo. Cada uno puede elegir en la sala si prefiere dar pistas, adivinar o turnarse; si no, quien da las pistas va rotando. Las palabras no se repiten en la misma sala. El anfitrión elige en Ajustes cuántas letras, cuánto tiempo, cuántas rondas y la dificultad de las palabras.</p>
 </div>`;
 
 // ---------- palabras ----------
@@ -532,8 +536,12 @@ function loadCfg() {
     if (ROUND_OPTS.includes(c.rounds)) d.rounds = c.rounds; if (DIFF_OPTS.includes(c.diff)) d.diff = c.diff; } catch (e) {}
   return d;
 }
+// palabras ya salidas en esta sala: no se repiten entre partidas (ni al cambiar de juego y volver)
+const usedKey = () => 'pg_pistas_used_' + room;
+function loadUsed() { try { return new Set(JSON.parse(sessionStorage.getItem(usedKey())) || []); } catch (e) { return new Set(); } }
+function saveUsed() { try { sessionStorage.setItem(usedKey(), JSON.stringify([...H.used])); } catch (e) {} }
 function newH() {
-  return { phase: 'lobby', players: [], settings: loadCfg(), T: [], seq: [], ti: -1, cur: null, last: null, hist: [], used: new Set(), rl: [],
+  return { phase: 'lobby', players: [], settings: loadCfg(), T: [], seq: [], ti: -1, cur: null, last: null, hist: [], used: loadUsed(), rl: [],
            endAt: 0, total: 1, tm: 0, v: 0, res: null, clueAt: 0 };
 }
 const byId = id => H.players.find(p => p.id === id);
@@ -550,7 +558,7 @@ function pub() {
     left: Math.max(0, Math.round(H.endAt - now())), total: Math.round(H.total),
     teams: H.T.map(t => ({ k: t.k, ids: t.ids, score: t.score })), cur: pubCur(), last: H.last,
     res: H.phase === 'ended' ? H.res : null,
-    players: H.players.map(p => ({ id: p.id, name: p.name, color: p.color, on: p.on, back: p.back, team: p.team }))
+    players: H.players.map(p => ({ id: p.id, name: p.name, color: p.color, on: p.on, back: p.back, team: p.team, role: p.role || '' }))
   };
 }
 function bcast(m) { netPub('all', m); }
@@ -589,7 +597,7 @@ function addPlayer(id, name) {
   // por defecto, en el primer equipo que aún no tenga pareja completa
   const cnt = teamCounts(); let team = cnt.findIndex(c => c < 2);
   if (team < 0) team = cnt.indexOf(Math.min(...cnt));
-  H.players.push({ id, name: n, on: true, back: true, score: 0, color, team });
+  H.players.push({ id, name: n, on: true, back: true, score: 0, color, team, role: '' });
 }
 function setTeam(id, k) {
   const p = byId(id); k = +k;
@@ -603,6 +611,19 @@ function mixTeams() {
   push();
 }
 
+// quién da las pistas: los que lo han pedido (se turnan entre ellos); si nadie, los que no han pedido adivinar; si no, todos
+function pickDesc(ids, r) {
+  const role = id => (byId(id) || {}).role || '';
+  let pool = ids.filter(id => role(id) === 'd');
+  if (!pool.length) pool = ids.filter(id => role(id) !== 'g');
+  if (!pool.length) pool = ids;
+  return pool[r % pool.length];
+}
+function setRole(id, r) {
+  const p = byId(id);
+  if (!p || !setupPhase() || !['', 'd', 'g'].includes(r) || p.role === r) return;
+  p.role = r; push();
+}
 function pickLetters(n) {
   if (n >= ALPHA.length) return ALPHA.split('');
   const pick = new Set(shuffle(ALPHA.split('')).slice(0, n));
@@ -614,7 +635,7 @@ function pickWord(l) {
   let opts = pool.filter(e => !H.used.has(e));
   if (!opts.length) opts = all.filter(e => !H.used.has(e));
   if (!opts.length) opts = pool.length ? pool : all;
-  const e = opts[Math.random() * opts.length | 0]; H.used.add(e);
+  const e = opts[Math.random() * opts.length | 0]; H.used.add(e); saveUsed();
   const [w, ...alts] = e.split('|');
   return { w, alts };
 }
@@ -625,8 +646,8 @@ function startGame() {
   if (!T.length || T.some(t => t.ids.length < 2)) return;
   H.players = ps; for (const p of ps) p.back = false;
   H.T = T; H.seq = [];
-  for (let r = 0; r < H.settings.rounds; r++) for (let t = 0; t < T.length; t++) H.seq.push({ r, t, d: T[t].ids[r % T[t].ids.length] });
-  H.ti = -1; H.hist = []; H.last = null; H.used = new Set(); H.rl = []; H.res = null;
+  for (let r = 0; r < H.settings.rounds; r++) for (let t = 0; t < T.length; t++) H.seq.push({ r, t, d: pickDesc(T[t].ids, r) });
+  H.ti = -1; H.hist = []; H.last = null; H.rl = []; H.res = null;
   PGT.start(ps.length, false);
   nextTurn();
 }
@@ -637,7 +658,7 @@ function nextTurn() {
     if (H.ti >= H.seq.length) { endGame(); return; }
     const s = H.seq[H.ti], on = H.T[s.t].ids.filter(alive);
     if (on.length < 2) continue;   // un equipo que se ha quedado sin pareja pierde el turno
-    const d = alive(s.d) ? s.d : on[s.r % on.length];
+    const d = alive(s.d) ? s.d : pickDesc(on, s.r);
     H.cur = { r: s.r, t: s.t, d, g: on.filter(id => id !== d), L: [], q: [], i: 0, pts: 0, tries: [], typ: '' };
     break;
   }
@@ -696,6 +717,7 @@ function fromPlayer(id, m) {
   if (!m || typeof m !== 'object') return;
   const c = H.cur, t = now();
   if (m.t === 'team') setTeam(id, m.k);
+  else if (m.t === 'role') setRole(id, String(m.r || ''));
   else if (m.t === 'go') { if (H.phase === 'prep' && c && (id === c.d || id === 'host')) beginTurn(); }
   else if (m.t === 'clue') {
     if (H.phase !== 'play' || !c || id !== c.d) return;
@@ -738,7 +760,7 @@ function hostLeft(id, kicked) {
       if (on.length < 2) { if (H.phase === 'play') endTurn(false); else nextTurn(); return; }
       if (c.d === id) {
         if (H.phase === 'play') { endTurn(false); return; }   // sin quien da las pistas, el turno acaba con lo que haya
-        c.d = on[0];
+        c.d = pickDesc(on, c.r);
       }
       c.g = on.filter(x => x !== c.d);
     }
@@ -889,14 +911,27 @@ function renderLobby() {
     const g = groups[k], mine = me && me.team === k;
     const mem = g.map(p => {
       const wait = ended && !p.back;
-      const tag = wait ? 'viendo resultados' : p.id === 'host' ? 'anfitrión' : p.id === myId ? 'tú' : '';
+      const who = wait ? 'viendo resultados' : p.id === myId ? 'tú' : p.id === 'host' ? 'anfitrión' : '';
+      const rl = wait ? '' : p.role === 'd' ? 'da pistas' : p.role === 'g' ? 'adivina' : '';
+      const tag = [who, rl].filter(Boolean).join(' · ');
       const kick = isHost && p.id !== 'host' ? `<button type="button" class="kick" data-kick="${esc(p.id)}" aria-label="Echar a ${esc(p.name)}">Echar</button>` : '';
-      return `<div class="mem ${wait ? 'wait' : ''}">${tok(p, 'xs')}<span>${esc(p.name)}</span>${tag ? `<small>${tag}</small>` : ''}${kick}</div>`;
+      return `<div class="mem ${wait ? 'wait' : ''}">${tok(p, 'xs')}<div class="nm"><span>${esc(p.name)}</span>${tag ? `<small>${tag}</small>` : ''}</div>${kick}</div>`;
     }).join('') || '<div class="none">Vacío</div>';
     const here = !mine && me ? `<button type="button" class="here" data-team="${k}">Unirme</button>` : '';
     return `<div class="team ${mine ? 'mine' : ''} ${g.length ? '' : 'empty'}" style="${tcol(k)}"><h3><span class="dot"></span>${TEAMS[k][0]}</h3>${mem}${here}</div>`;
   }).join('');
   $('#btnMix').hidden = !isHost || on.length < 3;
+  const mr = me && !(ended && !me.back) ? me.role || '' : null;
+  $('#myRole').hidden = mr === null;
+  if (mr !== null) {
+    const mates = me ? groups[me.team] || [] : [];
+    const note = mates.length > 1 && mates.every(p => p.role === 'g') ? 'En tu equipo todos queréis adivinar: os turnaréis.'
+      : mates.filter(p => p.role === 'd').length > 1 ? 'Sois varios para dar pistas: os turnaréis.' : '';
+    $('#myRole').innerHTML = `<span class="lbl">Tu papel</span><div class="seg" role="group">` +
+      [['', 'Turnarse'], ['d', 'Dar pistas'], ['g', 'Adivinar']].map(([v, l]) =>
+        `<button type="button" data-role="${v}" class="${mr === v ? 'on' : ''}" aria-pressed="${mr === v}">${l}</button>`).join('') +
+      `</div>${note ? `<small class="rnote">${note}</small>` : ''}`;
+  }
   $('#cfgSum').textContent = `${c.letters >= ALPHA.length ? 'Todas las' : c.letters} letras · ${c.time} s · ${c.rounds} ${c.rounds > 1 ? 'rondas' : 'ronda'} · ${DIFF_LBL[c.diff].toLowerCase()}`;
   $('#cfgSet').innerHTML =
     `<div class="set"><span class="lbl">Letras por turno</span>${ctlSeg('letters', LET_OPTS, LET_OPTS.map(n => n >= ALPHA.length ? 'Todas' : String(n)), c.letters)}</div>` +
@@ -1064,6 +1099,7 @@ if (navigator.share) { $('#btnShare').hidden = false; $('#btnShare').onclick = (
 $('#btnStart').onclick = startGame;
 $('#btnLeave').onclick = leave;
 $('#btnExit').onclick = leave;
+$('#myRole').addEventListener('click', e => { const b = e.target.closest('button[data-role]'); if (b) act({ t: 'role', r: b.dataset.role }); });
 $('#btnMix').onclick = () => { if (isHost) mixTeams(); };
 $('#cfgSet').addEventListener('click', e => {
   const b = e.target.closest('button[data-k]'); if (!b || !isHost) return;
