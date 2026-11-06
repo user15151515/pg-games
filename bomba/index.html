@@ -593,7 +593,8 @@ function addPlayer(id, name) {
   let n = name, k = 2;
   while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
   const used = new Set(H.players.map(p => p.color));
-  let color = 0; while (used.has(color) && color < COLORS.length - 1) color++;
+  let color = 0; while (used.has(color) && color < COLORS.length) color++;
+  if (color >= COLORS.length) color = H.players.length % COLORS.length;
   H.players.push({ id, name: n, lives: 0, alive: false, spec: H.phase === 'playing', on: true, back: true, letters: '', color, words: 0, streak: 0, bestStreak: 0, log: [] });
 }
 

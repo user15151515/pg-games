@@ -206,6 +206,11 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .car.ghost{opacity:.35}
 .car.run svg{animation:bump .22s infinite alternate}
 @keyframes bump{to{transform:translateY(-2px)}}
+.lanes.tight{gap:5px}
+.lanes.tight .track{height:30px}
+.lanes.tight .info{font-size:12px}
+.lanes.tight .info b{font-size:13px}
+.lanes.tight .car{top:2px;width:38px;height:24px;left:calc((100% - 14px - 38px) * var(--p,0))}
 .lane.me .info b::after{content:" (tú)";font-weight:600;opacity:.6}
 #textCard{background:var(--white);border:var(--line);border-radius:22px;box-shadow:var(--hard);padding:16px 18px;margin-top:6px;position:relative;cursor:text}
 #text{font-size:clamp(19px,5.2vw,25px);line-height:1.55;font-weight:600;overflow-wrap:anywhere}
@@ -320,7 +325,6 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
-const MAX_PLAYERS = 8;
 const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'],['#ff8a3d','#17140f'],
                 ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
 
@@ -333,7 +337,7 @@ const SB_URL = window.PG_SB_URL || 'https://acsrnjowxvjamiybsjkx.supabase.co';
 const SB_KEY = window.PG_SB_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
 const TOPIC = 'pg:teclazo:';
 const BEAT = 5000, DEAD = 20000;   // latido cada 5 s; se da por perdido a quien lleva 20 s sin enviar nada
-const MAX_CHANS = 16, MAX_RATE = 40;
+const MAX_RATE = 40;
 const uid = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
 const net = { clients: [], sb: null, a: null, u: {}, pend: {}, seq: 0, onMsg: null, timers: [], role: '', sent: [], probe: null, last: { a: 0, u: 0 } };
 
@@ -369,7 +373,7 @@ function netChan(name, onEnv) {
 // El anfitrión se suscribe al canal de cada invitado cuando llega su «hello» por el canal común.
 async function netAttach(f, e) {
   if (!net.u[f]) {
-    if (net.pend[f] || Object.keys(net.u).length >= MAX_CHANS) return;
+    if (net.pend[f]) return;
     net.pend[f] = 1;
     try { net.u[f] = await netChan('u:' + f, x => { if (x.f === f) net.onMsg(x.m, f); }); }
     catch (x) { delete net.pend[f]; return; }
@@ -566,7 +570,8 @@ function addPlayer(id, name) {
   let n = name, k = 2;
   while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
   const used = new Set(H.players.map(p => p.color));
-  let color = 0; while (used.has(color) && color < COLORS.length - 1) color++;
+  let color = 0; while (used.has(color) && color < COLORS.length) color++;
+  if (color >= COLORS.length) color = H.players.length % COLORS.length;
   H.players.push({ id, name: n, on: true, back: true, wins: 0, prog: 0, mis: 0, fin: null, color });
 }
 
@@ -696,7 +701,6 @@ function hostRecv(m, f) {
     const p = byId(f);
     if (p) { netPub('to/' + f, { t: 'state', s: pub() }); return; }
     if (H.phase === 'count' || H.phase === 'race') { netPub('to/' + f, { t: 'started' }); return; }
-    if (H.players.filter(x => x.on).length >= MAX_PLAYERS) { netPub('to/' + f, { t: 'full' }); return; }
     addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; evt({ k: 'join', name: byId(f).name }); push();
   } else if (m.t === 'bye') hostLeft(f);
   else fromPlayer(f, m);
@@ -924,6 +928,7 @@ function renderLanes() {
     `<div class="track"><div class="car" style="--c:${COLORS[p.color][0]}">${CAR}</div></div></div>`);
   if (s.solo && s.ghost) lanes.push(`<div class="lane" data-id="ghost"><div class="info"><b>Récord</b><small>${s.ghost} ppm</small></div><div class="track"><div class="car ghost" style="--c:#17140f">${CAR}</div></div></div>`);
   $('#lanes').innerHTML = lanes.join('');
+  $('#lanes').classList.toggle('tight', lanes.length > 8);
   updateLanes();
 }
 function updateLanes() {

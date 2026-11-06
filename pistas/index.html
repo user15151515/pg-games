@@ -304,7 +304,6 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
-const MAX_PLAYERS = 8;
 const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'],['#ff8a3d','#17140f'],
                 ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
 
@@ -317,7 +316,7 @@ const SB_URL = window.PG_SB_URL || 'https://acsrnjowxvjamiybsjkx.supabase.co';
 const SB_KEY = window.PG_SB_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
 const TOPIC = 'pg:pistas:';
 const BEAT = 5000, DEAD = 20000;   // latido cada 5 s; se da por perdido a quien lleva 20 s sin enviar nada
-const MAX_CHANS = 16, MAX_RATE = 40;
+const MAX_RATE = 40;
 const uid = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
 const net = { clients: [], sb: null, a: null, u: {}, pend: {}, seq: 0, onMsg: null, timers: [], role: '', sent: [], probe: null, last: { a: 0, u: 0 } };
 
@@ -353,7 +352,7 @@ function netChan(name, onEnv) {
 // El anfitrión se suscribe al canal de cada invitado cuando llega su «hello» por el canal común.
 async function netAttach(f, e) {
   if (!net.u[f]) {
-    if (net.pend[f] || Object.keys(net.u).length >= MAX_CHANS) return;
+    if (net.pend[f]) return;
     net.pend[f] = 1;
     try { net.u[f] = await netChan('u:' + f, x => { if (x.f === f) net.onMsg(x.m, f); }); }
     catch (x) { delete net.pend[f]; return; }
@@ -451,7 +450,6 @@ function paintSnd() { for (const b of document.querySelectorAll('.snd')) { b.tex
 const ALPHA = 'ABCDEFGHIJKLMNÑOPQRSTUVXYZ';   // sin W: casi no hay palabras que empiecen por ella
 const CONTAINS = 'ÑX';                         // con estas dos la palabra «contiene» la letra, no empieza por ella
 const TEAMS = [['Rosa', '#ff5c8a', '#17140f'], ['Azul', '#3b5bff', '#fffef8'], ['Verde', '#2fd08a', '#17140f'], ['Naranja', '#ff8a3d', '#17140f']];
-const MAX_TEAM = 4;
 const LET_OPTS = [8, 12, 16, 26], TIME_OPTS = [60, 90, 120, 150], ROUND_OPTS = [1, 2, 3, 4], DIFF_OPTS = ['f', 'm', 'd'];
 const DIFF_LBL = { f: 'Fáciles', m: 'Mezcla', d: 'Difíciles' };
 const PREP_MAX = 45000, CLUE_GAP = 350, MAX_CLUES = 15;
@@ -499,7 +497,7 @@ function clueCheck(raw, x) {
 
 const HOW = `<summary>Cómo se juega</summary><div class="body">
 <h3>Equipos</h3>
-<p>Se juega por parejas, o en equipos de hasta cuatro. Con dos jugadores sois un solo equipo y jugáis contra vuestro récord; con más, los equipos se turnan y gana el que más puntos sume.</p>
+<p>Se juega por parejas, o en equipos más grandes. Con dos jugadores sois un solo equipo y jugáis contra vuestro récord; con más, los equipos se turnan y gana el que más puntos sume.</p>
 <h3>El turno</h3>
 <p>En cada turno, uno del equipo da las pistas y el resto adivina. Sale una lista de letras y para cada una hay una palabra secreta que solo ve quien da las pistas (y los otros equipos, que miran). Con la C podría ser <span class="ex">cohete</span>; con la Ñ y la X la palabra contiene la letra, no empieza por ella.</p>
 <p>Quien da las pistas las escribe en el chat, de una o dos palabras cada una: <span class="ex">nave espacial</span>, <span class="ex">despegue</span>. No vale escribir la palabra, nada que la contenga o se le parezca mucho, letras sueltas ni números. Quien adivina escribe en grande y prueba tantas veces como quiera; fallar no resta.</p>
@@ -585,7 +583,8 @@ function addPlayer(id, name) {
   let n = name, k = 2;
   while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
   const used = new Set(H.players.map(p => p.color));
-  let color = 0; while (used.has(color) && color < COLORS.length - 1) color++;
+  let color = 0; while (used.has(color) && color < COLORS.length) color++;
+  if (color >= COLORS.length) color = H.players.length % COLORS.length;
   // por defecto, en el primer equipo que aún no tenga pareja completa
   const cnt = teamCounts(); let team = cnt.findIndex(c => c < 2);
   if (team < 0) team = cnt.indexOf(Math.min(...cnt));
@@ -593,7 +592,7 @@ function addPlayer(id, name) {
 }
 function setTeam(id, k) {
   const p = byId(id); k = +k;
-  if (!p || !setupPhase() || !(k >= 0 && k < TEAMS.length) || p.team === k || teamCounts()[k] >= MAX_TEAM) return;
+  if (!p || !setupPhase() || !(k >= 0 && k < TEAMS.length) || p.team === k) return;
   p.team = k; push();
 }
 function mixTeams() {
@@ -757,7 +756,6 @@ function hostRecv(m, f) {
     const p = byId(f);
     if (p) { netPub('to/' + f, { t: 'state', s: pub() }); sendWord(true, f); return; }
     if (!setupPhase()) { netPub('to/' + f, { t: 'started' }); return; }
-    if (H.players.filter(x => x.on).length >= MAX_PLAYERS) { netPub('to/' + f, { t: 'full' }); return; }
     addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; evt({ k: 'join', name: byId(f).name }); push();
   } else if (m.t === 'bye') hostLeft(f);
   else if (byId(f)) fromPlayer(f, m);
@@ -894,7 +892,7 @@ function renderLobby() {
       const kick = isHost && p.id !== 'host' ? `<button type="button" class="kick" data-kick="${esc(p.id)}" aria-label="Echar a ${esc(p.name)}">Echar</button>` : '';
       return `<div class="mem ${wait ? 'wait' : ''}">${tok(p, 'xs')}<span>${esc(p.name)}</span>${tag ? `<small>${tag}</small>` : ''}${kick}</div>`;
     }).join('') || '<div class="none">Vacío</div>';
-    const here = !mine && g.length < MAX_TEAM && me ? `<button type="button" class="here" data-team="${k}">Unirme</button>` : '';
+    const here = !mine && me ? `<button type="button" class="here" data-team="${k}">Unirme</button>` : '';
     return `<div class="team ${mine ? 'mine' : ''} ${g.length ? '' : 'empty'}" style="${tcol(k)}"><h3><span class="dot"></span>${TEAMS[k][0]}</h3>${mem}${here}</div>`;
   }).join('');
   $('#btnMix').hidden = !isHost || on.length < 3;
