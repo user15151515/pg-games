@@ -1,0 +1,19 @@
+/* páginas de texto: reglas, sobre y privacidad */
+.doc{padding-top:max(32px,env(safe-area-inset-top));padding-bottom:56px}
+.doc nav{font-size:15px;font-weight:600;margin-bottom:28px}
+.doc nav a{text-decoration:none;border-bottom:2px solid var(--ink)}
+.doc h1{font-size:clamp(48px,15vw,84px);margin:0 0 18px}
+.doc .lead{font-size:20px;font-weight:600;margin:0 0 28px}
+.doc h2{font-size:30px;font-weight:800;font-stretch:75%;letter-spacing:-.01em;line-height:1;margin:34px 0 10px}
+.doc p,.doc li,.doc dd{font-weight:500}
+.doc p{margin:0 0 14px}
+.doc dl{margin:0 0 14px}
+.doc dt{font-weight:800;margin-top:12px}
+.doc dd{margin:2px 0 0}
+.doc ul{padding-left:20px;margin:0 0 14px}
+.doc .ex{background:var(--white);border:2px solid var(--ink);border-radius:8px;padding:0 6px;font-weight:700;white-space:nowrap}
+.doc .play{display:inline-block;margin-top:24px;text-decoration:none;background:var(--ink);color:var(--paper);border:var(--line);border-radius:18px;box-shadow:var(--hard);padding:14px 22px;font-size:22px;font-weight:800;font-stretch:75%}
+.doc .links{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px;padding:0;list-style:none}
+.doc .links a{display:inline-block;text-decoration:none;background:var(--white);border:var(--line);border-radius:14px;padding:8px 14px;font-weight:700}
+.doc footer{margin-top:44px;font-size:14px;font-weight:600;opacity:.7}
+.doc footer a{margin-right:14px}
