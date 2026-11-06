@@ -896,7 +896,7 @@ function hostGone(why) {
 function goHome() { location.href = location.pathname; }
 // ---------- cambiar de juego sin salir de la sala ----------
 // El anfitrión avisa a todos con «goto»; cada uno abre el otro juego con el mismo código y vuelve a entrar solo.
-const GAMES_SW = [['bomba', 'Bomba'], ['tutti', 'Tutti frutti'], ['teclazo', 'Teclazo']];
+const GAMES_SW = [['bomba', 'Bomba'], ['tutti', 'Tutti frutti'], ['teclazo', 'Teclazo'], ['pistas', 'Pistas']];
 const THIS_GAME = TOPIC.split(':')[1];
 let switching = false, autoJoin = false;
 function renderSwitch(on) {

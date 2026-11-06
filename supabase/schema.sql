@@ -48,7 +48,7 @@ returns void language plpgsql security definer set search_path = public as $$
 declare v_name text;
 begin
   if p_kind is null or p_kind not in ('view','room_create','room_join','game_start','game_end','net_fail') then return; end if;
-  if p_game is null or p_game not in ('','bomba','tutti','teclazo') then return; end if;
+  if p_game is null or p_game not in ('','bomba','tutti','teclazo','pistas') then return; end if;
   if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return; end if;
   if p_sid is null or p_sid !~ '^[a-z0-9]{0,24}$' then return; end if;
   if p_props is null or jsonb_typeof(p_props) <> 'object' or length(p_props::text) > 500 then p_props := '{}'::jsonb; end if;
@@ -141,7 +141,7 @@ begin
         'started', coalesce(s.started, 0), 'finished', coalesce(s.finished, 0), 'solo', coalesce(s.solo, 0),
         'players', coalesce(s.players, 0), 'avg_n', s.avg_n, 'avg_dur', s.avg_dur, 'avg_m', s.avg_m, 'best_m', s.best_m
       ) order by gm.o)
-      from (values ('bomba', 1), ('tutti', 2), ('teclazo', 3)) as gm(g, o)
+      from (values ('bomba', 1), ('tutti', 2), ('teclazo', 3), ('pistas', 4)) as gm(g, o)
       left join (
         select game,
                count(*) filter (where kind = 'view') as views,
@@ -248,7 +248,7 @@ revoke all on public.game_logs from anon, authenticated;
 create or replace function public.pg_game(p_game text, p_vid text, p_detail jsonb)
 returns void language plpgsql security definer set search_path = public as $$
 begin
-  if p_game is null or p_game not in ('bomba', 'tutti', 'teclazo') then return; end if;
+  if p_game is null or p_game not in ('bomba', 'tutti', 'teclazo', 'pistas') then return; end if;
   if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return; end if;
   if p_detail is null or jsonb_typeof(p_detail) <> 'object' or jsonb_typeof(p_detail -> 'pl') <> 'array' then return; end if;
   if jsonb_array_length(p_detail -> 'pl') not between 1 and 8 or length(p_detail::text) > 64000 then return; end if;

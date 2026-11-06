@@ -16,7 +16,7 @@
   try { if (localStorage.getItem(NT) === '1') off = true; } catch (e) {}
   if (off) { window.PGT = noop; return; }
 
-  const game = (location.pathname.match(/\/(bomba|tutti|teclazo)(\/|$)/) || [])[1] || '';
+  const game = (location.pathname.match(/\/(bomba|tutti|teclazo|pistas)(\/|$)/) || [])[1] || '';
   const rnd = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
   let vid = '';
   try { vid = localStorage.getItem('pg_vid') || ''; if (!/^[a-z0-9]{8,24}$/.test(vid)) { vid = rnd(16); localStorage.setItem('pg_vid', vid); } } catch (e) { vid = rnd(16); }

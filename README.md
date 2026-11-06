@@ -2,7 +2,7 @@
 
 Juegos cortos multijugador para jugar con amigos. Web estática, sin registro: se juega compartiendo un enlace.
 
-Juegos: Teclazo (`teclazo/`), carrera de mecanografía en la que cada coche avanza según lo que escribes; se juega en sala o en individual contra la sombra de tu récord (ppm y precisión, guardados en el navegador). Tutti frutti (`tutti/`), una letra al azar y varias categorías que se pueden personalizar; se puntúa por respuestas únicas y los jugadores pueden votar las que no valen. Tiene modo individual contra el reloj, en el que el propio jugador corrige sus respuestas, con récord guardado en el navegador por combinación de rondas, tiempo y categorías. Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega». Tiene modo individual (aciertos, racha y récord, guardado en el navegador por combinación de ajustes), salir de la sala en cualquier momento y expulsión de jugadores por parte del anfitrión.
+Juegos: Pistas (`pistas/`), por parejas o equipos de hasta cuatro: uno da pistas de una o dos palabras por chat y el resto adivina una palabra por cada letra de una lista, contra el reloj. La palabra secreta solo la reciben quien da pistas y los otros equipos (por el canal privado de cada uno, no en el estado común); el anfitrión rechaza pistas que contengan la palabra o se le parezcan. Puntos: 10 por palabra con una pista, uno menos por cada pista extra (mínimo 3) y un punto por segundo sobrante si se completan todas las letras; con una sola pareja hay récord en el navegador del anfitrión. Teclazo (`teclazo/`), carrera de mecanografía en la que cada coche avanza según lo que escribes; se juega en sala o en individual contra la sombra de tu récord (ppm y precisión, guardados en el navegador). Tutti frutti (`tutti/`), una letra al azar y varias categorías que se pueden personalizar; se puntúa por respuestas únicas y los jugadores pueden votar las que no valen. Tiene modo individual contra el reloj, en el que el propio jugador corrige sus respuestas, con récord guardado en el navegador por combinación de rondas, tiempo y categorías. Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega». Tiene modo individual (aciertos, racha y récord, guardado en el navegador por combinación de ajustes), salir de la sala en cualquier momento y expulsión de jugadores por parte del anfitrión.
 
 ## Multijugador
 
@@ -29,6 +29,8 @@ shared.css            fuente, colores, botones e inputs comunes
 bomba/index.html      el juego Bomba
 tutti/index.html      el juego Tutti frutti (copia la capa de red de Bomba; si cambia una, cambia la otra)
 teclazo/index.html    el juego Teclazo (misma capa de red copiada)
+pistas/index.html     el juego Pistas (misma capa de red copiada)
+pistas/palabras.json  palabras por letra (f fáciles, d difíciles; variantes aceptadas separadas por |; con Ñ y X la palabra contiene la letra)
 teclazo/textos.json   refranes, frases y párrafos para las carreras (escritos para este proyecto o refranes populares)
 teclazo/palabras.json palabras comunes para el modo Palabras
 bomba/words.txt       diccionario normalizado (sin acentos)

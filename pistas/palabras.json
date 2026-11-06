@@ -1,0 +1,106 @@
+{
+  "A": {
+    "f": ["avión", "abeja", "árbol", "agua", "anillo", "ajo", "almohada", "ambulancia", "araña", "arena", "arroz", "ascensor", "avestruz", "azúcar", "abuelo|abuela", "aceite", "aguacate", "alfombra", "ardilla", "armario", "autobús|bus", "aeropuerto", "ancla", "ángel", "antena", "ajedrez"],
+    "d": ["acordeón", "alcantarilla", "andamio", "apicultor", "archipiélago", "armadura", "astronauta", "ataúd", "atasco", "auriculares|cascos", "avalancha|alud", "acuario", "aspiradora", "abanico"]
+  },
+  "B": {
+    "f": ["barco", "ballena", "banco", "bandera", "baño", "barba", "bebé", "beso", "biblioteca", "bicicleta|bici", "bigote", "boca", "bolígrafo|boli", "bombero", "bosque", "botella", "brazo", "bruja", "búho", "burro", "bufanda", "butaca", "balón|pelota", "bocadillo|bocata", "bolso"],
+    "d": ["bañera", "barómetro", "bisturí", "bumerán|boomerang|bumeran", "brújula", "buzo", "bisagra", "bostezo", "berenjena", "bellota", "bombilla", "buzón"]
+  },
+  "C": {
+    "f": ["casa", "coche", "cama", "caballo", "camello", "cámara", "camisa", "campana", "canguro", "caracol", "carta", "castillo", "cebolla", "cerdo", "cine", "cocina", "cohete", "conejo", "corazón", "cuchara", "cuchillo", "cumpleaños", "cartero", "cebra", "café", "calcetín"],
+    "d": ["calendario", "camaleón", "candado", "cangrejo", "catedral", "cerradura", "chimenea", "cicatriz", "columpio", "cometa", "cordillera", "cremallera", "cucaracha", "carnaval", "cerilla"]
+  },
+  "D": {
+    "f": ["dado", "dedo", "diente", "dinero", "dinosaurio", "disco", "doctor|médico|doctora", "domingo", "dragón", "ducha", "dulce", "delfín", "desayuno", "diccionario", "diamante", "diana", "deporte", "despertador"],
+    "d": ["dentista", "desierto", "destornillador", "detective", "diploma", "disfraz", "dominó", "dromedario", "duende", "diadema", "dardo", "diluvio"]
+  },
+  "E": {
+    "f": ["elefante", "escalera", "escoba", "espejo", "estrella", "estufa", "escuela|colegio", "enfermera|enfermero", "ensalada", "espada", "espalda", "espinacas|espinaca", "esquí", "estación", "estatua", "edificio", "enano", "enchufe", "erizo", "euro"],
+    "d": ["eclipse", "embudo", "encía", "enciclopedia", "escafandra", "escalofrío", "escorpión", "esqueleto", "estetoscopio|fonendoscopio|fonendo", "eucalipto", "embalse", "ermitaño"]
+  },
+  "F": {
+    "f": ["fantasma", "faro", "flor", "foca", "fresa", "fruta", "fuego", "fútbol", "fiesta", "flecha", "frigorífico|nevera|frigo", "fábrica", "falda", "familia", "farmacia", "fideos", "flamenco", "foto|fotografía", "frente", "fuente", "furgoneta", "futbolista"],
+    "d": ["fósforo|cerilla", "fósil", "frontera", "fregona", "fusible", "fiambrera|tupper|táper", "flequillo", "folio", "forastero", "frambuesa", "fábula", "faraón"]
+  },
+  "G": {
+    "f": ["gato", "gallina", "gafas", "globo", "gorila", "gorra", "guitarra", "gusano", "galleta", "garaje", "gasolina", "gigante", "gimnasio", "girasol", "gol", "grifo", "guante", "gambas|gamba", "garbanzos|garbanzo", "granja", "gallo"],
+    "d": ["gaita", "gárgola", "gemelos|gemelo", "geranio", "glaciar", "gladiador", "golondrina", "gotera", "granizo", "grúa", "guillotina", "guisantes|guisante"]
+  },
+  "H": {
+    "f": ["helado", "hielo", "hoja", "hormiga", "hospital", "hotel", "huevo", "hamburguesa", "hada", "hermano|hermana", "hijo|hija", "hipopótamo", "hombre", "hombro", "horno", "huerto", "hueso", "humo", "hacha", "hilo", "hambre", "huella"],
+    "d": ["halcón", "hamaca", "harina", "hechicero|brujo", "helicóptero", "herradura", "hipnosis", "hoguera", "hucha", "huracán", "hélice", "horóscopo"]
+  },
+  "I": {
+    "f": ["iglesia", "isla", "invierno", "imán", "insecto", "iglú", "idioma", "impresora", "incendio|fuego", "invitado|invitados", "interruptor", "inodoro|váter|retrete", "indio", "invento"],
+    "d": ["iceberg", "impermeable|chubasquero", "incienso", "inyección", "ingeniero", "instituto", "intérprete", "inventor", "istmo", "iguana", "imprenta"]
+  },
+  "J": {
+    "f": ["jabón", "jamón", "jardín", "jarra", "jirafa", "joyas|joya", "juego", "juguete", "jugador", "jueves", "julio", "junio", "jaula", "jefe", "joven", "jersey", "juez", "jabalí"],
+    "d": ["jaguar", "jarabe", "jazmín", "jeringuilla|jeringa", "jinete", "jorobado", "jubilado", "judo", "jungla|selva", "jaqueca", "jengibre", "jilguero"]
+  },
+  "K": {
+    "f": ["kiwi", "koala", "kárate|karate", "kilo|kilogramo", "kétchup|ketchup", "kayak", "kebab", "karaoke", "kimono", "kilómetro"],
+    "d": ["kiosco|quiosco", "kamikaze"]
+  },
+  "L": {
+    "f": ["león", "libro", "luna", "lápiz", "leche", "lechuga", "limón", "llave", "lluvia", "lobo", "loro", "lámpara", "lengua", "lentejas|lenteja", "ladrón", "lagarto", "langosta", "lavadora", "lazo", "letra", "lunes", "lombriz"],
+    "d": ["laberinto", "ladrillo", "lagartija", "lavavajillas|lavaplatos", "leñador", "libélula", "linterna", "llavero", "lupa", "luciérnaga", "lingote", "lápida"]
+  },
+  "M": {
+    "f": ["mano", "manzana", "mar", "mariposa", "mesa", "mono", "montaña", "moto|motocicleta", "música", "médico|doctor", "madre|mamá", "maleta", "mapa", "martillo", "medusa", "melón", "mochila", "moneda", "mosca", "mosquito", "muñeca", "museo", "murciélago", "miel"],
+    "d": ["mago", "mapache", "marioneta", "mármol", "máscara", "medalla", "mejillón|mejillones", "metro", "micrófono", "mimo", "molino", "momia", "marea", "mostaza"]
+  },
+  "N": {
+    "f": ["nariz", "naranja", "nieve", "niño|niña", "noche", "nube", "nido", "número", "nevera|frigorífico", "novia|novio", "nuez", "navidad", "nave", "nieto|nieta", "nota", "nadar"],
+    "d": ["náufrago", "nenúfar", "neumático|rueda", "ninja", "nómada", "notario", "nudo", "nutria", "néctar", "neurona", "novela", "nevada"]
+  },
+  "Ñ": {
+    "f": ["niño|niña", "araña", "montaña", "piña", "uña", "año", "sueño", "castaña", "mañana", "baño", "muñeca", "señal", "otoño", "caña", "leña", "cumpleaños", "pañuelo", "señora|señor", "España"],
+    "d": ["pañal", "cigüeña", "rebaño", "puño", "ñu", "leñador", "cabaña", "compañero|compañera", "guiño", "ñandú", "dueño|dueña"]
+  },
+  "O": {
+    "f": ["oreja", "ojo", "oso", "oveja", "ola", "oro", "ordenador|computadora|pc", "otoño", "oficina", "olla", "oca", "ombligo", "oruga", "oasis", "oliva|aceituna", "orquesta", "orca", "oído"],
+    "d": ["obelisco", "oboe", "océano", "oculista|oftalmólogo", "ogro", "olimpiadas|olimpiada|juegos olímpicos", "orangután", "órgano", "orquídea", "ostra", "ovni", "ovillo"]
+  },
+  "P": {
+    "f": ["pato", "perro", "pez", "piano", "pie", "pájaro", "pan", "pantalón|pantalones", "papel", "paraguas", "patata", "pelo", "pelota|balón", "peine", "pera", "pingüino", "pirata", "pizza", "playa", "plátano", "plato", "policía", "pollo", "puerta", "puente", "payaso"],
+    "d": ["pantano", "paracaídas", "pasillo", "pendientes|pendiente", "periscopio", "pescador", "piragua", "pirámide", "pólvora", "pulpo", "pupitre", "puzle|puzzle|rompecabezas", "prismáticos"]
+  },
+  "Q": {
+    "f": ["queso", "quiosco|kiosco", "química", "quince", "quirófano", "quemadura", "quinto", "quitanieves"],
+    "d": ["quimera", "quijote", "quiniela", "quilla", "quinceañera"]
+  },
+  "R": {
+    "f": ["rata", "ratón", "regalo", "reloj", "reina", "rey", "río", "robot", "rosa", "rueda", "radio", "raqueta", "rana", "rayo", "red", "regla", "restaurante", "rinoceronte", "rodilla", "ropa", "rubio|rubia", "rojo", "rascacielos"],
+    "d": ["radar", "raíz", "rampa", "recreo", "refugio", "remolque", "reno", "repollo|col", "resbalón", "ruleta", "rubí", "rastrillo", "rompecabezas|puzle|puzzle"]
+  },
+  "S": {
+    "f": ["sol", "silla", "sopa", "serpiente", "sal", "sandía", "sapo", "sartén", "semáforo", "sirena", "sobre", "sofá", "sombrero", "sombrilla", "submarino", "supermercado|súper|super", "sábado", "sangre", "seta", "sello", "semilla", "sonrisa"],
+    "d": ["sacacorchos", "salvavidas", "saxofón|saxo", "selfi|selfie", "sepia", "sequía", "sierra", "sótano", "sudor", "surf", "sauna", "sacapuntas"]
+  },
+  "T": {
+    "f": ["taza", "tigre", "tomate", "tren", "tortuga", "teléfono|móvil", "televisión|tele|tv", "tijeras", "toro", "tambor", "tarta|pastel", "taxi", "teatro", "tenedor", "tiburón", "tienda", "tierra", "toalla", "torre", "tractor", "trompeta", "tobogán", "tiza", "trineo"],
+    "d": ["tatuaje", "telaraña", "telescopio", "termómetro", "tirachinas", "tornado", "tornillo", "trapecista", "tridente", "trigo", "tuerca", "túnel", "turbante"]
+  },
+  "U": {
+    "f": ["uvas|uva", "uña", "uno", "universo", "uniforme", "unicornio", "urgencias", "universidad"],
+    "d": ["ukelele|ukulele", "urraca", "ungüento", "urna", "utopía", "umbral", "urbanización"]
+  },
+  "V": {
+    "f": ["vaca", "vaso", "ventana", "verano", "vela", "viento", "vino", "violín", "volcán", "vampiro", "vacaciones", "valla", "vaqueros|vaquero", "verde", "vestido", "viaje", "vídeo|video", "vinagre", "volante", "voleibol|voley|vóley", "vecino|vecina", "verduras|verdura", "ventilador"],
+    "d": ["vacuna", "vagón", "vajilla", "varita", "velero", "veleta", "venda|vendaje", "vendimia", "ventrílocuo", "vertedero", "vidriera", "vikingo|vikingos", "violonchelo|chelo"]
+  },
+  "X": {
+    "f": ["taxi", "examen", "éxito", "boxeo", "oxígeno", "texto", "sexto", "explosión", "extranjero", "saxofón|saxo", "xilófono", "taxista", "extintor", "excursión"],
+    "d": ["auxilio", "axila", "exilio", "exprimidor", "flexo", "sintaxis", "tórax", "boxeador", "excavadora", "extraterrestre"]
+  },
+  "Y": {
+    "f": ["yogur|yogurt", "yate", "yema", "yegua", "yeso", "yoyó|yoyo", "yoga", "yerno"],
+    "d": ["yunque", "yuca", "yacimiento", "yudo|judo", "yeti"]
+  },
+  "Z": {
+    "f": ["zapato|zapatos", "zanahoria", "zumo", "zorro", "zoo|zoológico", "zapatillas|zapatilla", "zurdo", "zona"],
+    "d": ["zambomba", "zancos", "zángano", "zepelín", "zarzamora|mora", "zuecos|zueco", "zigzag", "zafiro", "zarpa"]
+  }
+}

@@ -273,7 +273,7 @@ const SB_KEY = window.PG_SB_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3M
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'pg-admin-auth' } });
 const $ = s => document.querySelector(s);
 const INK = '#17140f', PINK = '#ff5c8a', BLUE = '#3b5bff', MINT = '#2fd08a', WHITE = '#fffef8';
-const GAMES = { bomba: { name: 'Bomba', color: PINK }, tutti: { name: 'Tutti frutti', color: MINT }, teclazo: { name: 'Teclazo', color: BLUE } };
+const GAMES = { bomba: { name: 'Bomba', color: PINK }, tutti: { name: 'Tutti frutti', color: MINT }, teclazo: { name: 'Teclazo', color: BLUE }, pistas: { name: 'Pistas', color: '#ff8a3d' } };
 const RANGES = [[7, '7 d'], [30, '30 d'], [90, '90 d'], [365, '1 año']];
 const nf = new Intl.NumberFormat('es-ES'), nf1 = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
 const fmt = n => n == null ? '–' : n >= 10000 ? nf1.format(n / 1000) + ' k' : nf.format(n);
@@ -294,6 +294,7 @@ const ICON = {
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   bomb: '<circle cx="11" cy="14" r="7"/><path d="M15.5 8.5L18 6M17 3l.8 2.2L20 6l-2.2.8L17 9l-.8-2.2L14 6l2.2-.8z"/>',
   note: '<rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(-6 12 12)"/><path d="M8 10h8M8 14h5"/>',
+  chat: '<path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M8 10h8M8 13h5"/>',
   car: '<path d="M3 16v-3l2-5h14l2 5v3z"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>',
   bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4"/><path d="M12 13v4M8 20h8"/>',
@@ -304,7 +305,7 @@ const ICON = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'
 };
 const ic = (n, cls) => `<svg class="ic ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
-const GICON = { bomba: 'bomb', tutti: 'note', teclazo: 'car' };
+const GICON = { bomba: 'bomb', tutti: 'note', teclazo: 'car', pistas: 'chat' };
 const SRC = { directo: 'Directo', whatsapp: 'WhatsApp', telegram: 'Telegram', instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', google: 'Google', bing: 'Bing', duckduckgo: 'DuckDuckGo', x: 'X', reddit: 'Reddit', discord: 'Discord', youtube: 'YouTube', otros: 'Otros' };
 const DEV = { m: ['Móvil', BLUE], d: ['Escritorio', PINK], t: ['Tablet', MINT] };
 
@@ -460,6 +461,7 @@ function renderGames() {
   $('#games').innerHTML = data.games.map(g => {
     const G = GAMES[g.game], multi = Math.max(0, g.started - g.solo), share = tot ? Math.round(g.started / tot * 100) : 0;
     const extra = g.game === 'teclazo' ? [['bolt', g.avg_m == null ? '–' : Math.round(g.avg_m), 'ppm'], ['trophy', g.best_m == null ? '–' : Math.round(g.best_m), 'mejor']]
+      : g.game === 'pistas' ? [['trophy', g.best_m == null ? '–' : Math.round(g.best_m), 'mejor']]
       : g.game === 'bomba' ? [['type', g.avg_m == null ? '–' : nf1.format(g.avg_m), 'palabras'], ['trophy', g.best_m == null ? '–' : Math.round(g.best_m), 'mejor']] : [];
     const facts = [['user', fmt(g.players), 'Jugadores'], ['door', fmt(g.rooms), 'Salas'], ['users', g.avg_n == null ? '–' : nf1.format(g.avg_n), 'Por sala'], ['clock', dur(g.avg_dur), 'Duración'], ['eye', fmt(g.views), 'Visitas'], ['link', fmt(g.joins), 'Se unen'], ...extra.map(([i, v, l]) => [i, v, l])];
     return `<article class="card game"><header><div class="gi" style="background:${G.color}">${ic(GICON[g.game])}</div><h3>${G.name}</h3><span class="pct">${share} %</span></header>
@@ -623,6 +625,7 @@ function gameCard(g, vid) {
     if (g.game === 'tutti') { const r = tuttiView(d, me); res = r.res; body = r.body; }
     else if (g.game === 'bomba') { const r = bombaView(d, me); res = r.res; body = r.body; }
     else if (g.game === 'teclazo') { const r = teclazoView(d, me); res = r.res; body = r.body; }
+    else if (g.game === 'pistas') { const r = pistasView(d, me); res = r.res; body = r.body; }
   } catch (e) { body = '<div class="empty">–</div>'; }
   const who = d.solo ? 'individual' : `${pl.length} jugadores${g.host ? ' · creó la sala' : ''}`;
   const du = d.dur != null ? ' · ' + dur(d.dur) : '';
@@ -654,6 +657,21 @@ function bombaView(d, me) {
   const hi = (syl, w) => { const k = w.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').indexOf(syl); return k < 0 ? esc(w) : esc(w.slice(0, k)) + '<u>' + esc(w.slice(k, k + syl.length)) + '</u>' + esc(w.slice(k + syl.length)); };
   for (const x of order) if ((x.log || []).length) body += `<div><h4>${esc(x.nm)}</h4><div class="ws">${x.log.map(([s, w]) => `<span class="wd">${hi(s, w)}</span>`).join('')}</div></div>`;
   if ((d.fails || []).length) body += `<div><h4>Explotaron con</h4><div class="ws">${[...new Set(d.fails)].map(s => `<span class="fx">${esc(s)}</span>`).join('')}</div></div>`;
+  return { res, body };
+}
+function pistasView(d, me) {
+  const pl = d.pl || [], teams = d.teams || [], mt = me >= 0 ? (pl[me] || {}).tm : -1;
+  const order = teams.map((t, i) => ({ i, ...t })).sort((a, b) => (b.sc || 0) - (a.sc || 0));
+  const myPos = order.findIndex(x => x.i === mt) + 1;
+  const res = mt >= 0 && teams[mt] ? `${teams[mt].sc || 0} pts${teams.length > 1 ? ' · ' + myPos + 'º' : ''}` : '';
+  const members = ti => pl.map((p, i) => p.tm === ti ? p.nm : null).filter(Boolean).join(', ');
+  let body = `<div><h4>${teams.length > 1 ? 'Clasificación' : 'Resultado'}</h4><div class="rk">${order.map((t, k) =>
+    `<div class="${t.i === mt ? 'me' : ''}"><b>${teams.length > 1 ? k + 1 : ''}</b><i style="width:16px;height:16px;border-radius:50%;border:2px solid var(--ink);background:${['#ff5c8a', '#3b5bff', '#2fd08a', '#ff8a3d'][t.k] || '#fff'}"></i><span>${esc(t.nm || '')} · ${esc(members(t.i))}</span><b>${t.sc || 0} pts</b></div>`).join('')}</div></div>`;
+  for (const tu of d.turns || []) {
+    const t = teams[tu.t] || {}, dn = (pl[tu.d] || {}).nm || '?';
+    body += `<div><h4>${teams.length > 1 ? esc(t.nm || '') + ' · ' : ''}pistas de ${esc(dn)} · ${tu.s} pts${tu.b ? ' (' + tu.b + ' por tiempo)' : ''}</h4><div class="ws">${(tu.L || []).map(([l, w, ok, n, pts]) =>
+      ok ? `<span class="wd">${esc(w)} · ${n} pista${n === 1 ? '' : 's'}</span>` : `<span class="fx">${esc(w)}</span>`).join('')}</div></div>`;
+  }
   return { res, body };
 }
 function teclazoView(d, me) {
