@@ -119,6 +119,10 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #players.many .pl{width:62px}
 #players.many .tok{width:40px;height:40px;font-size:18px}
 #players.many .nm{max-width:62px;font-size:12px}
+#players.lots{gap:44px 6px}
+#players.lots .pl{width:52px}
+#players.lots .tok{width:34px;height:34px;font-size:15px}
+#players.lots .nm{max-width:52px;font-size:11px}
 .pl{display:flex;flex-direction:column;align-items:center;width:78px;text-align:center}
 .pl.turn .tok{transform:scale(1.22);box-shadow:var(--hard)}
 .pl .nm{font-size:14px;font-weight:700;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:6px}
@@ -319,7 +323,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
-const MAX_PLAYERS = 8, MAX_LIVES = 5, BONUS = 'abcdefghilmnopqrstuv';
+const MAX_LIVES = 5, BONUS = 'abcdefghilmnopqrstuv';
 // [fondo, texto]
 const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'],['#ff8a3d','#17140f'],
                 ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
@@ -333,7 +337,7 @@ const SB_URL = window.PG_SB_URL || 'https://acsrnjowxvjamiybsjkx.supabase.co';
 const SB_KEY = window.PG_SB_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
 const TOPIC = 'pg:bomba:';
 const BEAT = 5000, DEAD = 20000;   // latido cada 5 s; se da por perdido a quien lleva 20 s sin enviar nada
-const MAX_CHANS = 16, MAX_RATE = 40;
+const MAX_RATE = 40;
 const uid = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
 const net = { clients: [], sb: null, a: null, u: {}, pend: {}, seq: 0, onMsg: null, timers: [], role: '', sent: [], probe: null, last: { a: 0, u: 0 } };
 
@@ -369,7 +373,7 @@ function netChan(name, onEnv) {
 // El anfitrión se suscribe al canal de cada invitado cuando llega su «hello» por el canal común.
 async function netAttach(f, e) {
   if (!net.u[f]) {
-    if (net.pend[f] || Object.keys(net.u).length >= MAX_CHANS) return;
+    if (net.pend[f]) return;
     net.pend[f] = 1;
     try { net.u[f] = await netChan('u:' + f, x => { if (x.f === f) net.onMsg(x.m, f); }); }
     catch (x) { delete net.pend[f]; return; }
@@ -779,7 +783,6 @@ function hostRecv(m, f) {
   if (m.t === 'hello') {
     const p = byId(f);
     if (p) { netPub('to/' + f, { t: 'state', s: pub() }); return; }
-    if (H.players.filter(x => x.on).length >= MAX_PLAYERS) { netPub('to/' + f, { t: 'full' }); return; }
     addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; evt({ k: 'join', name: byId(f).name }); push();
   } else if (m.t === 'bye') hostLeft(f);
   else if (byId(f)) fromPlayer(f, m);
@@ -1063,7 +1066,7 @@ function renderGame() {
   sylEl.textContent = nsyl;
   if (nsyl && nsyl !== lastSyl) { sylEl.classList.remove('pop'); void sylEl.offsetWidth; sylEl.classList.add('pop'); }
   lastSyl = nsyl;
-  $('#players').className = n > 5 ? 'many' : '';
+  $('#players').className = n > 12 ? 'many lots' : n > 5 ? 'many' : '';
   $('#players').innerHTML = s.players.map(p => {
     const hp = p.alive ? '<i></i>'.repeat(p.lives) : (p.spec ? 'espera' : '');
     return `<div class="pl ${p.id === s.turn ? 'turn' : ''} ${!p.alive && !p.spec ? 'out' : ''} ${!p.on ? 'off' : ''}" data-id="${esc(p.id)}">` +
