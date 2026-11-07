@@ -548,7 +548,7 @@ function loadWords() {
 // ---------- estado local ----------
 let isHost = false, room = '', myId = null, myName = '';
 let S = null, lastV = -1, endAt = 0, total = 1, lastHeard = 0, gotState = false, lastSec = -1;
-let myWords = {}, live = {}, pwEnd = 0, typed = '', lastClue = '', focusK = '', lastLetterK = '', clueSeen = { k: '', n: 0 };
+let myWords = {}, live = {}, liveTurn = '', pwEnd = 0, typed = '', lastClue = '', focusK = '', lastLetterK = '', clueSeen = { k: '', n: 0 };
 const lastSeen = {};
 
 // ---------- estado del anfitrión ----------
@@ -579,7 +579,7 @@ function loadUsed() { try { return new Set(JSON.parse(sessionStorage.getItem(use
 function saveUsed() { try { sessionStorage.setItem(usedKey(), JSON.stringify([...H.used])); } catch (e) {} }
 function newH() {
   return { phase: 'lobby', players: [], settings: loadCfg(), T: [], seq: [], ti: -1, cur: null, last: null, hist: [], used: loadUsed(), rl: [], order: [0, 1, 2, 3],
-           endAt: 0, total: 1, tm: 0, stm: 0, v: 0, res: null, clueAt: 0, mode: 't' };
+           endAt: 0, total: 1, tm: 0, stm: 0, v: 0, res: null, clueAt: 0, mode: 't', gid: 0 };
 }
 const byId = id => H.players.find(p => p.id === id);
 const alive = id => { const p = byId(id); return !!(p && p.on); };
@@ -603,7 +603,7 @@ function pubCur() {
 }
 function pub() {
   return {
-    v: ++H.v, phase: H.phase, settings: H.settings, rounds: H.settings.rounds, ti: H.ti, nt: H.seq.length, mode: H.mode || 't',
+    v: ++H.v, g: H.gid, phase: H.phase, settings: H.settings, rounds: H.settings.rounds, ti: H.ti, nt: H.seq.length, mode: H.mode || 't',
     left: Math.max(0, Math.round(H.endAt - now())), total: Math.round(H.total),
     order: H.order, teams: H.T.map(t => ({ k: t.k, ids: t.ids, score: t.score })), cur: pubCur(), last: H.last,
     res: H.phase === 'ended' ? H.res : null,
@@ -613,8 +613,9 @@ function pub() {
 function bcast(m) { netPub('all', m); }
 function reply(id, m) { if (id === 'host') onMsg(m); else netPub('to/' + id, m); }
 // la palabra secreta no va en el estado común: se manda aparte a quien da las pistas y a quien solo mira
-const runKey = u => H.ti + ':' + u.t + ':' + u.i;
-const pwKey = () => H.ti + ':p:' + H.cur.pw.i;
+// las claves llevan el número de partida: si no, en la siguiente partida «turno 0, letra 0» chocaría con lo de la anterior
+const runKey = u => H.gid + '.' + H.ti + ':' + u.t + ':' + u.i;
+const pwKey = () => H.gid + '.' + H.ti + ':p:' + H.cur.pw.i;
 let wordSent = new Set();
 function wordMsgs() {
   const c = H.cur, out = []; if (!c || H.phase !== 'play') return out;
@@ -731,7 +732,7 @@ function startGame() {
     if (H.mode === 't') for (let t = 0; t < T.length; t++) H.seq.push({ r, ts: [t] });
     else H.seq.push({ r, ts: T.map((_, t) => t) });
   }
-  H.ti = -1; H.hist = []; H.last = null; H.rl = []; H.res = null;
+  H.gid++; H.ti = -1; H.hist = []; H.last = null; H.rl = []; H.res = null;
   PGT.start(ps.length, false);
   nextTurn();
 }
@@ -1041,8 +1042,8 @@ const role = () => mine().r;
 function viewRun() { const c = S && S.cur; if (!c || !c.runs) return null; return mine().z || c.runs.find(u => !u.done) || c.runs[0]; }
 function sKey() {
   const c = S && S.cur; if (!c || S.phase !== 'play') return '';
-  if (c.pw) return S.ti + ':p:' + c.pw.i;
-  const u = viewRun(); return u ? S.ti + ':' + u.t + ':' + u.i : '';
+  if (c.pw) return S.g + '.' + S.ti + ':p:' + c.pw.i;
+  const u = viewRun(); return u ? S.g + '.' + S.ti + ':' + u.t + ':' + u.i : '';
 }
 // ¿puedo dar una pista / responder ahora mismo?
 function can() {
@@ -1055,6 +1056,8 @@ const lastWords = l => l ? l.recs.flatMap(r => r.L.map(x => x.w)).concat(l.miss 
 function applyState(s) {
   const prev = S ? S.phase : null;
   S = s; endAt = now() + s.left; total = Math.max(1, s.total || 1);
+  const turn = s.g + '.' + s.ti;   // turno nuevo: fuera palabras y textos en vivo de turnos anteriores
+  if (turn !== liveTurn) { liveTurn = turn; live = {}; for (const k in myWords) if (!k.startsWith(turn + ':')) delete myWords[k]; }
   pwEnd = s.cur && s.cur.pw ? now() + s.cur.pw.sl : 0;
   if (s.last) markSeen(lastWords(s.last));   // al acabar cada turno se enseñan todas sus palabras
   if (s.res && s.res.hist) for (const h of s.res.hist) markSeen(h.L.map(x => x.w));
