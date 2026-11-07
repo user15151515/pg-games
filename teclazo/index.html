@@ -152,7 +152,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .caret{width:.1em;height:1.3em;background:var(--ink);align-self:center;margin:0 2px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 #word{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;background:none;box-shadow:none;font-size:16px;padding:0;cursor:text}
-#word:disabled{pointer-events:none}
+#word:disabled{pointer-events:none;opacity:0}
 #fuse{height:14px;border:var(--line);border-radius:99px;margin-top:16px;overflow:hidden}
 #fuse i{display:block;height:100%;width:100%;background:var(--pink)}
 #send{margin-top:14px}
@@ -223,8 +223,6 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #hud{display:flex;justify-content:space-between;font-weight:800;font-size:19px;margin:12px 2px 0}
 #hud small{font-weight:600;font-size:14px;opacity:.7}
 #typed{margin-top:12px}
-#typed input{font-size:20px}
-#typed input:disabled{opacity:.5}
 #tclock{text-align:center;font-weight:700;min-height:26px;margin-top:8px}
 </style>
 <script>window.PGT={ev(){},start(){},end(){},game(){},vid:''}</script>
