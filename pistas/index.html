@@ -179,6 +179,10 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #cform input{flex:1;min-width:0;font-size:20px}
 #cform button{padding:13px 18px}
 #cform input:disabled{opacity:.6}
+#cform.bad input{background:var(--pink)}
+#cform.shake{animation:sshake .4s}
+#cerr{width:fit-content;min-height:26px;margin:10px auto 0;padding:1px 14px;border-radius:99px;font-weight:800;font-size:16px}
+#cerr:not(:empty){background:var(--pink);border:2px solid var(--ink)}
 .role.tline{gap:8px;font-size:17px;flex-wrap:wrap;justify-content:center}
 .role.tline b{font-weight:800}
 #lastT h4 .dot{width:13px;height:13px;vertical-align:-1px}
@@ -305,6 +309,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
       <input id="clueIn" type="text" maxlength="30" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Tu pista" placeholder="Una o dos palabras">
       <button type="submit">Pista</button>
     </form>
+    <p id="cerr" role="alert"></p>
     <button id="btnPass" class="big" type="button" hidden>Pasapalabra</button>
   </div>
   <span id="msg" role="status"></span>
@@ -1028,7 +1033,7 @@ function onMsg(m) {
   } else if (m.t === 'evt') showEvent(m.e);
   else if (m.t === 'word') { myWords[String(m.k)] = String(m.w || ''); if (S && S.phase === 'play') renderGame(); }
   else if (m.t === 'typ') { live[String(m.k)] = String(m.text || ''); if (S && S.phase === 'play') renderTiles(); }
-  else if (m.t === 'nope') { if (m.why) { $('#clueIn').value = lastClue; play('bad'); say(m.why, 'bad'); } }
+  else if (m.t === 'nope') { if (m.why) { $('#clueIn').value = lastBad = lastClue; clueErr(m.why, true); } }
   else if (m.t === 'full') fail('La sala está llena.');
   else if (m.t === 'started') fail('La partida ya ha empezado.');
   else if (m.t === 'kicked') { netClose(); location.href = location.pathname + '?e=k'; }
@@ -1218,7 +1223,8 @@ function paintClues(cl, k, r, waitTxt) {
 function setControls(r, cn, opts) {
   const w = $('#word');
   w.disabled = !cn.guess; $('#send').hidden = !cn.guess;
-  $('#cform').hidden = r !== 'd';
+  $('#cform').hidden = r !== 'd'; $('#cerr').hidden = r !== 'd';
+  if (!cn.clue && $('#cerr').textContent) clueErr('');
   const ci = $('#clueIn'), cb = $('#cform button');
   ci.disabled = !cn.clue; cb.disabled = !cn.clue; ci.placeholder = cn.clue ? 'Una o dos palabras' : (opts.waitClue || 'Espera');
   $('#btnPass').hidden = !opts.pass; $('#btnPass').disabled = !!opts.passOff;
@@ -1381,13 +1387,29 @@ $('#teams').addEventListener('click', e => {
 $('#btnGo').onclick = () => act({ t: 'go' });
 $('#btnSwap').onclick = () => act({ t: 'swap' });
 $('#btnPass').onclick = () => { if (!$('#btnPass').disabled) act({ t: 'pass' }); };
+// pista no válida: el campo se pone rojo con el motivo debajo; al enviar, además tiembla y suena
+let cerrTm = 0;
+function clueErr(text, loud) {
+  const f = $('#cform'), m = $('#cerr');
+  clearTimeout(cerrTm); m.textContent = text || ''; f.classList.toggle('bad', !!text);
+  if (!text) return;
+  if (loud) { play('bad'); f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake'); }
+  if (loud) cerrTm = setTimeout(() => { if ($('#clueIn').value.trim() === lastBad) clueErr(''); }, 3500);
+}
+let lastBad = '';
 $('#cform').addEventListener('submit', e => {
   e.preventDefault();
   const v = $('#clueIn').value.trim(); if (!v || !can().clue) return;
-  const r = clueCheck(v, { w: '', alts: [] });   // la comprobación contra la palabra la hace el anfitrión
-  if (r.e) { play('bad'); say(r.e, 'bad'); return; }
-  lastClue = v; $('#clueIn').value = ''; act({ t: 'clue', c: v });
+  // con la palabra que ya conozco se avisa al momento; el anfitrión vuelve a comprobarlo (con las variantes)
+  const r = clueCheck(v, { w: myWords[sKey()] || '', alts: [] });
+  if (r.e) { lastBad = v; clueErr(r.e, true); return; }
+  clueErr(''); lastClue = v; $('#clueIn').value = ''; act({ t: 'clue', c: v });
   $('#clueIn').focus();
+});
+// mientras escribes, solo lo que ya no tiene arreglo: más de dos palabras o números
+$('#clueIn').addEventListener('input', e => {
+  const t = e.target.value.replace(/\s+/g, ' ').trim();
+  clueErr(t.split(' ').length > 2 ? 'Como mucho dos palabras' : /\d/.test(t) ? 'Sin números' : '');
 });
 $('#word').addEventListener('input', e => {
   if (!can().guess) { e.target.value = ''; typed = ''; renderTiles(); return; }
