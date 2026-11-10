@@ -122,6 +122,8 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 .role{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px}
 .role small{font-size:14px;font-weight:600;opacity:.7}
 #prepMe{font-weight:800;font-size:22px;margin:0 0 14px}
+#btnSwap{margin:-6px 0 16px;padding:6px 16px;font-size:15px;box-shadow:none;background:transparent;color:var(--ink);border-width:2px;border-radius:99px}
+#btnSwap:hover:not(:disabled),#btnSwap:active:not(:disabled){transform:none;box-shadow:none;background:var(--tc)}
 #prepClock{font-weight:600;font-size:15px;margin:12px 0 0;min-height:21px}
 #lastT{margin-top:22px;text-align:center}
 #lastT h4{margin:0 0 8px;font-size:16px;font-weight:700}
@@ -274,6 +276,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
       <div class="display" id="prepTeam"></div>
       <div id="prepRoles"></div>
       <p id="prepMe"></p>
+      <button id="btnSwap" type="button" hidden>Cambiar papeles</button>
       <button id="btnGo" class="big" type="button" hidden>Empezar</button>
       <p id="prepClock"></p>
     </div>
@@ -701,6 +704,14 @@ function setRole(id, r) {
   if (!p || !setupPhase() || !['', 'd', 'g'].includes(r) || p.role === r) return;
   p.role = r; push();
 }
+// en «preparados», cualquiera de la pareja cambia quién da las pistas; en pareja se recuerda para los siguientes turnos
+function swapRole(id) {
+  const c = H.cur; if (H.phase !== 'prep' || !c || !c.runs) return;
+  const u = c.runs.find(z => z.d === id || z.g.includes(id)); if (!u || !u.g.length) return;
+  const old = u.d; u.d = u.g.shift(); u.g.push(old);
+  if (u.g.length === 1) { const a = byId(u.d), b = byId(old); if (a) a.role = 'd'; if (b) b.role = 'g'; }
+  push();
+}
 function pickLetters(n) {
   if (n >= ALPHA.length) return ALPHA.split('');
   const pick = new Set(shuffle(ALPHA.split('')).slice(0, n));
@@ -859,6 +870,7 @@ function fromPlayer(id, m) {
   const c = H.cur;
   if (m.t === 'team') setTeam(id, m.k);
   else if (m.t === 'role') setRole(id, String(m.r || ''));
+  else if (m.t === 'swap') swapRole(id);
   else if (m.t === 'go') { if (H.phase === 'prep' && c && (id === 'host' || c.runs.some(u => u.d === id))) beginTurn(); }
   else if (m.t === 'again') { const p = byId(id); if (p && H.phase === 'ended') { p.back = true; push(); } }
   else if (H.phase !== 'play' || !c) return;
@@ -1178,6 +1190,8 @@ function renderPrep(s, c) {
     $('#prepRoles').innerHTML = zs.map(z => `<div class="role tline" style="${tcol(tk(z.t))}"><span class="dot"></span><b>${tname(z.t)}</b><span>${esc(pl(z.d).name)} <small>da pistas</small> · ${esc(names(z.g))} <small>${z.g.length > 1 ? 'adivinan' : 'adivina'}</small></span></div>`).join('');
   }
   $('#prepMe').textContent = r === 'd' ? 'Tú das las pistas' : r === 'g' ? 'Tú adivinas' : 'Os toca mirar';
+  const sw = $('#btnSwap'), mz = mine().z; sw.hidden = !mz;
+  if (mz) sw.textContent = mz.g.length > 1 ? 'Cambiar quién da pistas' : 'Cambiar papeles';
   const b = $('#btnGo'); b.hidden = !(r === 'd' || isHost); b.textContent = r === 'd' ? '¡Empezar!' : 'Empezar ya';
   $('#lastT').innerHTML = lastHtml(s.last, s);
 }
@@ -1365,6 +1379,7 @@ $('#teams').addEventListener('click', e => {
   const t = e.target.closest('[data-team]'); if (t) act({ t: 'team', k: +t.dataset.team });
 });
 $('#btnGo').onclick = () => act({ t: 'go' });
+$('#btnSwap').onclick = () => act({ t: 'swap' });
 $('#btnPass').onclick = () => { if (!$('#btnPass').disabled) act({ t: 'pass' }); };
 $('#cform').addEventListener('submit', e => {
   e.preventDefault();
