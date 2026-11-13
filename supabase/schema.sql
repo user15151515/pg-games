@@ -36,6 +36,30 @@ update public.players pl set names = s.names, name = s.names ->> 0
 from (select vid, jsonb_agg(nm order by t) as names from n group by vid) s
 where s.vid = pl.vid and pl.names = '[]'::jsonb;
 
+-- Cuentas con varios dispositivos: «vid» pertenece a la cuenta cuyo dispositivo principal es «main». Solo lo cambia el administrador.
+create table if not exists public.merges (vid text primary key, main text not null, ts timestamptz not null default now());
+create index if not exists merges_main_idx on public.merges (main);
+alter table public.merges enable row level security;
+revoke all on public.merges from anon, authenticated;
+
+-- Cuenta de un dispositivo, dispositivos de una cuenta, nombre visible y todos los nombres usados.
+create or replace function public._acct(p text) returns text language sql stable set search_path = public as $$
+  select coalesce((select main from merges where vid = p), p);
+$$;
+create or replace function public._members(a text) returns text[] language sql stable set search_path = public as $$
+  select array[a] || coalesce((select array_agg(vid order by ts) from merges where main = a), '{}'::text[]);
+$$;
+create or replace function public._aname(a text) returns text language sql stable set search_path = public as $$
+  select pl.name from players pl where pl.vid = any(public._members(a)) order by (pl.vid = a) desc, pl.first_seen limit 1;
+$$;
+create or replace function public._anames(a text) returns jsonb language sql stable set search_path = public as $$
+  select coalesce(jsonb_agg(n order by o), '[]'::jsonb) from (
+    select t.n, min(case when pl.vid = a then 0 else 1000 end + t.i) as o
+    from players pl, jsonb_array_elements_text(pl.names) with ordinality t(n, i)
+    where pl.vid = any(public._members(a)) group by t.n) x;
+$$;
+revoke all on function public._acct(text), public._members(text), public._aname(text), public._anames(text) from public, anon, authenticated;
+
 -- Dispositivos que el administrador ha ocultado: sus eventos no cuentan en ninguna estadística.
 create table if not exists public.hidden_vids (vid text primary key, ts timestamptz not null default now());
 alter table public.hidden_vids enable row level security;
@@ -191,7 +215,7 @@ begin
     'recent', (
       select coalesce(jsonb_agg(jsonb_build_object('t', ts, 'k', kind, 'g', game, 'n', n, 'solo', solo, 'name', name, 'names', names) order by ts desc), '[]'::jsonb)
       from (select e.ts, e.kind, e.game, e.n, e.solo, coalesce(pl.name, e.name) as name, e.names
-            from public._ev(now() - interval '7 days', tn) e left join players pl on pl.vid = e.vid
+            from public._ev(now() - interval '7 days', tn) e left join merges mg on mg.vid = e.vid left join players pl on pl.vid = coalesce(mg.main, e.vid)
             where e.kind <> 'view' order by e.ts desc limit 30) x
     )
   ) into res;
@@ -200,52 +224,7 @@ end $$;
 revoke all on function public.admin_stats(int) from public, anon;
 grant execute on function public.admin_stats(int) to authenticated;
 
--- Lista de jugadores con su actividad, incluidos los ocultos y los que juegan sin escribir nombre.
-create or replace function public.admin_players(p_days int default 90)
-returns jsonb language plpgsql security definer set search_path = public as $$
-declare
-  tz constant text := 'Europe/Madrid';
-  d  int := greatest(1, least(coalesce(p_days, 90), 365));
-  t0 timestamptz := (((now() at time zone tz)::date - (d - 1))::timestamp) at time zone tz;
-  res jsonb;
-begin
-  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
-  select coalesce(jsonb_agg(to_jsonb(r) order by r.last desc), '[]'::jsonb) into res
-  from (
-    select v.vid, pl.name, (h.vid is not null) as hidden,
-           coalesce(pl.first_seen, (select min(e.ts) from events e where e.vid = v.vid)) as first,
-           greatest(pl.last_seen, (select max(e.ts) from events e where e.vid = v.vid)) as last,
-           (select count(*) from events e where e.vid = v.vid and e.kind = 'game_start' and e.ts >= t0) as hosted,
-           (select count(*) from events e where e.vid = v.vid and e.kind = 'room_join' and e.ts >= t0) as joined,
-           (select count(*) from events e where e.vid = v.vid and e.kind = 'view' and e.ts >= t0) as visits,
-           (select coalesce(jsonb_agg(distinct e.game), '[]'::jsonb) from events e where e.vid = v.vid and e.game <> '' and e.kind in ('game_start', 'room_join', 'room_create') and e.ts >= t0) as games,
-           (select e.p ->> 'dev' from events e where e.vid = v.vid and e.kind = 'view' and e.p ? 'dev' order by e.ts desc limit 1) as dev,
-           coalesce(pl.names, '[]'::jsonb) as names
-    from (
-      select vid from players where last_seen >= t0
-      union
-      select distinct vid from events where kind in ('game_start', 'room_join', 'room_create') and ts >= t0
-    ) v
-    left join players pl on pl.vid = v.vid
-    left join hidden_vids h on h.vid = v.vid
-    order by 5 desc limit 300
-  ) r;
-  return res;
-end $$;
-revoke all on function public.admin_players(int) from public, anon;
-grant execute on function public.admin_players(int) to authenticated;
 
--- Ocultar o mostrar un dispositivo (sus eventos dejan de contar en todas las estadísticas).
-create or replace function public.admin_hide(p_vid text, p_hide boolean)
-returns void language plpgsql security definer set search_path = public as $$
-begin
-  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
-  if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return; end if;
-  if p_hide then insert into hidden_vids (vid) values (p_vid) on conflict do nothing;
-  else delete from hidden_vids where vid = p_vid; end if;
-end $$;
-revoke all on function public.admin_hide(text, boolean) from public, anon;
-grant execute on function public.admin_hide(text, boolean) to authenticated;
 
 -- Resumen de cada partida (jugadores, puntos, respuestas o palabras). Lo envía quien crea la partida al terminarla.
 create table if not exists public.game_logs (
@@ -277,24 +256,66 @@ end $$;
 revoke all on function public.pg_game(text, text, jsonb) from public;
 grant execute on function public.pg_game(text, text, jsonb) to anon, authenticated;
 
--- Partidas de un jugador (las que ha creado y aquellas en las que ha jugado como invitado), con todo el detalle.
+create or replace function public.admin_players(p_days int default 90)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  tz constant text := 'Europe/Madrid';
+  d  int := greatest(1, least(coalesce(p_days, 90), 365));
+  t0 timestamptz := (((now() at time zone tz)::date - (d - 1))::timestamp) at time zone tz;
+  res jsonb;
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  select coalesce(jsonb_agg(to_jsonb(r) order by r.last desc), '[]'::jsonb) into res
+  from (
+    select x.a as vid, public._aname(x.a) as name, public._anames(x.a) as names, cardinality(x.ms) as devs,
+           exists (select 1 from hidden_vids h where h.vid = any(x.ms)) as hidden,
+           least((select min(first_seen) from players where vid = any(x.ms)), (select min(e.ts) from events e where e.vid = any(x.ms))) as first,
+           greatest((select max(last_seen) from players where vid = any(x.ms)), (select max(e.ts) from events e where e.vid = any(x.ms))) as last,
+           (select count(*) from events e where e.vid = any(x.ms) and e.kind = 'game_start' and e.ts >= t0) as hosted,
+           (select count(*) from events e where e.vid = any(x.ms) and e.kind = 'room_join' and e.ts >= t0) as joined,
+           (select count(*) from events e where e.vid = any(x.ms) and e.kind = 'view' and e.ts >= t0) as visits,
+           (select count(*) from game_logs g where g.vid = any(x.ms) or exists (select 1 from jsonb_array_elements(g.d -> 'pl') y where y ->> 'pv' = any(x.ms))) as played,
+           (select coalesce(jsonb_agg(distinct e.game), '[]'::jsonb) from events e where e.vid = any(x.ms) and e.game <> '' and e.kind in ('game_start', 'room_join', 'room_create') and e.ts >= t0) as games,
+           (select coalesce(jsonb_agg(distinct e.p ->> 'dev'), '[]'::jsonb) from events e where e.vid = any(x.ms) and e.kind = 'view' and e.p ->> 'dev' in ('m', 'd', 't')) as dev
+    from (select a, public._members(a) as ms from (
+            select distinct public._acct(vid) as a from (
+              select vid from players where last_seen >= t0
+              union
+              select distinct vid from events where kind in ('game_start', 'room_join', 'room_create') and ts >= t0
+            ) v) y) x
+  ) r;
+  return res;
+end $$;
+revoke all on function public.admin_players(int) from public, anon;
+grant execute on function public.admin_players(int) to authenticated;
+
+create or replace function public.admin_hide(p_vid text, p_hide boolean)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return; end if;
+  if p_hide then insert into hidden_vids (vid) select unnest(public._members(public._acct(p_vid))) on conflict do nothing;
+  else delete from hidden_vids where vid = any(public._members(public._acct(p_vid))); end if;
+end $$;
+revoke all on function public.admin_hide(text, boolean) from public, anon;
+grant execute on function public.admin_hide(text, boolean) to authenticated;
+
 create or replace function public.admin_player_games(p_vid text, p_limit int default 40)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare res jsonb;
+declare res jsonb; ms text[];
 begin
   if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
   if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return '[]'::jsonb; end if;
-  select coalesce(jsonb_agg(jsonb_build_object('id', g.id, 'ts', g.ts, 'game', g.game, 'host', g.vid = p_vid, 'solo', g.solo, 'd', g.d) order by g.ts desc), '[]'::jsonb) into res
-  from (select * from game_logs
-        where vid = p_vid or d @> jsonb_build_object('pl', jsonb_build_array(jsonb_build_object('pv', p_vid)))
-        order by ts desc limit greatest(1, least(coalesce(p_limit, 40), 200))) g;
+  ms := public._members(public._acct(p_vid));
+  select coalesce(jsonb_agg(jsonb_build_object('id', g.id, 'ts', g.ts, 'game', g.game, 'host', g.vid = any(ms), 'solo', g.solo, 'd', g.d) order by g.ts desc), '[]'::jsonb) into res
+  from (select * from game_logs gl
+        where gl.vid = any(ms) or exists (select 1 from jsonb_array_elements(gl.d -> 'pl') y where y ->> 'pv' = any(ms))
+        order by ts desc limit greatest(1, least(coalesce(p_limit, 40), 300))) g;
   return res;
 end $$;
 revoke all on function public.admin_player_games(text, int) from public, anon;
 grant execute on function public.admin_player_games(text, int) to authenticated;
 
--- Actividad: eventos de salas y partidas, y los resúmenes de partida, para agrupar por sala en el panel.
--- Incluye a los ocultos (marcados) para no perder salas mixtas; el panel quita las salas en las que solo hay ocultos.
 create or replace function public.admin_activity(p_days int default 7)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
@@ -307,12 +328,14 @@ begin
   select jsonb_build_object(
     'events', (
       select coalesce(jsonb_agg(jsonb_build_object('t', e.ts, 'k', e.kind, 'g', e.game, 'v', e.vid,
-               'nm', coalesce(pl.name, nullif(e.p ->> 'name', '')), 'room', e.p ->> 'room',
+               'nm', coalesce(pl.name, pv.name, nullif(e.p ->> 'name', '')), 'room', e.p ->> 'room',
                'n', case when e.p ->> 'n' ~ '^[0-9]{1,3}$' then (e.p ->> 'n')::int end,
                'solo', coalesce(e.p ->> 'solo', 'false') = 'true') order by e.ts), '[]'::jsonb)
       from (select * from events where ts >= t0 and kind in ('room_create', 'room_join', 'game_start', 'game_end')
               order by ts desc limit 3000) e
-      left join players pl on pl.vid = e.vid
+      left join merges mg on mg.vid = e.vid
+      left join players pl on pl.vid = coalesce(mg.main, e.vid)
+      left join players pv on pv.vid = e.vid
     ),
     'logs', (
       select coalesce(jsonb_agg(jsonb_build_object('id', g.id, 'ts', g.ts, 'game', g.game, 'v', g.vid, 'solo', g.solo, 'room', g.d ->> 'room', 'd', g.d) order by g.ts), '[]'::jsonb)
@@ -325,51 +348,59 @@ end $$;
 revoke all on function public.admin_activity(int) from public, anon;
 grant execute on function public.admin_activity(int) to authenticated;
 
--- Ficha de un jugador: nombre y alias, actividad, salas en las que ha estado (con quién) y con quién ha jugado.
 create or replace function public.admin_player(p_vid text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   tz constant text := 'Europe/Madrid';
+  a  text;
+  ms text[];
   res jsonb;
 begin
   if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
   if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return null; end if;
+  a := public._acct(p_vid); ms := public._members(a);
   select jsonb_build_object(
-    'vid', p_vid, 'name', pl.name, 'names', coalesce(pl.names, '[]'::jsonb),
-    'hidden', exists (select 1 from hidden_vids where vid = p_vid),
-    'first', least(pl.first_seen, (select min(ts) from events where vid = p_vid)),
-    'last', greatest(pl.last_seen, (select max(ts) from events where vid = p_vid)),
-    'visits', (select count(*) from events where vid = p_vid and kind = 'view'),
-    'days', (select count(distinct (ts at time zone tz)::date) from events where vid = p_vid),
-    'dev', (select e.p ->> 'dev' from events e where e.vid = p_vid and e.kind = 'view' and e.p ? 'dev' order by e.ts desc limit 1),
+    'vid', a, 'vids', to_jsonb(ms), 'name', public._aname(a), 'names', public._anames(a),
+    'hidden', exists (select 1 from hidden_vids where vid = any(ms)),
+    'first', least((select min(first_seen) from players where vid = any(ms)), (select min(ts) from events where vid = any(ms))),
+    'last', greatest((select max(last_seen) from players where vid = any(ms)), (select max(ts) from events where vid = any(ms))),
+    'visits', (select count(*) from events where vid = any(ms) and kind = 'view'),
+    'days', (select count(distinct (ts at time zone tz)::date) from events where vid = any(ms)),
+    'devices', (
+      select jsonb_agg(jsonb_build_object('v', m.v, 'main', m.v = a, 'nm', pl.name, 'names', coalesce(pl.names, '[]'::jsonb),
+               'dev', (select e.p ->> 'dev' from events e where e.vid = m.v and e.kind = 'view' and e.p ? 'dev' order by e.ts desc limit 1),
+               'first', least(pl.first_seen, (select min(ts) from events where vid = m.v)),
+               'last', greatest(pl.last_seen, (select max(ts) from events where vid = m.v)),
+               'visits', (select count(*) from events where vid = m.v and kind = 'view'),
+               'hidden', exists (select 1 from hidden_vids where vid = m.v)) order by m.o)
+      from unnest(ms) with ordinality m(v, o) left join players pl on pl.vid = m.v
+    ),
     'mates', (
-      select coalesce(jsonb_agg(jsonb_build_object('v', m.pv, 'nm', coalesce(p2.name, m.nm), 'n', m.n, 't', m.t, 'hidden', h.vid is not null) order by m.n desc, m.t desc), '[]'::jsonb)
-      from (select x ->> 'pv' as pv, max(x ->> 'nm') as nm, count(distinct g.id) as n, max(g.ts) as t
+      select coalesce(jsonb_agg(jsonb_build_object('v', m.pv, 'nm', coalesce(public._aname(m.pv), m.nm), 'n', m.n, 't', m.t,
+               'hidden', exists (select 1 from hidden_vids h where h.vid = any(public._members(m.pv)))) order by m.n desc, m.t desc), '[]'::jsonb)
+      from (select public._acct(x ->> 'pv') as pv, max(x ->> 'nm') as nm, count(distinct g.id) as n, max(g.ts) as t
             from game_logs g, jsonb_array_elements(g.d -> 'pl') x
-            where g.d @> jsonb_build_object('pl', jsonb_build_array(jsonb_build_object('pv', p_vid)))
-              and x ->> 'pv' ~ '^[a-z0-9]{8,24}$' and x ->> 'pv' <> p_vid
+            where exists (select 1 from jsonb_array_elements(g.d -> 'pl') y where y ->> 'pv' = any(ms))
+              and x ->> 'pv' ~ '^[a-z0-9]{8,24}$' and not (x ->> 'pv' = any(ms))
             group by 1 order by 3 desc, 4 desc limit 60) m
-      left join players p2 on p2.vid = m.pv
-      left join hidden_vids h on h.vid = m.pv
     ),
     'rooms', (
       select coalesce(jsonb_agg(jsonb_build_object(
                'room', r.room, 'g', r.game, 't', r.t, 'own', r.own,
                'games', (select count(*) from game_logs gl where gl.game = r.game and gl.d ->> 'room' = r.room and (gl.ts at time zone tz)::date = r.dy),
-               'ppl', (select coalesce(jsonb_agg(jsonb_build_object('v', q.vid, 'nm', q.nm) order by q.t), '[]'::jsonb)
-                       from (select e.vid, coalesce(max(p3.name), max(e.p ->> 'name')) as nm, min(e.ts) as t
-                             from events e left join players p3 on p3.vid = e.vid
+               'ppl', (select coalesce(jsonb_agg(jsonb_build_object('v', q.a, 'nm', coalesce(public._aname(q.a), q.nm)) order by q.t), '[]'::jsonb)
+                       from (select public._acct(e.vid) as a, max(e.p ->> 'name') as nm, min(e.ts) as t
+                             from events e
                              where e.game = r.game and e.p ->> 'room' = r.room and (e.ts at time zone tz)::date = r.dy
-                               and e.vid <> p_vid and e.kind in ('room_create', 'room_join', 'game_start', 'game_end')
-                             group by e.vid) q)
+                               and not (e.vid = any(ms)) and e.kind in ('room_create', 'room_join', 'game_start', 'game_end')
+                             group by 1) q)
              ) order by r.t desc), '[]'::jsonb)
       from (select e.p ->> 'room' as room, e.game, (e.ts at time zone tz)::date as dy, min(e.ts) as t, bool_or(e.kind = 'room_create') as own
             from events e
-            where e.vid = p_vid and e.kind in ('room_create', 'room_join', 'game_start', 'game_end') and e.p ->> 'room' ~ '^[A-Z]{4}$'
-            group by 1, 2, 3 order by 4 desc limit 60) r
+            where e.vid = any(ms) and e.kind in ('room_create', 'room_join', 'game_start', 'game_end') and e.p ->> 'room' ~ '^[A-Z]{4}$'
+            group by 1, 2, 3 order by 4 desc limit 80) r
     )
-  ) into res
-  from (select 1) one left join players pl on pl.vid = p_vid;
+  ) into res;
   return res;
 end $$;
 revoke all on function public.admin_player(text) from public, anon;
@@ -378,18 +409,53 @@ grant execute on function public.admin_player(text) to authenticated;
 -- Cambiar a mano el nombre que se ve de una cuenta (solo en el panel). Vacío = volver al primer nombre que escribió.
 create or replace function public.admin_rename(p_vid text, p_name text)
 returns text language plpgsql security definer set search_path = public as $$
-declare v text := nullif(btrim(regexp_replace(left(coalesce(p_name, ''), 24), '[[:cntrl:]<>]', '', 'g')), '');
+declare
+  v text := nullif(btrim(regexp_replace(left(coalesce(p_name, ''), 24), '[[:cntrl:]<>]', '', 'g')), '');
+  a text;
 begin
   if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
   if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return null; end if;
+  a := public._acct(p_vid);
   if v is null then
-    update players set name = coalesce(names ->> 0, name) where vid = p_vid returning name into v;
+    update players set name = coalesce(names ->> 0, name) where vid = a returning name into v;
     return v;
   end if;
   insert into players (vid, name, first_seen, last_seen)
-  values (p_vid, v, coalesce((select min(ts) from events where vid = p_vid), now()), coalesce((select max(ts) from events where vid = p_vid), now()))
+  values (a, v, coalesce((select min(ts) from events where vid = a), now()), coalesce((select max(ts) from events where vid = a), now()))
   on conflict (vid) do update set name = excluded.name;
   return v;
 end $$;
 revoke all on function public.admin_rename(text, text) from public, anon;
 grant execute on function public.admin_rename(text, text) to authenticated;
+
+-- Unir la cuenta de p_other a la de p_main (misma persona en varios dispositivos). Se queda el nombre de p_main.
+create or replace function public.admin_merge(p_main text, p_other text)
+returns text language plpgsql security definer set search_path = public as $$
+declare a text; b text;
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  if p_main !~ '^[a-z0-9]{8,24}$' or p_other !~ '^[a-z0-9]{8,24}$' then return null; end if;
+  a := public._acct(p_main); b := public._acct(p_other);
+  if a = b then return a; end if;
+  update merges set main = a where main = b;
+  insert into merges (vid, main) values (b, a) on conflict (vid) do update set main = excluded.main, ts = now();
+  return a;
+end $$;
+revoke all on function public.admin_merge(text, text) from public, anon;
+grant execute on function public.admin_merge(text, text) to authenticated;
+
+-- Separar un dispositivo de su cuenta. Si es el principal, el siguiente dispositivo pasa a ser el principal de los demás.
+create or replace function public.admin_unmerge(p_vid text)
+returns void language plpgsql security definer set search_path = public as $$
+declare nm text;
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return; end if;
+  if exists (select 1 from merges where vid = p_vid) then delete from merges where vid = p_vid; return; end if;
+  select vid into nm from merges where main = p_vid order by ts limit 1;
+  if nm is null then return; end if;
+  delete from merges where vid = nm;
+  update merges set main = nm where main = p_vid;
+end $$;
+revoke all on function public.admin_unmerge(text) from public, anon;
+grant execute on function public.admin_unmerge(text) to authenticated;

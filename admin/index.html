@@ -241,6 +241,32 @@ main.load{opacity:.55}
 .pbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .pbar .chips{flex-wrap:wrap}
 .pbar .cnt{margin-left:auto;font-weight:800;color:var(--mute)}
+.srch input::-webkit-search-cancel-button{display:none}
+.srch{display:flex;align-items:center;gap:8px;flex:1 1 150px;min-width:0;background:var(--white);border:2px solid var(--ink);border-radius:99px;padding:0 12px}
+.srch .ic{width:17px;height:17px;flex:0 0 auto;color:var(--mute)}
+.srch input{flex:1;min-width:0;font:inherit;font-weight:700;font-size:16px;color:var(--ink);background:transparent;border:0;outline:none;padding:9px 0}
+.srch:focus-within{box-shadow:0 0 0 3px var(--blue)}
+.srch button{box-shadow:none;border:0;background:transparent;padding:4px;color:var(--mute);display:grid}
+.srch button:hover:not(:disabled),.srch button:active:not(:disabled){transform:none;box-shadow:none;background:transparent;color:var(--ink)}
+.pbar .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
+.pbar select{font:inherit;font-weight:700;font-size:15px;color:var(--ink);background:var(--white);border:2px solid var(--ink);border-radius:99px;padding:7px 12px}
+.pl .nm mark{background:#fff3b8;color:inherit;border-radius:3px}
+.pl .sub{font-weight:700;font-size:12px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dvs{display:grid;gap:6px}
+.dv{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;background:var(--white);border:2px solid var(--ink);border-radius:12px;padding:7px 10px}
+.dv .gi{width:30px;height:30px;border-radius:9px;border:2px solid var(--ink);display:grid;place-items:center;background:var(--paper)}
+.dv .gi .ic{width:15px;height:15px}
+.dv .t1{font-weight:800;font-size:15px}
+.dv .t2{font-weight:700;font-size:13px;color:var(--mute)}
+.dv button,.addv{box-shadow:none;border-width:2px;border-radius:99px;padding:5px 12px;font-size:14px;background:transparent;color:var(--ink)}
+.dv button:hover:not(:disabled),.addv:hover:not(:disabled),.dv button:active:not(:disabled),.addv:active:not(:disabled){transform:none;box-shadow:none;background:var(--wash)}
+.addv{display:inline-flex;align-items:center;gap:6px;margin-top:8px}
+.addv .ic{width:15px;height:15px}
+.pick{margin-top:8px;display:grid;gap:8px}
+.pick .res{display:grid;gap:6px;max-height:300px;overflow:auto}
+.pick .pl{grid-template-columns:36px 1fr auto;padding:6px 10px}
+.pick .pl .av{width:36px;height:36px;font-size:16px;border-radius:10px}
+.pick .pl .nm{font-size:16px}
 </style>
 </head>
 <body>
@@ -333,6 +359,9 @@ const ICON = {
   type: '<path d="M4 7V5h16v2M12 5v14M9 19h6"/>',
   eyeoff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.3 6.8C3.8 8.5 2 12 2 12s3.6 7 10 7c1.5 0 2.8-.4 4-.9"/>',
   pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  unlink: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/><path d="M3 3l18 18"/>',
   home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
   chart: '<path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'
@@ -598,31 +627,63 @@ $('#tabs').addEventListener('click', e => {
 });
 
 /* ---------- jugadores ---------- */
-let players = null, pfilter = 'real';
+let players = null, pfilter = 'real', pq = '', psort = 'last';
+try { psort = localStorage.getItem('pg_admin_psort') || 'last'; } catch (e) {}
+const fold = t => (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const DICON = { m: 'user', t: 'user', d: 'grid' };
 async function loadPlayers() {
   const { data: d, error } = await sb.rpc('admin_players', { p_days: days });
   if (error) return;
   players = d; renderPlayers();
 }
+$('#pbar').innerHTML = `<div class="row"><label class="srch">${ic('search')}<input id="pq" type="search" placeholder="Buscar" aria-label="Buscar" autocomplete="off"><button type="button" id="pqx" aria-label="Borrar" hidden>${ic('x')}</button></label>
+  <select id="psort" aria-label="Orden"><option value="last">Recientes</option><option value="played">Más partidas</option><option value="visits">Más visitas</option><option value="first">Nuevos</option><option value="name">Nombre</option></select></div>
+  <div class="chips" id="pchips" role="group" aria-label="Filtro"></div><span class="cnt" id="pcnt"></span>`;
+$('#psort').value = psort;
+$('#pq').addEventListener('input', e => { pq = e.target.value; $('#pqx').hidden = !pq; renderPlayers(); });
+$('#pqx').onclick = () => { pq = ''; $('#pq').value = ''; $('#pqx').hidden = true; renderPlayers(); $('#pq').focus(); };
+$('#psort').onchange = e => { psort = e.target.value; try { localStorage.setItem('pg_admin_psort', psort); } catch (x) {} renderPlayers(); };
+$('#pchips').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; pfilter = b.dataset.f; renderPlayers(); });
+function matchP(p, q) {
+  if (!q) return { ok: true };
+  const all = [p.name || '', ...(p.names || [])];
+  const hit = all.find(n => fold(n).includes(q));
+  return { ok: !!hit || (!p.name && 'sin nombre'.includes(q)), via: hit && fold(hit) !== fold(p.name || '') ? hit : '' };
+}
+const hl = (t, q) => { if (!q || !t) return esc(t || ''); const k = fold(t).indexOf(q); return k < 0 ? esc(t) : esc(t.slice(0, k)) + '<mark>' + esc(t.slice(k, k + q.length)) + '</mark>' + esc(t.slice(k + q.length)); };
+function sortP(list) {
+  const T = x => x ? new Date(x).getTime() : 0, by = {
+    last: (a, b) => T(b.last) - T(a.last),
+    played: (a, b) => (b.played || 0) - (a.played || 0) || T(b.last) - T(a.last),
+    visits: (a, b) => (b.visits || 0) - (a.visits || 0) || T(b.last) - T(a.last),
+    first: (a, b) => T(b.first) - T(a.first),
+    name: (a, b) => (a.name ? 0 : 1) - (b.name ? 0 : 1) || fold(a.name).localeCompare(fold(b.name), 'es')
+  };
+  return list.slice().sort(by[psort] || by.last);
+}
+function plRow(p, q, btn) {
+  const m = matchP(p, q);
+  const gs = (p.games || []).filter(g => GAMES[g]).map(g => `<i style="background:${GAMES[g].color}" title="${GAMES[g].name}"></i>`).join('');
+  const dv = [].concat(p.dev || []).filter(d => DEV[d]).map(d => `<span title="${DEV[d][0]}">${ic(DICON[d])}${(p.dev || []).length > 1 ? '' : DEV[d][0]}</span>`).join('');
+  const al = (p.names || []).filter(x => x !== p.name);
+  const nm = (p.name ? hl(p.name, q) : '<i style="font-weight:700;color:var(--mute)">sin nombre</i>') + (al.length ? `<span class="al" title="${esc(al.join(', '))}">+${al.length}</span>` : '');
+  return `<div class="pl ${p.hidden ? 'off' : ''}" data-pv="${esc(p.vid)}" tabindex="0"><div class="av">${p.name ? esc(p.name.slice(0, 1).toUpperCase()) : '?'}</div>
+    <div style="min-width:0"><div class="nm">${nm}<span class="gs">${gs}</span></div>
+    ${m.via ? `<div class="sub">también ${hl(m.via, q)}</div>` : ''}
+    <div class="meta"><span title="Partidas">${ic('play')}${p.played ?? p.hosted}</span><span title="Visitas">${ic('eye')}${p.visits}</span>${p.devs > 1 ? `<span title="Dispositivos">${ic('link')}${p.devs}</span>` : ''}${dv}<span>${ic('clock')}${ago(p.last)}</span></div></div>
+    ${btn === false ? '' : `<button type="button" data-v="${esc(p.vid)}" data-h="${p.hidden ? 0 : 1}" aria-label="${p.hidden ? 'Mostrar' : 'Ocultar'}" title="${p.hidden ? 'Mostrar' : 'Ocultar'}"><svg class="ic" viewBox="0 0 24 24">${ICON[p.hidden ? 'eye' : 'eyeoff']}</svg></button>`}</div>`;
+}
 function renderPlayers() {
   if (!players) return;
-  const real = players.filter(p => !p.hidden), off = players.filter(p => p.hidden);
-  const F = [['real', 'Reales', real.length], ['off', 'Ocultos', off.length], ['all', 'Todos', players.length]];
-  $('#pbar').innerHTML = `<div class="chips" role="group" aria-label="Filtro">${F.map(([k, l, n]) => `<button type="button" data-f="${k}" aria-pressed="${k === pfilter}">${l} ${n}</button>`).join('')}</div>`;
-  const list = pfilter === 'real' ? real : pfilter === 'off' ? off : players;
-  if (!list.length) { $('#plist').innerHTML = '<div class="empty">–</div>'; return; }
-  $('#plist').innerHTML = list.map(p => {
-    const gs = (p.games || []).filter(g => GAMES[g]).map(g => `<i style="background:${GAMES[g].color}" title="${GAMES[g].name}"></i>`).join('');
-    const dv = p.dev && DEV[p.dev] ? `<span>${ic(p.dev === 'd' ? 'grid' : 'user')}${DEV[p.dev][0]}</span>` : '';
-    const al = (p.names || []).filter(x => x !== p.name);
-    const nm = (p.name ? esc(p.name) : '<i style="font-weight:700;color:var(--mute)">sin nombre</i>') + (al.length ? `<span class="al" title="${esc(al.join(', '))}">+${al.length}</span>` : '');
-    return `<div class="pl ${p.hidden ? 'off' : ''}" data-pv="${esc(p.vid)}" tabindex="0"><div class="av">${p.name ? esc(p.name.slice(0, 1).toUpperCase()) : '?'}</div>
-      <div style="min-width:0"><div class="nm">${nm}<span class="gs">${gs}</span></div>
-      <div class="meta"><span>${ic('play')}${p.hosted}</span><span>${ic('link')}${p.joined}</span><span>${ic('eye')}${p.visits}</span>${dv}<span>${ic('clock')}${ago(p.last)}</span></div></div>
-      <button type="button" data-v="${esc(p.vid)}" data-h="${p.hidden ? 0 : 1}" aria-label="${p.hidden ? 'Mostrar' : 'Ocultar'}" title="${p.hidden ? 'Mostrar' : 'Ocultar'}"><svg class="ic" viewBox="0 0 24 24">${ICON[p.hidden ? 'eye' : 'eyeoff']}</svg></button></div>`;
-  }).join('');
+  const q = fold(pq.trim());
+  const found = players.filter(p => matchP(p, q).ok);
+  const real = found.filter(p => !p.hidden), off = found.filter(p => p.hidden), anon = found.filter(p => !p.name);
+  const F = [['real', 'Reales', real.length], ['off', 'Ocultos', off.length], ['anon', 'Sin nombre', anon.length], ['all', 'Todos', found.length]];
+  $('#pchips').innerHTML = F.map(([k, l, n]) => `<button type="button" data-f="${k}" aria-pressed="${k === pfilter}">${l} ${n}</button>`).join('');
+  const list = sortP(pfilter === 'real' ? real : pfilter === 'off' ? off : pfilter === 'anon' ? anon : found);
+  $('#pcnt').textContent = '';
+  $('#plist').innerHTML = list.length ? list.map(p => plRow(p, q)).join('') : '<div class="empty">–</div>';
 }
-$('#pbar').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; pfilter = b.dataset.f; renderPlayers(); });
 $('#plist').addEventListener('click', async e => {
   const b = e.target.closest('button');
   if (!b) { const r = e.target.closest('.pl'); if (r) openPlayer(r.dataset.pv); return; }
@@ -657,31 +718,54 @@ async function openPlayer(vid, push) {
   const head = (nm, al, meta) => `${pstack.length ? `<button type="button" class="back" data-back aria-label="Volver"><svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>` : ''}<div class="av">${nm ? esc(nm[0].toUpperCase()) : '?'}</div><h2>${nm ? esc(nm) : 'sin nombre'}<button type="button" class="ed" data-edit aria-label="Cambiar nombre" title="Cambiar nombre">${ic('pen')}</button>${al.length ? `<span class="alias">también ${al.map(esc).join(', ')}</span>` : ''}<small>${meta}</small></h2><button type="button" data-close aria-label="Cerrar"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
   $('#shh').innerHTML = head(p0.name, [], '…');
   $('#shb').innerHTML = '<div class="empty">…</div>';
-  $('#sheet').hidden = false; document.body.style.overflow = 'hidden'; $('#sheet .sh').scrollTop = 0; $('#sheet').dataset.pv = vid;
+  $('#sheet').hidden = false; document.body.style.overflow = 'hidden'; $('#sheet .sh').scrollTop = 0; $('#sheet').dataset.pv = vid; $('#sheet').dataset.ids = vid;
   const [a, b] = await Promise.all([sb.rpc('admin_player', { p_vid: vid }), sb.rpc('admin_player_games', { p_vid: vid, p_limit: 200 })]);
   if (a.error || b.error || !a.data) { $('#shb').innerHTML = '<div class="empty">Sin conexión</div>'; return; }
-  const P = a.data, G = b.data || [], rooms = P.rooms || [], mates = P.mates || [];
-  const multi = G.filter(g => !(g.d || {}).solo), wins = multi.filter(g => won(g, vid)).length;
+  const P = a.data, G = b.data || [], rooms = P.rooms || [], mates = P.mates || [], ids = P.vids || [vid];
+  $('#sheet').dataset.pv = P.vid || vid;
+  const multi = G.filter(g => !(g.d || {}).solo), wins = multi.filter(g => won(g, ids)).length;
   const meta = [`${G.length} partidas`, multi.length ? `${wins} ganadas` : '', `${rooms.length} salas`, `${P.visits} visitas`, `${P.days} días`,
-    P.dev && DEV[P.dev] ? DEV[P.dev][0] : '', P.first ? 'desde ' + ago2(P.first) : '', P.last ? 'visto ' + ago(P.last) : '', P.hidden ? 'oculto' : ''].filter(Boolean).join(' · ');
+    ids.length > 1 ? ids.length + ' dispositivos' : (P.devices || [])[0] && DEV[P.devices[0].dev] ? DEV[P.devices[0].dev][0] : '', P.first ? 'desde ' + ago2(P.first) : '', P.last ? 'visto ' + ago(P.last) : '', P.hidden ? 'oculto' : ''].filter(Boolean).join(' · ');
   $('#shh').innerHTML = head(P.name, (P.names || []).filter(x => x !== P.name), meta);
   let h = '';
   const per = Object.keys(GAMES).map(k => {
     const gs = G.filter(g => g.game === k); if (!gs.length) return '';
-    const m = gs.filter(g => !(g.d || {}).solo), w = m.filter(g => won(g, vid)).length, so = gs.length - m.length;
+    const m = gs.filter(g => !(g.d || {}).solo), w = m.filter(g => won(g, ids)).length, so = gs.length - m.length;
     return `<div><i style="background:${GAMES[k].color}"></i><b>${GAMES[k].name}</b><small>${gs.length} partidas${m.length ? ' · ' + w + ' ganadas' : ''}${so ? ' · ' + so + ' solo' : ''}</small></div>`;
   }).join('');
   if (per) h += `<div class="sec"><div class="pst">${per}</div></div>`;
+  const dvs = P.devices || [];
+  h += `<div class="sec"><h3>${dvs.length > 1 ? 'Dispositivos' : 'Dispositivo'}</h3><div class="dvs">${dvs.map(d => {
+    const al = (d.names || []).length ? (d.names || []).map(esc).join(', ') : 'sin nombre';
+    return `<div class="dv" style="${d.hidden ? 'opacity:.55' : ''}"><div class="gi">${ic(DICON[d.dev] || 'user')}</div><div style="min-width:0"><div class="t1">${d.dev && DEV[d.dev] ? DEV[d.dev][0] : 'Dispositivo'}${d.main && dvs.length > 1 ? ' · principal' : ''}${d.hidden ? ' · oculto' : ''}</div><div class="t2">${al} · ${d.visits} visitas${d.first ? ' · desde ' + ago2(d.first) : ''}${d.last ? ' · visto ' + ago(d.last) : ''}</div></div>${dvs.length > 1 ? `<button type="button" data-split="${esc(d.v)}" title="Separar">${ic('unlink')}</button>` : ''}</div>`;
+  }).join('')}</div><button type="button" class="addv" data-addv>${ic('plus')}Unir otro dispositivo</button><div class="pick" id="pick" hidden><label class="srch">${ic('search')}<input id="pkq" type="search" placeholder="Buscar jugador" aria-label="Buscar jugador" autocomplete="off"></label><div class="res" id="pkres"></div></div></div>`;
   if (mates.length) h += `<div class="sec"><h3>Juega con</h3><div class="mts">${mates.map((m, i) => `<button type="button" class="mt ${m.hidden ? 'off' : ''}" data-pv="${esc(m.v)}">${dot(i, m.nm)}${esc(m.nm || '?')}<em>${m.n}</em></button>`).join('')}</div></div>`;
   if (rooms.length) h += `<div class="sec"><h3>Salas</h3><div class="rms">${rooms.map(r => {
     const Gm = GAMES[r.g] || { name: r.g, color: WHITE };
     const ppl = (r.ppl || []).map(x => `<a data-pv="${esc(x.v)}">${esc(x.nm || '?')}</a>`).join(', ');
     return `<div class="rm"><div class="gi" style="background:${Gm.color}">${ic(GICON[r.g] || 'grid')}</div><div style="min-width:0"><div class="t1"><code>${esc(r.room)}</code>${Gm.name}</div><div class="t2">${when(r.t)} · ${r.own ? 'la creó' : 'se unió'}${ppl ? ' · con ' + ppl : ' · sin nadie más'}</div></div><div class="n">${r.games ? r.games + ' ' + ic('play') : ''}</div></div>`;
   }).join('')}</div></div>`;
-  h += `<div class="sec"><h3>Partidas</h3>${G.length ? G.map(g => gameCard(g, vid)).join('') : '<div class="empty">Aún no hay partidas con detalle</div>'}</div>`;
+  h += `<div class="sec"><h3>Partidas</h3>${G.length ? G.map(g => gameCard(g, ids)).join('') : '<div class="empty">Aún no hay partidas con detalle</div>'}</div>`;
   $('#shb').innerHTML = h;
   $('#sheet').dataset.nm = P.name || '';
+  $('#sheet').dataset.ids = ids.join(',');
 }
+let allP = null;
+async function openPick() {
+  const box = $('#pick'); if (!box) return;
+  box.hidden = !box.hidden; if (box.hidden) return;
+  $('#pkq').value = ''; $('#pkq').focus();
+  $('#pkres').innerHTML = '<div class="empty">…</div>';
+  if (!allP) { const { data, error } = await sb.rpc('admin_players', { p_days: 365 }); if (error) { $('#pkres').innerHTML = '<div class="empty">Sin conexión</div>'; return; } allP = data; }
+  renderPick();
+}
+function renderPick() {
+  if (!allP || !$('#pkres')) return;
+  const me = $('#sheet').dataset.pv, q = fold($('#pkq').value.trim());
+  const list = sortP(allP.filter(p => p.vid !== me && matchP(p, q).ok)).slice(0, 40);
+  $('#pkres').innerHTML = list.length ? list.map(p => plRow(p, q, false).replace('class="pl', 'data-merge="' + esc(p.vid) + '" class="pl')).join('') : '<div class="empty">–</div>';
+}
+async function refreshAfter(vid) { allP = null; await openPlayer(vid, true); loadPlayers(); if (act) loadActivity(); }
 function editName() {
   const h2 = $('#shh h2'); if (!h2 || $('#shh form')) return;
   const vid = $('#sheet').dataset.pv, keep = h2.innerHTML;
@@ -698,13 +782,19 @@ function editName() {
     openPlayer(vid, true); loadPlayers(); if (act) loadActivity();
   });
 }
+$('#sheet').addEventListener('input', e => { if (e.target.id === 'pkq') renderPick(); });
 $('#sheet').addEventListener('click', e => {
-  const t = e.target.closest('[data-pv]');
+  const t = e.target.closest('[data-pv]:not([data-merge])');
   if (t && t.dataset.pv !== $('#sheet').dataset.pv) { pstack.push($('#sheet').dataset.pv); openPlayer(t.dataset.pv, true); return; }
   if (e.target.closest('[data-edit]')) { editName(); return; }
+  if (e.target.closest('[data-addv]')) { openPick(); return; }
+  const mg = e.target.closest('[data-merge]');
+  if (mg) { const me = $('#sheet').dataset.pv; mg.style.pointerEvents = 'none'; sb.rpc('admin_merge', { p_main: me, p_other: mg.dataset.merge }).then(({ error }) => { if (!error) refreshAfter(me); else mg.style.pointerEvents = ''; }); return; }
+  const sp = e.target.closest('[data-split]');
+  if (sp) { const me = $('#sheet').dataset.pv; sp.disabled = true; sb.rpc('admin_unmerge', { p_vid: sp.dataset.split }).then(({ error }) => { if (!error) refreshAfter(sp.dataset.split === me ? (($('#sheet').dataset.ids || '').split(',').find(x => x && x !== me) || me) : me); else sp.disabled = false; }); return; }
   if (e.target.closest('[data-back]') && pstack.length) { const v = pstack.pop(); openPlayer(v, true); }
 });
-function meIdx(d, vid, host) { let i = (d.pl || []).findIndex(x => x.pv === vid); if (i < 0 && host) i = (d.pl || []).findIndex(x => x.h); return i; }
+function meIdx(d, vid, host) { const ids = [].concat(vid || []); let i = (d.pl || []).findIndex(x => ids.includes(x.pv)); if (i < 0 && host) i = (d.pl || []).findIndex(x => x.h); return i; }
 function gameCard(g, vid) {
   const d = g.d || {}, G = GAMES[g.game] || { name: g.game, color: WHITE }, me = meIdx(d, vid, g.host), pl = d.pl || [];
   let res = '', body = '';
