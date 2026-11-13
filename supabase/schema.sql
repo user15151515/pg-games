@@ -24,6 +24,17 @@ create table if not exists public.players (
   last_seen  timestamptz not null default now()
 );
 alter table public.players enable row level security;
+-- Cada dispositivo es una cuenta: «name» es el primer nombre que escribió y «names», todos los que ha usado por orden.
+alter table public.players add column if not exists names jsonb not null default '[]'::jsonb;
+with n as (
+  select vid, nm, min(ts) as t from (
+    select vid, ts, nullif(btrim(regexp_replace(left(coalesce(p ->> 'name', ''), 14), '[[:cntrl:]<>]', '', 'g')), '') as nm
+    from public.events where p ? 'name') x
+  where nm is not null group by vid, nm
+)
+update public.players pl set names = s.names, name = s.names ->> 0
+from (select vid, jsonb_agg(nm order by t) as names from n group by vid) s
+where s.vid = pl.vid and pl.names = '[]'::jsonb;
 
 -- Dispositivos que el administrador ha ocultado: sus eventos no cuentan en ninguna estadística.
 create table if not exists public.hidden_vids (vid text primary key, ts timestamptz not null default now());
@@ -57,8 +68,10 @@ begin
   insert into events (kind, game, vid, sid, p) values (p_kind, p_game, p_vid, p_sid, p_props);
   v_name := nullif(btrim(regexp_replace(left(coalesce(p_props ->> 'name', ''), 14), '[[:cntrl:]<>]', '', 'g')), '');
   if v_name is not null then
-    insert into players (vid, name) values (p_vid, v_name)
-    on conflict (vid) do update set name = excluded.name, last_seen = now();
+    insert into players (vid, name, names) values (p_vid, v_name, jsonb_build_array(v_name))
+    on conflict (vid) do update set last_seen = now(),
+      names = case when players.names ? v_name or jsonb_array_length(players.names) >= 20 then players.names
+                   else players.names || jsonb_build_array(v_name) end;
   end if;
 end $$;
 revoke all on function public.pg_log(text, text, text, text, jsonb) from public;
@@ -177,7 +190,9 @@ begin
     ),
     'recent', (
       select coalesce(jsonb_agg(jsonb_build_object('t', ts, 'k', kind, 'g', game, 'n', n, 'solo', solo, 'name', name, 'names', names) order by ts desc), '[]'::jsonb)
-      from (select ts, kind, game, n, solo, name, names from public._ev(now() - interval '7 days', tn) where kind <> 'view' order by ts desc limit 30) x
+      from (select e.ts, e.kind, e.game, e.n, e.solo, coalesce(pl.name, e.name) as name, e.names
+            from public._ev(now() - interval '7 days', tn) e left join players pl on pl.vid = e.vid
+            where e.kind <> 'view' order by e.ts desc limit 30) x
     )
   ) into res;
   return res;
@@ -204,7 +219,8 @@ begin
            (select count(*) from events e where e.vid = v.vid and e.kind = 'room_join' and e.ts >= t0) as joined,
            (select count(*) from events e where e.vid = v.vid and e.kind = 'view' and e.ts >= t0) as visits,
            (select coalesce(jsonb_agg(distinct e.game), '[]'::jsonb) from events e where e.vid = v.vid and e.game <> '' and e.kind in ('game_start', 'room_join', 'room_create') and e.ts >= t0) as games,
-           (select e.p ->> 'dev' from events e where e.vid = v.vid and e.kind = 'view' and e.p ? 'dev' order by e.ts desc limit 1) as dev
+           (select e.p ->> 'dev' from events e where e.vid = v.vid and e.kind = 'view' and e.p ? 'dev' order by e.ts desc limit 1) as dev,
+           coalesce(pl.names, '[]'::jsonb) as names
     from (
       select vid from players where last_seen >= t0
       union
@@ -291,7 +307,7 @@ begin
   select jsonb_build_object(
     'events', (
       select coalesce(jsonb_agg(jsonb_build_object('t', e.ts, 'k', e.kind, 'g', e.game, 'v', e.vid,
-               'nm', coalesce(nullif(e.p ->> 'name', ''), pl.name), 'room', e.p ->> 'room',
+               'nm', coalesce(pl.name, nullif(e.p ->> 'name', '')), 'room', e.p ->> 'room',
                'n', case when e.p ->> 'n' ~ '^[0-9]{1,3}$' then (e.p ->> 'n')::int end,
                'solo', coalesce(e.p ->> 'solo', 'false') = 'true') order by e.ts), '[]'::jsonb)
       from (select * from events where ts >= t0 and kind in ('room_create', 'room_join', 'game_start', 'game_end')
@@ -308,3 +324,53 @@ begin
 end $$;
 revoke all on function public.admin_activity(int) from public, anon;
 grant execute on function public.admin_activity(int) to authenticated;
+
+-- Ficha de un jugador: nombre y alias, actividad, salas en las que ha estado (con quién) y con quién ha jugado.
+create or replace function public.admin_player(p_vid text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  tz constant text := 'Europe/Madrid';
+  res jsonb;
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return null; end if;
+  select jsonb_build_object(
+    'vid', p_vid, 'name', pl.name, 'names', coalesce(pl.names, '[]'::jsonb),
+    'hidden', exists (select 1 from hidden_vids where vid = p_vid),
+    'first', least(pl.first_seen, (select min(ts) from events where vid = p_vid)),
+    'last', greatest(pl.last_seen, (select max(ts) from events where vid = p_vid)),
+    'visits', (select count(*) from events where vid = p_vid and kind = 'view'),
+    'days', (select count(distinct (ts at time zone tz)::date) from events where vid = p_vid),
+    'dev', (select e.p ->> 'dev' from events e where e.vid = p_vid and e.kind = 'view' and e.p ? 'dev' order by e.ts desc limit 1),
+    'mates', (
+      select coalesce(jsonb_agg(jsonb_build_object('v', m.pv, 'nm', coalesce(p2.name, m.nm), 'n', m.n, 't', m.t, 'hidden', h.vid is not null) order by m.n desc, m.t desc), '[]'::jsonb)
+      from (select x ->> 'pv' as pv, max(x ->> 'nm') as nm, count(distinct g.id) as n, max(g.ts) as t
+            from game_logs g, jsonb_array_elements(g.d -> 'pl') x
+            where g.d @> jsonb_build_object('pl', jsonb_build_array(jsonb_build_object('pv', p_vid)))
+              and x ->> 'pv' ~ '^[a-z0-9]{8,24}$' and x ->> 'pv' <> p_vid
+            group by 1 order by 3 desc, 4 desc limit 60) m
+      left join players p2 on p2.vid = m.pv
+      left join hidden_vids h on h.vid = m.pv
+    ),
+    'rooms', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+               'room', r.room, 'g', r.game, 't', r.t, 'own', r.own,
+               'games', (select count(*) from game_logs gl where gl.game = r.game and gl.d ->> 'room' = r.room and (gl.ts at time zone tz)::date = r.dy),
+               'ppl', (select coalesce(jsonb_agg(jsonb_build_object('v', q.vid, 'nm', q.nm) order by q.t), '[]'::jsonb)
+                       from (select e.vid, coalesce(max(p3.name), max(e.p ->> 'name')) as nm, min(e.ts) as t
+                             from events e left join players p3 on p3.vid = e.vid
+                             where e.game = r.game and e.p ->> 'room' = r.room and (e.ts at time zone tz)::date = r.dy
+                               and e.vid <> p_vid and e.kind in ('room_create', 'room_join', 'game_start', 'game_end')
+                             group by e.vid) q)
+             ) order by r.t desc), '[]'::jsonb)
+      from (select e.p ->> 'room' as room, e.game, (e.ts at time zone tz)::date as dy, min(e.ts) as t, bool_or(e.kind = 'room_create') as own
+            from events e
+            where e.vid = p_vid and e.kind in ('room_create', 'room_join', 'game_start', 'game_end') and e.p ->> 'room' ~ '^[A-Z]{4}$'
+            group by 1, 2, 3 order by 4 desc limit 60) r
+    )
+  ) into res
+  from (select 1) one left join players pl on pl.vid = p_vid;
+  return res;
+end $$;
+revoke all on function public.admin_player(text) from public, anon;
+grant execute on function public.admin_player(text) to authenticated;

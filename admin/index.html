@@ -177,6 +177,33 @@ main.load{opacity:.55}
 .gb{padding:12px;display:grid;gap:12px}
 .gb h4{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
 .rk{display:grid;gap:4px}
+.pl .al{font-size:12px;font-weight:800;color:var(--mute);background:var(--wash);border-radius:99px;padding:1px 7px}
+.shh .alias{display:block;font-size:14px;font-weight:700;color:var(--ink);font-stretch:100%;letter-spacing:0;margin-top:5px;white-space:normal}
+.shh .back{background:transparent}
+.sec{margin:0 0 16px}
+.sec>h3{margin:0 0 8px;font-size:13px;font-weight:800;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.pst{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pst div{background:var(--white);border:2px solid var(--ink);border-radius:12px;padding:8px 10px;display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center}
+.pst i{grid-row:span 2;width:14px;height:34px;border-radius:5px;border:1.5px solid var(--ink)}
+.pst b{font-weight:800;font-size:16px}
+.pst small{font-weight:700;font-size:12px;color:var(--mute)}
+.mts{display:flex;flex-wrap:wrap;gap:6px}
+.mt{box-shadow:none;border-width:2px;border-radius:99px;padding:3px 10px 3px 3px;font-size:14px;background:var(--white);color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+.mt:hover:not(:disabled),.mt:active:not(:disabled){transform:none;box-shadow:none;background:#fff8d6}
+.mt em{font-style:normal;color:var(--mute);font-weight:800}
+.mt.off{opacity:.5}
+.rms{display:grid;gap:6px}
+.rm{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;background:var(--white);border:2px solid var(--ink);border-radius:12px;padding:7px 10px}
+.rm .gi{width:30px;height:30px;border-radius:9px;border:2px solid var(--ink);display:grid;place-items:center}
+.rm .gi .ic{width:15px;height:15px}
+.rm .t1{font-weight:800;font-size:15px}
+.rm .t1 code{font:inherit;letter-spacing:.06em;background:var(--wash);border-radius:6px;padding:0 5px;margin-right:6px}
+.rm .t2{font-weight:700;font-size:13px;color:var(--mute)}
+.rm .t2 a{color:var(--ink);text-decoration:none;cursor:pointer}
+.rm .t2 a:hover{text-decoration:underline}
+.rm .n{font-weight:800;font-size:15px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.rm .n .ic{width:14px;height:14px}
+.shh small{white-space:normal;line-height:1.35}
 .rk div{display:grid;grid-template-columns:22px 24px 1fr auto;gap:8px;align-items:center;font-weight:700;font-size:15px}
 .rk div.me{background:#fff3b8;border-radius:8px}
 .rk b{font-weight:800}
@@ -581,7 +608,8 @@ function renderPlayers() {
   $('#plist').innerHTML = list.map(p => {
     const gs = (p.games || []).filter(g => GAMES[g]).map(g => `<i style="background:${GAMES[g].color}" title="${GAMES[g].name}"></i>`).join('');
     const dv = p.dev && DEV[p.dev] ? `<span>${ic(p.dev === 'd' ? 'grid' : 'user')}${DEV[p.dev][0]}</span>` : '';
-    const nm = p.name ? esc(p.name) : '<i style="font-weight:700;color:var(--mute)">sin nombre</i>';
+    const al = (p.names || []).filter(x => x !== p.name);
+    const nm = (p.name ? esc(p.name) : '<i style="font-weight:700;color:var(--mute)">sin nombre</i>') + (al.length ? `<span class="al" title="${esc(al.join(', '))}">+${al.length}</span>` : '');
     return `<div class="pl ${p.hidden ? 'off' : ''}" data-pv="${esc(p.vid)}" tabindex="0"><div class="av">${p.name ? esc(p.name.slice(0, 1).toUpperCase()) : '?'}</div>
       <div style="min-width:0"><div class="nm">${nm}<span class="gs">${gs}</span></div>
       <div class="meta"><span>${ic('play')}${p.hosted}</span><span>${ic('link')}${p.joined}</span><span>${ic('eye')}${p.visits}</span>${dv}<span>${ic('clock')}${ago(p.last)}</span></div></div>
@@ -606,17 +634,52 @@ const dot = (i, nm) => `<span class="dt" style="background:${PCOL[i % PCOL.lengt
 function closeSheet() { $('#sheet').hidden = true; document.body.style.overflow = ''; }
 $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet' || e.target.closest('[data-close]')) closeSheet(); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
-async function openPlayer(vid) {
-  const p = (players || []).find(x => x.vid === vid); if (!p) return;
-  const nm = p.name ? esc(p.name) : 'sin nombre';
-  $('#shh').innerHTML = `<div class="av">${p.name ? esc(p.name[0].toUpperCase()) : '?'}</div><h2>${nm}<small>${p.hosted} creadas · ${p.joined} unido · ${p.visits} visitas${p.dev && DEV[p.dev] ? ' · ' + DEV[p.dev][0] : ''} · visto ${ago(p.last)}</small></h2><button type="button" data-close aria-label="Cerrar"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
-  $('#shb').innerHTML = '<div class="empty">…</div>';
-  $('#sheet').hidden = false; document.body.style.overflow = 'hidden'; $('#sheet .sh').scrollTop = 0;
-  const { data, error } = await sb.rpc('admin_player_games', { p_vid: vid, p_limit: 60 });
-  if (error) { $('#shb').innerHTML = '<div class="empty">Sin conexión</div>'; return; }
-  if (!data.length) { $('#shb').innerHTML = '<div class="empty">Aún no hay partidas con detalle</div>'; return; }
-  $('#shb').innerHTML = data.map(g => gameCard(g, vid)).join('');
+let pstack = [];
+const ago2 = t => new Date(t).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+function won(g, vid) {
+  const d = g.d || {}, pl = d.pl || [];
+  if (d.solo || pl.length < 2) return null;
+  const me = meIdx(d, vid, g.host); if (me < 0) return null;
+  if (g.game === 'bomba' || g.game === 'teclazo') return pl[me].pos === 1;
+  if (g.game === 'tutti') return (pl[me].sc || 0) === Math.max(...pl.map(x => x.sc || 0));
+  if (g.game === 'pistas') { const t = d.teams || [], mt = pl[me].tm; if (t.length < 2 || !t[mt]) return null; return (t[mt].sc || 0) === Math.max(...t.map(x => x.sc || 0)); }
+  return null;
 }
+async function openPlayer(vid, push) {
+  if (!push) pstack = [];
+  const p0 = (players || []).find(x => x.vid === vid) || {};
+  const head = (nm, al, meta) => `${pstack.length ? `<button type="button" class="back" data-back aria-label="Volver"><svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>` : ''}<div class="av">${nm ? esc(nm[0].toUpperCase()) : '?'}</div><h2>${nm ? esc(nm) : 'sin nombre'}${al.length ? `<span class="alias">también ${al.map(esc).join(', ')}</span>` : ''}<small>${meta}</small></h2><button type="button" data-close aria-label="Cerrar"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+  $('#shh').innerHTML = head(p0.name, [], '…');
+  $('#shb').innerHTML = '<div class="empty">…</div>';
+  $('#sheet').hidden = false; document.body.style.overflow = 'hidden'; $('#sheet .sh').scrollTop = 0; $('#sheet').dataset.pv = vid;
+  const [a, b] = await Promise.all([sb.rpc('admin_player', { p_vid: vid }), sb.rpc('admin_player_games', { p_vid: vid, p_limit: 200 })]);
+  if (a.error || b.error || !a.data) { $('#shb').innerHTML = '<div class="empty">Sin conexión</div>'; return; }
+  const P = a.data, G = b.data || [], rooms = P.rooms || [], mates = P.mates || [];
+  const multi = G.filter(g => !(g.d || {}).solo), wins = multi.filter(g => won(g, vid)).length;
+  const meta = [`${G.length} partidas`, multi.length ? `${wins} ganadas` : '', `${rooms.length} salas`, `${P.visits} visitas`, `${P.days} días`,
+    P.dev && DEV[P.dev] ? DEV[P.dev][0] : '', P.first ? 'desde ' + ago2(P.first) : '', P.last ? 'visto ' + ago(P.last) : '', P.hidden ? 'oculto' : ''].filter(Boolean).join(' · ');
+  $('#shh').innerHTML = head(P.name, (P.names || []).filter(x => x !== P.name), meta);
+  let h = '';
+  const per = Object.keys(GAMES).map(k => {
+    const gs = G.filter(g => g.game === k); if (!gs.length) return '';
+    const m = gs.filter(g => !(g.d || {}).solo), w = m.filter(g => won(g, vid)).length, so = gs.length - m.length;
+    return `<div><i style="background:${GAMES[k].color}"></i><b>${GAMES[k].name}</b><small>${gs.length} partidas${m.length ? ' · ' + w + ' ganadas' : ''}${so ? ' · ' + so + ' solo' : ''}</small></div>`;
+  }).join('');
+  if (per) h += `<div class="sec"><div class="pst">${per}</div></div>`;
+  if (mates.length) h += `<div class="sec"><h3>Juega con</h3><div class="mts">${mates.map((m, i) => `<button type="button" class="mt ${m.hidden ? 'off' : ''}" data-pv="${esc(m.v)}">${dot(i, m.nm)}${esc(m.nm || '?')}<em>${m.n}</em></button>`).join('')}</div></div>`;
+  if (rooms.length) h += `<div class="sec"><h3>Salas</h3><div class="rms">${rooms.map(r => {
+    const Gm = GAMES[r.g] || { name: r.g, color: WHITE };
+    const ppl = (r.ppl || []).map(x => `<a data-pv="${esc(x.v)}">${esc(x.nm || '?')}</a>`).join(', ');
+    return `<div class="rm"><div class="gi" style="background:${Gm.color}">${ic(GICON[r.g] || 'grid')}</div><div style="min-width:0"><div class="t1"><code>${esc(r.room)}</code>${Gm.name}</div><div class="t2">${when(r.t)} · ${r.own ? 'la creó' : 'se unió'}${ppl ? ' · con ' + ppl : ' · sin nadie más'}</div></div><div class="n">${r.games ? r.games + ' ' + ic('play') : ''}</div></div>`;
+  }).join('')}</div></div>`;
+  h += `<div class="sec"><h3>Partidas</h3>${G.length ? G.map(g => gameCard(g, vid)).join('') : '<div class="empty">Aún no hay partidas con detalle</div>'}</div>`;
+  $('#shb').innerHTML = h;
+}
+$('#sheet').addEventListener('click', e => {
+  const t = e.target.closest('[data-pv]');
+  if (t && t.dataset.pv !== $('#sheet').dataset.pv) { pstack.push($('#sheet').dataset.pv); openPlayer(t.dataset.pv, true); return; }
+  if (e.target.closest('[data-back]') && pstack.length) { const v = pstack.pop(); openPlayer(v, true); }
+});
 function meIdx(d, vid, host) { let i = (d.pl || []).findIndex(x => x.pv === vid); if (i < 0 && host) i = (d.pl || []).findIndex(x => x.h); return i; }
 function gameCard(g, vid) {
   const d = g.d || {}, G = GAMES[g.game] || { name: g.game, color: WHITE }, me = meIdx(d, vid, g.host), pl = d.pl || [];
