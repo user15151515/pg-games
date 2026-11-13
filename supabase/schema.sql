@@ -374,3 +374,22 @@ begin
 end $$;
 revoke all on function public.admin_player(text) from public, anon;
 grant execute on function public.admin_player(text) to authenticated;
+
+-- Cambiar a mano el nombre que se ve de una cuenta (solo en el panel). Vacío = volver al primer nombre que escribió.
+create or replace function public.admin_rename(p_vid text, p_name text)
+returns text language plpgsql security definer set search_path = public as $$
+declare v text := nullif(btrim(regexp_replace(left(coalesce(p_name, ''), 24), '[[:cntrl:]<>]', '', 'g')), '');
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return null; end if;
+  if v is null then
+    update players set name = coalesce(names ->> 0, name) where vid = p_vid returning name into v;
+    return v;
+  end if;
+  insert into players (vid, name, first_seen, last_seen)
+  values (p_vid, v, coalesce((select min(ts) from events where vid = p_vid), now()), coalesce((select max(ts) from events where vid = p_vid), now()))
+  on conflict (vid) do update set name = excluded.name;
+  return v;
+end $$;
+revoke all on function public.admin_rename(text, text) from public, anon;
+grant execute on function public.admin_rename(text, text) to authenticated;
