@@ -442,14 +442,14 @@ const SCHEMA = [
   { k: 'min',     ctx: 'multi', label: 'Tiempo mínimo',              min: 4, max: 30 },
   { k: 'max',     ctx: 'multi', label: 'Tiempo máximo',              min: 4, max: 40 },
   { k: 'bonusSec', ctx: 'multi', label: 'Segundos extra al acertar', vals: [0, 1, 2, 3, 5], labels: ['0', '1', '2', '3', '5'], off: c => c.mode === 'turn' },
-  { k: 'floor',   ctx: 'multi', label: 'Mínimo al recibir la bomba', vals: [4, 5, 6, 8], labels: ['4', '5', '6', '8'], off: c => c.mode === 'turn' },
+  { k: 'floor',   ctx: 'multi', label: 'Mínimo al recibir la bomba', vals: [4, 5, 6, 7, 8], labels: ['4', '5', '6', '7', '8'], off: c => c.mode === 'turn' },
   { k: 'order',   ctx: 'multi', label: 'Orden de pase',              vals: ['ring', 'bounce', 'random'], labels: ['Círculo', 'Rebote', 'Azar'] },
   { k: 'after',   ctx: 'multi', label: 'Tras explotar',              vals: ['next', 'same'], labels: ['Pasa al siguiente', 'Repite el mismo'] },
   { k: 'ramp',    ctx: 'multi', label: 'Más difícil con cada eliminado', vals: [1, 0], labels: ['Sí', 'No'] },
   { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'], hide: c => c.smode === 'rush' },
   { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
 ];
-const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 6, max: 14, bonusSec: 0, floor: 4, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 0, smode: 'word', total: 30 };
+const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 7, max: 14, bonusSec: 0, floor: 7, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 0, smode: 'word', total: 30 };
 const DEF_SOLO = { ...DEF, lives: 3, mode: 'turn', min: 10, max: 10, show: 1 };
 const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 
