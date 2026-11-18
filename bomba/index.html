@@ -449,7 +449,7 @@ const SCHEMA = [
   { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'], hide: c => c.smode === 'rush' },
   { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
 ];
-const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 7, max: 14, bonusSec: 0, floor: 7, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 1, smode: 'word', total: 30 };
+const DEF = { lives: 2, diff: 0, len: 0, minWord: 2, mode: 'shared', min: 7, max: 14, bonusSec: 0, floor: 7, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 1, smode: 'word', total: 30 };
 const DEF_SOLO = { ...DEF, lives: 3, mode: 'turn', min: 10, max: 10, show: 1 };
 const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 
