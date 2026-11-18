@@ -392,9 +392,10 @@ $('#form').addEventListener('submit', async e => {
 $('#out').onclick = async () => { await sb.auth.signOut(); data = null; showLogin(); };
 
 /* ---------- datos ---------- */
-async function load() {
-  if (busy) return; busy = true;
-  $('#main').classList.add('load'); $('#refresh').classList.add('spin');
+let quiet = false;
+async function load(silent) {
+  if (busy) return; busy = true; quiet = silent === true;
+  if (!quiet) { $('#main').classList.add('load'); $('#refresh').classList.add('spin'); }
   const { data: d, error } = await sb.rpc('admin_stats', { p_days: days });
   busy = false; $('#refresh').classList.remove('spin'); $('#main').classList.remove('load');
   if (error) {
@@ -403,7 +404,14 @@ async function load() {
     else if (!data) { showLogin('Sin conexión'); }
     return;
   }
-  data = d; render();
+  if (quiet && data && JSON.stringify(d) === JSON.stringify(data)) { quiet = false; return; }
+  data = d; render(); quiet = false;
+}
+// al volver a pintar una lista se conservan los desplegables abiertos
+function keepOpen(host, paint) {
+  const was = new Set([...host.querySelectorAll('details[open][data-k]')].map(x => x.dataset.k));
+  paint();
+  if (was.size) for (const x of host.querySelectorAll('details[data-k]')) if (was.has(x.dataset.k)) x.open = true;
 }
 // nombres reales: el nombre guardado de la cuenta (dispositivos unidos) en lugar del que se puso en cada partida
 let realNm = false, NAMES = {};
@@ -420,7 +428,7 @@ async function start() {
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) { showLogin(); return; }
   showApp(); chips(); tabs(); paintReal(); loadNames().then(() => { if (realNm && act) renderActivity(); }); await load();
-  clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(); }, 60000);
+  clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(true); }, 60000);
 }
 
 /* ---------- piezas ---------- */
@@ -432,7 +440,7 @@ $('#chips').addEventListener('click', e => {
   days = +b.dataset.d; try { localStorage.setItem('pg_admin_days', days); } catch (x) {}
   chips(); load();
 });
-$('#refresh').onclick = load;
+$('#refresh').onclick = () => load();
 addEventListener('resize', () => { if (data) { drawTrend(); } });
 
 const tip = $('#tip');
@@ -648,6 +656,7 @@ const DICON = { m: 'user', t: 'user', d: 'grid' };
 async function loadPlayers() {
   const { data: d, error } = await sb.rpc('admin_players', { p_days: days });
   if (error) return;
+  if (players && JSON.stringify(d) === JSON.stringify(players)) return;
   players = d; renderPlayers();
 }
 $('#pbar').innerHTML = `<div class="row"><label class="srch">${ic('search')}<input id="pq" type="search" placeholder="Buscar" aria-label="Buscar" autocomplete="off"><button type="button" id="pqx" aria-label="Borrar" hidden>${ic('x')}</button></label>
@@ -822,7 +831,7 @@ function gameCard(g, vid) {
   } catch (e) { body = '<div class="empty">–</div>'; }
   const who = d.solo ? 'individual' : `${pl.length} jugadores${g.host ? ' · creó la sala' : ''}`;
   const du = (d.dur != null ? ' · ' + dur(d.dur) : '') + (d.part ? ` · a medias (${(d.rounds || []).length}/${(d.set || {}).rounds || '?'})` : '');
-  return `<details class="gm"><summary><div class="gi" style="background:${G.color}">${ic(GICON[g.game] || 'grid')}</div><div><div class="t1">${G.name}</div><div class="t2">${when(g.ts)} · ${who}${du}</div></div><div class="res">${res}</div></summary><div class="gb">${body}</div></details>`;
+  return `<details class="gm" data-k="g${esc(g.ts)}${g.game}"><summary><div class="gi" style="background:${G.color}">${ic(GICON[g.game] || 'grid')}</div><div><div class="t1">${G.name}</div><div class="t2">${when(g.ts)} · ${who}${du}</div></div><div class="res">${res}</div></summary><div class="gb">${body}</div></details>`;
 }
 function rankList(rows) {
   return '<div class="rk">' + rows.map(r => `<div class="${r.me ? 'me' : ''}"><b>${r.pos || ''}</b>${dot(r.i, r.nm)}<span>${esc(r.nm)}</span><b>${r.val}</b></div>`).join('') + '</div>';
@@ -884,6 +893,7 @@ let act = null, afilter = 'all';
 async function loadActivity() {
   const { data, error } = await sb.rpc('admin_activity', { p_days: days });
   if (error) return;
+  if (act && JSON.stringify(data) === JSON.stringify(act)) return;
   act = data; renderActivity();
 }
 function buildActivity(a) {
@@ -939,7 +949,7 @@ function renderActivity() {
     const dl = dayLabel(it.start); if (dl !== last) { h += `<div class="day">${dl}</div>`; last = dl; }
     h += it.type === 'room' ? roomCard(it) : soloCard(it);
   }
-  $('#alist').innerHTML = h;
+  keepOpen($('#alist'), () => { $('#alist').innerHTML = h; });
 }
 function roomCard(s) {
   const ppl = [...s.people.entries()], hostNm = s.host ? (s.people.get(s.host) || '') : '';
@@ -951,7 +961,7 @@ function roomCard(s) {
   const body = `<div><h4>Jugadores</h4><div class="ppl">${ppl.map(([v, n], i) => `<span style="${s.hid && s.hid.has(v) ? 'opacity:.5' : ''}">${dot(i, n)}${n ? esc(n) : '<i>sin nombre</i>'}${v === s.host ? ' · anfitrión' : ''}${s.hid && s.hid.has(v) ? ' · oculto' : ''}</span>`).join('') || '–'}</div>${!s.host ? '<div class="t2" style="margin-top:6px">El anfitrión no está registrado (tenía «no rastrear»), así que no hay datos de sus partidas.</div>' : ''}</div>` +
     `<div><h4>Partidas</h4>${s.games.length ? s.games.map(g => g.log ? gameCard({ ts: g.log.ts, game: g.log.game, host: false, solo: false, d: g.log.d }, '') :
       `<div class="gl"><div class="gi" style="background:${(GAMES[g.g] || {}).color || WHITE};border:2px solid var(--ink);display:grid;place-items:center">${ic(GICON[g.g] || 'grid')}</div><span>${(GAMES[g.g] || {}).name || g.g} · ${hm(g.t)}${g.n ? ' · ' + g.n + ' jugadores' : ''}</span><span class="t2">sin detalle</span></div>`).join('') : '<div class="t2">Ninguna partida</div>'}</div>`;
-  return `<details class="gm ses"><summary><div class="gi" style="background:${mainG.color}">${ic('door')}</div><div><div class="t1">Sala${s.room ? `<span class="code">${esc(s.room)}</span>` : (GAMES[s.g] ? ' · ' + GAMES[s.g].name : '')}</div><div class="t2">${span} · ${esc(names.slice(0, 4).join(', '))}${names.length > 4 ? ' +' + (names.length - 4) : ''}</div></div><div class="res" style="display:grid;justify-items:end;gap:4px">${s.games.length} ${s.games.length === 1 ? 'partida' : 'partidas'}<span class="gseq">${seq}</span></div></summary><div class="gb">${body}</div></details>`;
+  return `<details class="gm ses" data-k="r${esc(s.room || s.g)}${s.start}"><summary><div class="gi" style="background:${mainG.color}">${ic('door')}</div><div><div class="t1">Sala${s.room ? `<span class="code">${esc(s.room)}</span>` : (GAMES[s.g] ? ' · ' + GAMES[s.g].name : '')}</div><div class="t2">${span} · ${esc(names.slice(0, 4).join(', '))}${names.length > 4 ? ' +' + (names.length - 4) : ''}</div></div><div class="res" style="display:grid;justify-items:end;gap:4px">${s.games.length} ${s.games.length === 1 ? 'partida' : 'partidas'}<span class="gseq">${seq}</span></div></summary><div class="gb">${body}</div></details>`;
 }
 function soloCard(it) {
   if (it.log) { const p0 = (it.log.d.pl || [])[0] || {}, nm = rn(p0.pv, p0.nm) || ''; return gameCard({ ts: it.log.ts, game: it.log.game, host: true, solo: true, d: it.log.d }, it.log.v).replace('<div class="t1">', `<div class="t1">${esc(nm)} · `); }
