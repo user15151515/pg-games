@@ -544,7 +544,7 @@ function pub() {
   return {
     v: ++H.v, solo: !!H.solo, phase: H.phase, round: H.round, rounds: H.settings.rounds, letter: H.letter, settings: H.settings, stopper: H.stopper,
     left: Math.max(0, Math.round(H.endAt - now())), total: Math.round(H.total),
-    rv: H.phase === 'review' ? H.rv : null, res: H.phase === 'ended' ? H.res : null,
+    rv: H.phase === 'review' ? H.rv : null, part: H.part || [], res: H.phase === 'ended' ? H.res : null,
     players: H.players.map(p => ({ id: p.id, name: p.name, color: p.color, on: p.on, back: p.back, score: p.score, ready: H.ready.has(p.id) }))
   };
 }
@@ -726,8 +726,10 @@ function hostRecv(m, f) {
   if (m.t === 'hello') {
     const p = byId(f);
     if (p) { netPub('to/' + f, { t: 'state', s: pub() }); return; }
-    if (H.phase !== 'lobby' && H.phase !== 'ended') { netPub('to/' + f, { t: 'started' }); return; }
-    addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; evt({ k: 'join', name: byId(f).name }); push();
+    // se puede entrar con la partida empezada: si la ronda está en marcha juega ya; si se está corrigiendo, desde la siguiente
+    addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : '';
+    if (H.phase === 'play' && !H.part.includes(f)) H.part.push(f);
+    evt({ k: 'join', name: byId(f).name }); push();
   } else if (m.t === 'bye') hostLeft(f);
   else if (byId(f)) fromPlayer(f, m);
 }
@@ -761,7 +763,10 @@ function startSolo() {
 async function joinRoom(code) {
   room = code; isHost = false; solo = false; PGT.room = code; myId = uid(10); lastV = -1; gotState = false;
   net.onMsg = onMsg;
-  try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
+  for (let i = 0; ; i++) {
+    try { await netOpen('guest'); break; }
+    catch (e) { if (i >= 2) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; } await new Promise(r => setTimeout(r, 800 + Math.random() * 1500)); }
+  }
   lastHeard = now();
   const hello = () => netPub('host', { t: 'hello', name: myName, pv: PGT.vid || '' });
   hello(); let tries = 0;
@@ -809,7 +814,7 @@ function leave() {
 }
 function onMsg(m) {
   if (!m) return;
-  if (m.t === 'goto' && !isHost && room && GAMES_SW.some(x => x[0] === m.g) && m.g !== THIS_GAME) { switching = true; location.href = '../' + m.g + '/?sala=' + room + '&go=1'; return; }
+  if (m.t === 'goto' && !isHost && room && GAMES_SW.some(x => x[0] === m.g) && m.g !== THIS_GAME) { switching = true; const g = m.g; setTimeout(() => { location.href = '../' + g + '/?sala=' + room + '&go=1'; }, 150 + Math.random() * 1200); return; }
   if (!isHost) lastHeard = now();
   if (m.t === 'state') {
     if (m.s.v <= lastV) return;
@@ -921,8 +926,9 @@ function renderReview(s) {
   $('#rvScore').innerHTML = s.players.filter(p => p.on || s.rv.pts[p.id]).slice()
     .sort((a, b) => (b.score + (rv.pts[b.id] || 0)) - (a.score + (rv.pts[a.id] || 0)))
     .map(p => `<div>${tok(p, 'sm')}<span>${esc(p.name)}</span><em>${p.score + (rv.pts[p.id] || 0)}</em><small>+${rv.pts[p.id] || 0}</small></div>`).join('');
-  const me = s.players.find(p => p.id === myId), act_ = s.players.filter(p => p.on);
-  $('#btnReady').textContent = me && me.ready ? 'Esperando a los demás' : (s.round >= s.rounds ? 'Ver resultados' : 'Listo');
+  const me = s.players.find(p => p.id === myId), part = s.part || [], act_ = s.players.filter(p => p.on && (!part.length || part.includes(p.id))), inR = !part.length || part.includes(myId);
+  $('#btnReady').disabled = !inR;
+  $('#btnReady').textContent = !inR ? 'Entras en la siguiente ronda' : me && me.ready ? 'Esperando a los demás' : (s.round >= s.rounds ? 'Ver resultados' : 'Listo');
   $('#rvHint').textContent = s.solo ? '' : `${act_.filter(p => p.ready).length} de ${act_.length} listos`;
   $('#rvHead span').textContent = s.solo ? 'Toca las respuestas que no valgan.' : 'Toca una respuesta si no vale.';
 }
