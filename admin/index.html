@@ -34,6 +34,7 @@ input[type=email]:focus-visible,input[type=password]:focus-visible{box-shadow:va
 .chips button[aria-pressed=true]:hover:not(:disabled){background:var(--ink)}
 .chips button:active:not(:disabled),.icon:active:not(:disabled){transform:none;box-shadow:none}
 .icon{padding:7px 9px;display:grid;place-items:center}
+.icon[aria-pressed=true],.icon[aria-pressed=true]:hover:not(:disabled){background:var(--ink);color:var(--paper)}
 .live{display:flex;align-items:center;gap:8px;font-weight:800;background:var(--white);border:2px solid var(--ink);border-radius:99px;padding:5px 14px 5px 11px}
 .live i{width:10px;height:10px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 2px var(--white),0 0 0 4px var(--mint)}
 .live.zero i{background:#17140f40;box-shadow:none}
@@ -287,6 +288,7 @@ main.load{opacity:.55}
     <h1 class="display">panel</h1>
     <div class="live zero" id="live" title="Ahora"><i></i><b id="liveN">0</b></div>
     <div class="chips" id="chips" role="group" aria-label="Periodo"></div>
+    <button class="icon alt" id="real" type="button" aria-label="Nombres reales" title="Nombres reales" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M15.5 11l2 2 4-4"/></svg></button>
     <button class="icon alt" id="refresh" type="button" aria-label="Actualizar"><svg class="ic" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></svg></button>
     <button class="icon alt" id="out" type="button" aria-label="Salir"><svg class="ic" viewBox="0 0 24 24"><path d="M10 4H5v16h5"/><path d="M15 8l4 4-4 4"/><path d="M19 12H9"/></svg></button>
   </div>
@@ -402,10 +404,21 @@ async function load() {
   }
   data = d; render();
 }
+// nombres reales: el nombre guardado de la cuenta (dispositivos unidos) en lugar del que se puso en cada partida
+let realNm = false, NAMES = {};
+try { realNm = localStorage.getItem('pg_admin_real') === '1'; } catch (e) {}
+const rn = (pv, nm) => realNm && pv && NAMES[pv] ? NAMES[pv] : nm;
+async function loadNames() { const { data, error } = await sb.rpc('admin_names'); if (!error && data) NAMES = data; }
+function paintReal() { $('#real').setAttribute('aria-pressed', realNm); }
+$('#real').onclick = () => {
+  realNm = !realNm; paintReal(); try { localStorage.setItem('pg_admin_real', realNm ? '1' : '0'); } catch (x) {}
+  if (act) renderActivity();
+  if (!$('#sheet').hidden && $('#sheet').dataset.pv) openPlayer($('#sheet').dataset.pv, true);
+};
 async function start() {
   const { data: s } = await sb.auth.getSession();
   if (!s || !s.session) { showLogin(); return; }
-  showApp(); chips(); tabs(); await load();
+  showApp(); chips(); tabs(); paintReal(); loadNames().then(() => { if (realNm && act) renderActivity(); }); await load();
   clearInterval(timer); timer = setInterval(() => { if (!document.hidden) load(); }, 60000);
 }
 
@@ -765,7 +778,7 @@ function renderPick() {
   const list = sortP(allP.filter(p => p.vid !== me && matchP(p, q).ok)).slice(0, 40);
   $('#pkres').innerHTML = list.length ? list.map(p => plRow(p, q, false).replace('class="pl', 'data-merge="' + esc(p.vid) + '" class="pl')).join('') : '<div class="empty">–</div>';
 }
-async function refreshAfter(vid) { allP = null; await openPlayer(vid, true); loadPlayers(); if (act) loadActivity(); }
+async function refreshAfter(vid) { allP = null; await loadNames(); await openPlayer(vid, true); loadPlayers(); if (act) loadActivity(); }
 function editName() {
   const h2 = $('#shh h2'); if (!h2 || $('#shh form')) return;
   const vid = $('#sheet').dataset.pv, keep = h2.innerHTML;
@@ -779,7 +792,7 @@ function editName() {
     e.preventDefault(); inp.disabled = true;
     const { error } = await sb.rpc('admin_rename', { p_vid: vid, p_name: inp.value });
     if (error) { inp.disabled = false; return; }
-    openPlayer(vid, true); loadPlayers(); if (act) loadActivity();
+    await loadNames(); openPlayer(vid, true); loadPlayers(); if (act) loadActivity();
   });
 }
 $('#sheet').addEventListener('input', e => { if (e.target.id === 'pkq') renderPick(); });
@@ -796,7 +809,9 @@ $('#sheet').addEventListener('click', e => {
 });
 function meIdx(d, vid, host) { const ids = [].concat(vid || []); let i = (d.pl || []).findIndex(x => ids.includes(x.pv)); if (i < 0 && host) i = (d.pl || []).findIndex(x => x.h); return i; }
 function gameCard(g, vid) {
-  const d = g.d || {}, G = GAMES[g.game] || { name: g.game, color: WHITE }, me = meIdx(d, vid, g.host), pl = d.pl || [];
+  let d = g.d || {};
+  if (realNm && Array.isArray(d.pl)) d = { ...d, pl: d.pl.map(p => ({ ...p, nm: rn(p.pv, p.nm) })) };
+  const G = GAMES[g.game] || { name: g.game, color: WHITE }, me = meIdx(d, vid, g.host), pl = d.pl || [];
   let res = '', body = '';
   try {
     if (g.game === 'tutti') { const r = tuttiView(d, me); res = r.res; body = r.body; }
@@ -883,7 +898,8 @@ function buildActivity(a) {
     if (!s || T(e.t) - s.end > gap || otherHost) { s = open[key] = { type: 'room', room: e.room || '', g: e.g, start: T(e.t), end: T(e.t), host: null, people: new Map(), games: [] }; items.push(s); }
     s.end = Math.max(s.end, T(e.t));
     if (e.k === 'room_create' && !s.host) s.host = e.v;
-    if (e.nm || e.v) s.people.set(e.v, e.nm || '');
+    const enm = realNm ? e.nm : (e.pn || e.nm);
+    if (enm || e.v) s.people.set(e.v, enm || '');
     if (e.k === 'game_start') s.games.push({ t: T(e.t), g: e.g, n: e.n, v: e.v, log: null });
   }
   // resúmenes de partidas en sala: se asignan a la partida empezada más cercana del mismo juego y sala
@@ -893,7 +909,7 @@ function buildActivity(a) {
     if (!s) continue;
     const g = s.games.filter(x => x.g === l.game && !x.log && x.t <= T(l.ts)).pop();
     if (g) g.log = l; else s.games.push({ t: T(l.ts), g: l.game, n: (l.d.pl || []).length, v: l.v, log: l });
-    for (const p of l.d.pl || []) if (p.pv && !s.people.has(p.pv)) s.people.set(p.pv, p.nm); else if (!p.pv) s.people.set('nm:' + p.nm, p.nm);
+    for (const p of l.d.pl || []) if (p.pv && !s.people.has(p.pv)) s.people.set(p.pv, rn(p.pv, p.nm)); else if (!p.pv) s.people.set('nm:' + p.nm, p.nm);
     s.end = Math.max(s.end, T(l.ts)); used.add(l.id);
   }
   // individuales: con resumen si lo hay
@@ -937,9 +953,9 @@ function roomCard(s) {
   return `<details class="gm ses"><summary><div class="gi" style="background:${mainG.color}">${ic('door')}</div><div><div class="t1">Sala${s.room ? `<span class="code">${esc(s.room)}</span>` : (GAMES[s.g] ? ' · ' + GAMES[s.g].name : '')}</div><div class="t2">${span} · ${esc(names.slice(0, 4).join(', '))}${names.length > 4 ? ' +' + (names.length - 4) : ''}</div></div><div class="res" style="display:grid;justify-items:end;gap:4px">${s.games.length} ${s.games.length === 1 ? 'partida' : 'partidas'}<span class="gseq">${seq}</span></div></summary><div class="gb">${body}</div></details>`;
 }
 function soloCard(it) {
-  if (it.log) { const nm = ((it.log.d.pl || [])[0] || {}).nm || ''; return gameCard({ ts: it.log.ts, game: it.log.game, host: true, solo: true, d: it.log.d }, it.log.v).replace('<div class="t1">', `<div class="t1">${esc(nm)} · `); }
-  const e = it.ev, G = GAMES[e.g] || { name: e.g, color: WHITE };
-  return `<div class="gm"><div style="display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:10px 12px"><div class="gi" style="background:${G.color}">${ic(GICON[e.g] || 'grid')}</div><div><div class="t1">${e.nm ? esc(e.nm) + ' · ' : ''}${G.name}</div><div class="t2">${when(e.t)} · individual</div></div><div class="t2">sin detalle</div></div></div>`;
+  if (it.log) { const p0 = (it.log.d.pl || [])[0] || {}, nm = rn(p0.pv, p0.nm) || ''; return gameCard({ ts: it.log.ts, game: it.log.game, host: true, solo: true, d: it.log.d }, it.log.v).replace('<div class="t1">', `<div class="t1">${esc(nm)} · `); }
+  const e = it.ev, G = GAMES[e.g] || { name: e.g, color: WHITE }, enm = realNm ? e.nm : (e.pn || e.nm);
+  return `<div class="gm"><div style="display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:10px 12px"><div class="gi" style="background:${G.color}">${ic(GICON[e.g] || 'grid')}</div><div><div class="t1">${enm ? esc(enm) + ' · ' : ''}${G.name}</div><div class="t2">${when(e.t)} · individual</div></div><div class="t2">sin detalle</div></div></div>`;
 }
 $('#abar').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; afilter = b.dataset.f; renderActivity(); });
 

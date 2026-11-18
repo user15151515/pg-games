@@ -334,7 +334,7 @@ begin
   select jsonb_build_object(
     'events', (
       select coalesce(jsonb_agg(jsonb_build_object('t', e.ts, 'k', e.kind, 'g', e.game, 'v', e.vid,
-               'nm', coalesce(pl.name, pv.name, nullif(e.p ->> 'name', '')), 'room', e.p ->> 'room',
+               'nm', coalesce(pl.name, pv.name, nullif(e.p ->> 'name', '')), 'pn', nullif(e.p ->> 'name', ''), 'room', e.p ->> 'room',
                'n', case when e.p ->> 'n' ~ '^[0-9]{1,3}$' then (e.p ->> 'n')::int end,
                'solo', coalesce(e.p ->> 'solo', 'false') = 'true') order by e.ts), '[]'::jsonb)
       from (select * from events where ts >= t0 and kind in ('room_create', 'room_join', 'game_start', 'game_end')
@@ -353,6 +353,19 @@ begin
 end $$;
 revoke all on function public.admin_activity(int) from public, anon;
 grant execute on function public.admin_activity(int) to authenticated;
+
+-- Nombre real (el de la cuenta) de cada dispositivo, para mostrarlo en lugar del que se puso en cada partida.
+create or replace function public.admin_names()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare res jsonb;
+begin
+  if not public._is_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
+  select coalesce(jsonb_object_agg(v, n), '{}'::jsonb) into res
+  from (select v, public._aname(public._acct(v)) as n from (select vid as v from players union select vid from merges) x) y where n is not null;
+  return res;
+end $$;
+revoke all on function public.admin_names() from public, anon;
+grant execute on function public.admin_names() to authenticated;
 
 create or replace function public.admin_player(p_vid text)
 returns jsonb language plpgsql security definer set search_path = public as $$
