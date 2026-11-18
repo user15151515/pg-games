@@ -45,10 +45,12 @@
   const coarse = window.matchMedia && matchMedia('(pointer:coarse)').matches;
   const dev = coarse ? (Math.min(screen.width, screen.height) < 700 ? 'm' : 't') : 'd';
 
-  let t0 = 0, lastDur = null;
+  let t0 = 0, lastDur = null, gid = '';
+  // gid identifica la partida: los guardados parciales (por ronda) y el final van a la misma fila
   const game_ = d => {
     try {
-      if (d && d.dur == null && lastDur != null) d.dur = lastDur;
+      if (d && d.dur == null) { if (t0) d.dur = Math.round((Date.now() - t0) / 1000); else if (lastDur != null) d.dur = lastDur; }
+      if (d && gid) d.gid = gid;
       if (d && !d.solo && /^[A-Z]{4}$/.test(window.PGT.room || '')) d.room = window.PGT.room;
       let body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d });
       if (body.length > 60000) { for (const p of d.pl || []) delete p.log; body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d }); }
@@ -59,7 +61,7 @@
   window.PGT = {
     vid, game: game_, room: '',
     ev: send,
-    start(n, solo) { t0 = Date.now(); send('game_start', { n, solo: !!solo }); },
+    start(n, solo) { t0 = Date.now(); gid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); send('game_start', { n, solo: !!solo }); },
     end(n, solo, m) {
       if (!t0) return;
       const dur = Math.round((Date.now() - t0) / 1000); t0 = 0; lastDur = dur;

@@ -805,7 +805,7 @@ function gameCard(g, vid) {
     else if (g.game === 'pistas') { const r = pistasView(d, me); res = r.res; body = r.body; }
   } catch (e) { body = '<div class="empty">–</div>'; }
   const who = d.solo ? 'individual' : `${pl.length} jugadores${g.host ? ' · creó la sala' : ''}`;
-  const du = d.dur != null ? ' · ' + dur(d.dur) : '';
+  const du = (d.dur != null ? ' · ' + dur(d.dur) : '') + (d.part ? ` · a medias (${(d.rounds || []).length}/${(d.set || {}).rounds || '?'})` : '');
   return `<details class="gm"><summary><div class="gi" style="background:${G.color}">${ic(GICON[g.game] || 'grid')}</div><div><div class="t1">${G.name}</div><div class="t2">${when(g.ts)} · ${who}${du}</div></div><div class="res">${res}</div></summary><div class="gb">${body}</div></details>`;
 }
 function rankList(rows) {

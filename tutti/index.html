@@ -636,7 +636,7 @@ function endReview() {
   clearTimeout(H.tm);
   for (const p of H.players) p.score += H.rv.pts[p.id] || 0;
   H.hist.push({ letter: H.letter, cats: H.rv.cats, pts: H.rv.pts });
-  if (H.round >= H.settings.rounds) endGame(); else nextRound();
+  if (H.round >= H.settings.rounds) endGame(); else { sendDetail(true); nextRound(); }
 }
 function endGame() {
   clearTimeout(H.tm); H.phase = 'ended'; H.rv = null;
@@ -658,10 +658,11 @@ function endGame() {
   push();
 }
 // resumen para el panel de administración: categorías, respuestas de cada uno y sus puntos
-function sendDetail() {
+// se envía al acabar cada ronda (part) y al final; todo va a la misma fila, así una partida abandonada no se pierde
+function sendDetail(part) {
   try {
     const ids = H.players.map(p => p.id);
-    PGT.game({ v: 1, solo: !!H.solo, set: { rounds: H.settings.rounds, time: H.settings.time }, cats: H.settings.cats,
+    PGT.game({ v: 1, solo: !!H.solo, ...(part ? { part: 1 } : {}), set: { rounds: H.settings.rounds, time: H.settings.time }, cats: H.settings.cats,
       pl: H.players.map(p => ({ nm: p.name, pv: p.id === 'host' ? (PGT.vid || '') : (p.pv || ''), h: p.id === 'host' ? 1 : 0, sc: p.score })),
       rounds: H.hist.map(h => ({ l: h.letter, r: h.cats.flatMap((c, ci) => c.rows.map(x => [ids.indexOf(x.id), ci, x.a, x.pts])) })) });
   } catch (e) {}

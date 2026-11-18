@@ -246,8 +246,14 @@ begin
   if p_game is null or p_game not in ('bomba', 'tutti', 'teclazo', 'pistas') then return; end if;
   if p_vid is null or p_vid !~ '^[a-z0-9]{8,24}$' then return; end if;
   if p_detail is null or jsonb_typeof(p_detail) <> 'object' or jsonb_typeof(p_detail -> 'pl') <> 'array' then return; end if;
-  if jsonb_array_length(p_detail -> 'pl') not between 1 and 8 or length(p_detail::text) > 64000 then return; end if;
+  if jsonb_array_length(p_detail -> 'pl') not between 1 and 100 or length(p_detail::text) > 64000 then return; end if;
   if jsonb_typeof(p_detail -> 'solo') is distinct from 'boolean' then return; end if;
+  -- misma partida (gid): los guardados por ronda y el final reemplazan la fila existente
+  if coalesce(p_detail ->> 'gid', '') ~ '^[a-z0-9]{6,24}$' then
+    update game_logs set d = p_detail, solo = (p_detail ->> 'solo')::boolean
+     where vid = p_vid and game = p_game and ts > now() - interval '12 hours' and d @> jsonb_build_object('gid', p_detail ->> 'gid');
+    if found then return; end if;
+  end if;
   if (select count(*) from game_logs where vid = p_vid and ts > now() - interval '1 minute') >= 10 then return; end if;
   if (select count(*) from (select 1 from game_logs where ts > now() - interval '1 minute' limit 600) x) >= 600 then return; end if;
   insert into game_logs (game, vid, solo, d) values (p_game, p_vid, (p_detail ->> 'solo')::boolean, p_detail);
