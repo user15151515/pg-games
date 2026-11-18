@@ -221,6 +221,7 @@ main.load{opacity:.55}
 .as{display:flex;flex-wrap:wrap;gap:4px}
 .an{display:inline-flex;align-items:center;gap:5px;background:var(--wash);border-radius:99px;padding:2px 9px 2px 3px;font-weight:700}
 .an.me{outline:2px solid var(--ink)}
+.an .who{border:2px solid var(--ink);border-radius:99px;padding:0 7px;font-size:11px;font-weight:800;color:#fff;white-space:nowrap}
 .an.z{opacity:.55;text-decoration:line-through}
 .an em{font-style:normal;font-weight:800;font-size:12px;background:var(--mint);border-radius:99px;padding:0 6px}
 .an.z em{background:var(--pink)}
@@ -835,7 +836,7 @@ function tuttiView(d, me) {
   body += '<div><h4>Respuestas</h4><div style="display:grid;gap:8px">' + (d.rounds || []).map(rd => {
     const by = {}; for (const [pi, ci, a, pts] of rd.r || []) (by[ci] = by[ci] || []).push([pi, a, pts]);
     return `<div class="rd"><span class="lt">${esc(rd.l)}</span>` + cats.map((c, ci) => `<div class="ct"><span>${esc(c)}</span><div class="as">` +
-      ((by[ci] || []).map(([pi, a, pts]) => `<span class="an ${pts ? '' : 'z'} ${pi === me ? 'me' : ''}">${dot(pi, (pl[pi] || {}).nm)}${esc(a)}<em>${pts}</em></span>`).join('') || '<span class="t2" style="padding-top:3px">—</span>') +
+      ((by[ci] || []).map(([pi, a, pts]) => `<span class="an ${pts ? '' : 'z'} ${pi === me ? 'me' : ''}"><span class="who" style="background:${PCOL[pi % PCOL.length]}">${esc((pl[pi] || {}).nm || '?')}</span>${esc(a)}<em>${pts}</em></span>`).join('') || '<span class="t2" style="padding-top:3px">—</span>') +
       '</div></div>').join('') + '</div>';
   }).join('') + '</div></div>';
   return { res, body };
