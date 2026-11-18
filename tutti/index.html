@@ -307,7 +307,7 @@ button.pink{background:var(--pink);color:var(--ink)}
 </section>
 
 <section id="game" hidden>
-  <div class="top"><span id="gCode"></span><span id="gInfo"></span></div>
+  <div class="top"><span id="gCode"></span><button id="btnFinish" type="button" class="linkbtn" hidden>Terminar</button><span id="gInfo"></span></div>
   <div id="letterCard">
     <div id="letter"></div>
     <div id="fuse"><i></i></div>
@@ -703,6 +703,11 @@ function fromPlayer(id, m) {
     if (H.ready.has(id)) H.ready.delete(id); else H.ready.add(id);
     const on = H.players.filter(p => p.on && H.part.includes(p.id));
     if (on.length && on.every(p => H.ready.has(p.id))) endReview(); else push();
+  } else if (m.t === 'finish') {
+    // el anfitrión acaba la partida antes de tiempo: cuenta lo ya corregido y se va a resultados sin salir de la sala
+    if (id !== 'host' || !['play', 'collect', 'review'].includes(H.phase)) return;
+    if (H.phase === 'review' && H.rv) { for (const p of H.players) p.score += H.rv.pts[p.id] || 0; H.hist.push({ letter: H.letter, cats: H.rv.cats, pts: H.rv.pts }); }
+    endGame();
   } else if (m.t === 'reletter') {
     if (id !== 'host' || H.phase !== 'play' || H.stopper) return;
     H.letter = pickLetter();   // la descartada queda como usada
@@ -911,6 +916,7 @@ function renderGame() {
   $('#form').hidden = s.phase === 'review'; $('#review').hidden = s.phase !== 'review';
   $('#letterCard').hidden = false;
   $('#btnRelet').hidden = !(isHost && s.phase === 'play' && !s.stopper);
+  $('#btnFinish').hidden = !(isHost && s.phase !== 'ended');
   if (inPlay) {
     if (fieldsRound !== s.round + ':' + s.letter) buildFields(s);
     for (const i of document.querySelectorAll('#fields input')) i.disabled = s.phase !== 'play';
@@ -1042,6 +1048,7 @@ $('#form').addEventListener('submit', e => e.preventDefault());
 $('#rvCats').addEventListener('click', e => { const b = e.target.closest('.rrow'); if (b && !b.disabled) act({ t: 'flag', c: +b.dataset.c, id: b.dataset.id }); });
 $('#btnReady').onclick = () => act({ t: 'ready' });
 $('#btnRelet').onclick = () => act({ t: 'reletter' });
+$('#btnFinish').onclick = () => { if (confirm('¿Terminar la partida ahora?')) act({ t: 'finish' }); };
 for (const b of document.querySelectorAll('.snd')) b.onclick = () => {
   unlock(); SND.mute = !SND.mute;
   try { localStorage.setItem('jt_mute', SND.mute ? '1' : '0'); } catch (e) {}
