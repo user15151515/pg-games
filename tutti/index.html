@@ -222,8 +222,11 @@ button.pink{background:var(--pink);color:var(--ink)}
 .rrow:disabled{opacity:1;cursor:default}
 .rrow .ra{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.15}
 .rrow small{display:block;font-size:13px;font-weight:500}
+.rrow .who{display:inline-block;max-width:100%;background:var(--bg);color:var(--fg);border:2px solid var(--ink);border-radius:8px;padding:0 7px;
+  font-size:13px;font-weight:700;line-height:1.35;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:top}
+#btnRelet{margin-top:4px;font-size:15px}
 .rrow .pts{font-weight:800;background:var(--mint);border-radius:99px;padding:0 10px;font-size:16px}
-.rrow.no .ra{text-decoration:line-through;opacity:.55}
+.rrow.no .ra .ans{text-decoration:line-through;opacity:.55}
 .rrow.no .pts{background:var(--pink)}
 .rrow.flagged{border-color:var(--pink)}
 .sc{display:grid;gap:8px;margin:6px 0 16px}
@@ -309,6 +312,7 @@ button.pink{background:var(--pink);color:var(--ink)}
     <div id="letter"></div>
     <div id="fuse"><i></i></div>
     <div id="clock"></div>
+    <button id="btnRelet" type="button" class="linkbtn" hidden>Otra letra</button>
   </div>
   <form id="form" autocomplete="off">
     <div id="fields"></div>
@@ -699,6 +703,11 @@ function fromPlayer(id, m) {
     if (H.ready.has(id)) H.ready.delete(id); else H.ready.add(id);
     const on = H.players.filter(p => p.on && H.part.includes(p.id));
     if (on.length && on.every(p => H.ready.has(p.id))) endReview(); else push();
+  } else if (m.t === 'reletter') {
+    if (id !== 'host' || H.phase !== 'play' || H.stopper) return;
+    H.letter = pickLetter();   // la descartada queda como usada
+    H.ans = {}; H.fin = new Set(); H.total = H.settings.time * 1000; H.endAt = now() + H.total;
+    at(endPlay); evt({ k: 'letter', l: H.letter }); push();
   } else if (m.t === 'again') { const p = byId(id); if (p && H.phase === 'ended') { p.back = true; push(); } }
 }
 function hostLeft(id, kicked) {
@@ -876,7 +885,7 @@ function renderLobby() {
 
 function readFields() { return [...document.querySelectorAll('#fields input')].map(i => i.value); }
 function buildFields(s) {
-  fieldsRound = s.round;
+  fieldsRound = s.round + ':' + s.letter; clearTimeout(ansTm);
   $('#fields').innerHTML = s.settings.cats.map((n, i) =>
     `<label class="fld"><span>${esc(n)}</span><input type="text" data-i="${i}" maxlength="40" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" enterkeyhint="${i === s.settings.cats.length - 1 ? 'done' : 'next'}"></label>`).join('');
   const f = document.querySelector('#fields input'); if (f) setTimeout(() => f.focus(), 40);
@@ -901,8 +910,9 @@ function renderGame() {
   if (s.letter !== lastLetter) { L.classList.remove('pop'); void L.offsetWidth; L.classList.add('pop'); lastLetter = s.letter; }
   $('#form').hidden = s.phase === 'review'; $('#review').hidden = s.phase !== 'review';
   $('#letterCard').hidden = false;
+  $('#btnRelet').hidden = !(isHost && s.phase === 'play' && !s.stopper);
   if (inPlay) {
-    if (fieldsRound !== s.round) buildFields(s);
+    if (fieldsRound !== s.round + ':' + s.letter) buildFields(s);
     for (const i of document.querySelectorAll('#fields input')) i.disabled = s.phase !== 'play';
     updateStop();
   }
@@ -921,7 +931,7 @@ function renderReview(s) {
     const p = s.players.find(q => q.id === r.id) || { name: '?', color: 0 };
     const tag = !r.ok ? 'No empieza por ' + s.letter : r.fl.length ? (s.solo ? 'No vale' : r.fl.length + ' en contra') : '';
     return `<button type="button" class="rrow ${r.valid ? '' : 'no'} ${r.fl.includes(myId) ? 'flagged' : ''}" data-c="${ci}" data-id="${esc(r.id)}" ${(r.id === myId && !s.solo) || !r.ok ? 'disabled' : ''}>` +
-      `${tok(p, 'sm')}<span class="ra">${esc(r.a)}${tag ? `<small>${esc(tag)}</small>` : ''}</span><span class="pts">+${r.pts}</span></button>`;
+      `<span class="ra">${s.solo ? '' : `<span class="who" style="--bg:${COLORS[p.color][0]};--fg:${COLORS[p.color][1]}">${esc(p.name)}</span><br>`}<span class="ans">${esc(r.a)}</span>${tag ? `<small>${esc(tag)}</small>` : ''}</span><span class="pts">+${r.pts}</span></button>`;
   }).join('') : '<p class="emp">Nadie ha respondido.</p>') + '</div>').join('');
   $('#rvScore').innerHTML = s.players.filter(p => p.on || s.rv.pts[p.id]).slice()
     .sort((a, b) => (b.score + (rv.pts[b.id] || 0)) - (a.score + (rv.pts[a.id] || 0)))
@@ -957,6 +967,7 @@ function say(text, cls) { const m = $('#msg'); m.textContent = text; m.className
 function showEvent(e) {
   if (e.k === 'join') { play('join'); say(e.name + ' entra'); }
   else if (e.k === 'left') { play('left'); say(e.name + (e.kicked ? ' expulsado' : ' se va')); }
+  else if (e.k === 'letter') { play('turn'); say('Nueva letra: ' + e.l); }
   else if (e.k === 'stop') { play('bad'); say('¡Basta de ' + e.name + '!', 'bad'); }
 }
 
@@ -1030,6 +1041,7 @@ $('#btnStop').onclick = () => { if (!$('#btnStop').disabled) { $('#btnStop').dis
 $('#form').addEventListener('submit', e => e.preventDefault());
 $('#rvCats').addEventListener('click', e => { const b = e.target.closest('.rrow'); if (b && !b.disabled) act({ t: 'flag', c: +b.dataset.c, id: b.dataset.id }); });
 $('#btnReady').onclick = () => act({ t: 'ready' });
+$('#btnRelet').onclick = () => act({ t: 'reletter' });
 for (const b of document.querySelectorAll('.snd')) b.onclick = () => {
   unlock(); SND.mute = !SND.mute;
   try { localStorage.setItem('jt_mute', SND.mute ? '1' : '0'); } catch (e) {}
