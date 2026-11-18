@@ -449,7 +449,7 @@ const SCHEMA = [
   { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'], hide: c => c.smode === 'rush' },
   { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
 ];
-const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 7, max: 14, bonusSec: 0, floor: 7, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 0, smode: 'word', total: 30 };
+const DEF = { lives: 2, diff: 1, len: 0, minWord: 2, mode: 'shared', min: 7, max: 14, bonusSec: 0, floor: 7, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 1, smode: 'word', total: 30 };
 const DEF_SOLO = { ...DEF, lives: 3, mode: 'turn', min: 10, max: 10, show: 1 };
 const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 
@@ -606,8 +606,12 @@ function pickSyl() {
     const k = Math.min(.6, H.out.length * .08), a = w[0] * k, b = w[1] * k / 2;
     w[0] -= a; w[1] += a - b; w[2] += b;
   }
-  const filt = a => c.len ? a.filter(s => s.length === c.len) : a;
-  let pool = filt(r < w[0] ? SYL.easy : r < w[0] + w[1] ? SYL.normal : SYL.hard);
+  // en mixto: 65 % de sílabas de 2 letras y 35 % de 3
+  const want = c.len || (Math.random() < .65 ? 2 : 3);
+  const filt = a => a.filter(s => s.length === want);
+  const tier = r < w[0] ? SYL.easy : r < w[0] + w[1] ? SYL.normal : SYL.hard;
+  let pool = filt(tier);
+  if (!pool.length && !c.len) pool = tier;
   if (!pool.length) pool = filt(SYL.easy);
   if (!pool.length) pool = SYL.easy;
   // no se repite ninguna sílaba hasta haber salido todas las de su grupo; la memoria se guarda en este navegador,
