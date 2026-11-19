@@ -2,7 +2,7 @@
 
 Juegos cortos multijugador para jugar con amigos. Web estática, sin registro: se juega compartiendo un enlace.
 
-Juegos: Pistas (`pistas/`), por parejas o equipos de hasta cuatro: uno da pistas de una o dos palabras por chat y el resto adivina una palabra por cada letra de una lista, contra el reloj. La palabra secreta solo la reciben quien da pistas y los otros equipos (por el canal privado de cada uno, no en el estado común); el anfitrión rechaza pistas que contengan la palabra o se le parezcan. Puntos: 10 por palabra con una pista, uno menos por cada pista extra (mínimo 3) y un punto por segundo sobrante si se completan todas las letras; con una sola pareja hay récord en el navegador del anfitrión. Teclazo (`teclazo/`), carrera de mecanografía en la que cada coche avanza según lo que escribes; se juega en sala o en individual contra la sombra de tu récord (ppm y precisión, guardados en el navegador). Tutti frutti (`tutti/`), una letra al azar y varias categorías que se pueden personalizar; se puntúa por respuestas únicas y los jugadores pueden votar las que no valen. Tiene modo individual contra el reloj, en el que el propio jugador corrige sus respuestas, con récord guardado en el navegador por combinación de rondas, tiempo y categorías. Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega». Tiene modo individual (aciertos, racha y récord, guardado en el navegador por combinación de ajustes), salir de la sala en cualquier momento y expulsión de jugadores por parte del anfitrión.
+Juegos: Pistas (`pistas/`), por parejas o equipos de hasta cuatro: uno da pistas de una o dos palabras por chat y el resto adivina una palabra por cada letra de una lista, contra el reloj. La palabra secreta solo la reciben quien da pistas y los otros equipos (por el canal privado de cada uno, no en el estado común); el anfitrión rechaza pistas que contengan la palabra o se le parezcan. Puntos: 10 por palabra con una pista, uno menos por cada pista extra (mínimo 3) y un punto por segundo sobrante si se completan todas las letras; con una sola pareja hay récord en el navegador del anfitrión. Teclazo (`teclazo/`), carrera de mecanografía en la que cada coche avanza según lo que escribes; se juega en sala o en individual contra la sombra de tu récord (ppm y precisión, guardados en el navegador). Tutti frutti (`tutti/`), una letra al azar y varias categorías que se pueden personalizar; se puntúa por respuestas únicas y los jugadores pueden votar las que no valen. Tiene modo individual contra el reloj, en el que el propio jugador corrige sus respuestas, con récord guardado en el navegador por combinación de rondas, tiempo y categorías. Bomba (`bomba/`), una sílaba, una palabra, pasa la bomba. Con ajustes de vidas, dificultad, tipo y duración de la mecha, orden de pase (círculo, rebote o azar) y más; las reglas están explicadas dentro del juego, en «Cómo se juega». Tiene modo individual (aciertos, racha y récord, guardado en el navegador por combinación de ajustes), salir de la sala en cualquier momento y expulsión de jugadores por parte del anfitrión. Se juega en castellano o en inglés: las banderas de arriba cambian textos y diccionario; en una sala manda el idioma del anfitrión (ajuste `lang`, que viaja en el estado y en el enlace de invitación como `&lang=en`), y los récords y sílabas vistas se guardan por separado para cada idioma.
 
 ## Multijugador
 
@@ -21,6 +21,14 @@ npm install
 npm run words
 ```
 
+Diccionario inglés (`bomba/en/`): an-array-of-english-words (unas 275.000 formas) más palabras modernas de hunspell en_US de uso real (selfie, emoji…); los ejemplos del resumen final son las palabras más frecuentes según wordfreq. Los umbrales de sílabas (1.300, 450 y 150 palabras) dan grupos del mismo tamaño que en castellano; si cambian, actualiza la constante `HOW_EN`:
+
+```
+npm install
+pip install wordfreq
+npm run words:en
+```
+
 ## Estructura
 
 ```
@@ -36,8 +44,10 @@ teclazo/palabras.json palabras comunes para el modo Palabras
 bomba/words.txt       diccionario normalizado (sin acentos)
 bomba/syllables.json  sílabas por dificultad
 bomba/examples.json   palabras de ejemplo por sílaba (para el resumen final)
+bomba/en/             lo mismo en inglés (words.txt, syllables.json, examples.json)
 vendor/               supabase-js (UMD) y Bricolage Grotesque (licencia OFL)
 tools/build-words.mjs genera diccionario y sílabas
+tools/build-words-en.py genera los del inglés
 ```
 
 ## Publicación

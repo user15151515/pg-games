@@ -44,6 +44,14 @@
 .rech{font-size:clamp(60px,20vw,96px);margin:0 0 18px}
 .emp{font-weight:600}
 .bar .snd,.topline .snd{margin-left:auto}
+.langs{display:flex;gap:7px;margin-left:auto}
+.langs+.snd{margin-left:16px}
+.flag{width:32px;height:22px;padding:0;border:2px solid var(--ink);border-radius:5px;overflow:hidden;box-shadow:none;background:none;opacity:.45;cursor:pointer;flex:0 0 auto}
+.flag svg{display:block;width:100%;height:100%}
+.flag.on{opacity:1;box-shadow:2px 2px 0 var(--ink)}
+.flag:hover:not(:disabled),.flag:active:not(:disabled){transform:none;box-shadow:2px 2px 0 var(--ink);opacity:1}
+.flag:disabled{cursor:default}
+.flag:disabled:not(.on){display:none}
 .snd[aria-pressed=false]{text-decoration-line:line-through}
 #homeMsg{min-height:30px;margin:14px 0 0;font-weight:600}
 #homeMsg.bad{width:fit-content;background:var(--pink);padding:2px 12px;border-radius:99px}
@@ -207,15 +215,16 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 <main class="wrap">
 
 <div class="bar" id="bar" hidden>
-  <button type="button" class="linkbtn" id="btnLeave">← Salir</button>
+  <button type="button" class="linkbtn" id="btnLeave" data-t="leave">← Salir</button>
   <a href="../">pg games</a>
+  <span class="langs"></span>
   <button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button>
 </div>
 
 <section id="home">
-  <div class="topline"><a class="back" href="../">pg games</a><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
+  <div class="topline"><a class="back" href="../">pg games</a><span class="langs"></span><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
   <div class="hero">
-    <h1 class="display">Bomba</h1>
+    <h1 class="display" data-t="title">Bomba</h1>
     <svg viewBox="0 0 200 220" aria-hidden="true">
       <path d="M122 58C132 36 150 30 166 34" fill="none" stroke="#17140f" stroke-width="9" stroke-linecap="round"/>
       <circle cx="100" cy="128" r="76" fill="#17140f"/>
@@ -225,21 +234,21 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
     </svg>
   </div>
   <div class="stack">
-    <input id="name" type="text" maxlength="14" autocomplete="off" aria-label="Tu nombre" placeholder="Tu nombre">
+    <input id="name" type="text" maxlength="14" autocomplete="off" aria-label="Tu nombre" placeholder="Tu nombre" data-tp="name" data-ta="name">
     <div id="homeCreate">
       <div class="cta">
-        <button id="btnCreate" class="primary">Crear sala</button>
-        <button id="btnJoinOpen" class="alt">Unirse</button>
+        <button id="btnCreate" class="primary" data-t="create">Crear sala</button>
+        <button id="btnJoinOpen" class="alt" data-t="joinOpen">Unirse</button>
       </div>
-      <button id="btnSolo" class="solo"><b>Individual</b><small>tú contra la mecha</small></button>
+      <button id="btnSolo" class="solo"><b data-t="solo">Individual</b><small data-t="soloSub">tú contra la mecha</small></button>
     </div>
     <div id="homeJoin" class="stack" hidden>
-      <input id="codeIn" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" aria-label="Código de sala" placeholder="ABCD">
-      <button id="btnJoin" class="big">Entrar</button>
-      <div class="subrow"><button id="btnJoinBack" type="button" class="linkbtn">← Volver</button></div>
+      <input id="codeIn" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" aria-label="Código de sala" data-ta="code" placeholder="ABCD">
+      <button id="btnJoin" class="big" data-t="enter">Entrar</button>
+      <div class="subrow"><button id="btnJoinBack" type="button" class="linkbtn" data-t="back">← Volver</button></div>
     </div>
     <div id="homeInvite" hidden>
-      <button id="btnJoinInvite" class="big">Entrar a <span id="inviteCode"></span></button>
+      <button id="btnJoinInvite" class="big"><span data-t="enterTo">Entrar a</span> <span id="inviteCode"></span></button>
     </div>
   </div>
   <p id="homeMsg" role="status"></p>
@@ -250,19 +259,19 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
   <div class="codecard" id="codecard">
     <div class="display" id="lobbyCode">----</div>
     <div class="row">
-      <button id="btnCopy">Copiar enlace</button>
-      <button id="btnShare" class="alt" hidden>Compartir</button>
+      <button id="btnCopy" data-t="copy">Copiar enlace</button>
+      <button id="btnShare" class="alt" hidden data-t="share">Compartir</button>
     </div>
   </div>
   <div class="plist" id="plist"></div>
   <div id="cfgBasic"></div>
   <p id="cfgSum"></p>
   <div id="soloRec" hidden></div>
-  <button type="button" class="linkbtn" id="btnRecLobby" hidden style="margin:-6px 0 16px">Ver todos los récords</button>
-  <button id="btnStart" class="big" hidden>Empezar</button>
+  <button type="button" class="linkbtn" id="btnRecLobby" hidden style="margin:-6px 0 16px" data-t="allRec">Ver todos los récords</button>
+  <button id="btnStart" class="big" hidden data-t="start">Empezar</button>
   <div id="gameSw" hidden></div>
   <p id="lobbyHint" role="status"></p>
-  <details class="panel" id="cfgMore"><summary>Ajustes</summary><div class="body" id="cfgMoreBody"></div></details>
+  <details class="panel" id="cfgMore"><summary data-t="settings">Ajustes</summary><div class="body" id="cfgMoreBody"></div></details>
   <details class="panel" id="howLobby"></details>
 </section>
 
@@ -285,22 +294,22 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
       <div id="syl"></div>
       <div id="entry">
         <div id="tiles" aria-live="off"></div>
-        <input id="word" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Tu palabra" disabled>
+        <input id="word" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Tu palabra" data-ta="yourWord" disabled>
       </div>
       <div id="fuse" hidden><i></i></div>
     </div>
-    <button id="send" class="big" type="submit" hidden>Enviar</button>
+    <button id="send" class="big" type="submit" hidden data-t="send">Enviar</button>
   </form>
   <span id="msg" role="status"></span>
   <div id="letters"></div>
 </section>
 
 <section id="records" hidden>
-  <div class="topline"><button type="button" class="linkbtn" id="btnRecBack">← Volver</button><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
-  <h2 class="display rech">Récords</h2>
-  <div class="fgroup"><span class="lbl">Modo</span><div class="fchips" id="recMode"></div></div>
-  <div class="fgroup"><span class="lbl">Dificultad</span><div class="fchips" id="recDiff"></div></div>
-  <div class="fgroup"><span class="lbl">Vidas</span><div class="fchips" id="recLives"></div></div>
+  <div class="topline"><button type="button" class="linkbtn" id="btnRecBack" data-t="back">← Volver</button><span class="langs"></span><button type="button" class="linkbtn snd" aria-pressed="true">Sonido</button></div>
+  <h2 class="display rech" data-t="records">Récords</h2>
+  <div class="fgroup"><span class="lbl" data-t="mode">Modo</span><div class="fchips" id="recMode"></div></div>
+  <div class="fgroup"><span class="lbl" data-t="diff">Dificultad</span><div class="fchips" id="recDiff"></div></div>
+  <div class="fgroup"><span class="lbl" data-t="lives">Vidas</span><div class="fchips" id="recLives"></div></div>
   <div id="recList"></div>
 </section>
 
@@ -311,8 +320,8 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
     <ol id="rank"></ol>
     <div id="fails"></div>
     <button id="btnAgain" class="big">Jugar de nuevo</button>
-    <button id="btnSettings" class="big alt" hidden>Ajustes</button>
-    <button id="btnExit" class="big alt">Salir</button>
+    <button id="btnSettings" class="big alt" hidden data-t="settings">Ajustes</button>
+    <button id="btnExit" class="big alt" data-t="exit">Salir</button>
     <p id="overHint"></p>
   </div>
 </div>
@@ -324,7 +333,70 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
-const MAX_LIVES = 5, BONUS = 'abcdefghilmnopqrstuv';
+const MAX_LIVES = 5;
+// letras del reto de la vida extra (20 en cada idioma; en inglés sin j, q, v, w, x, z)
+const BONUS_BY = { es: 'abcdefghilmnopqrstuv', en: 'abcdefghiklmnoprstuy' };
+
+// ---------- idioma ----------
+// El idioma decide los textos y el diccionario. En una sala manda el del anfitrión (ajuste «lang»); fuera de una sala, el elegido con la bandera.
+const LANGS = ['es', 'en'];
+let pref = 'es';
+try { const q = new URLSearchParams(location.search).get('lang'), st = localStorage.getItem('pg_bomba_lang'); pref = LANGS.includes(q) ? q : LANGS.includes(st) ? st : 'es'; } catch (e) {}
+const lang = () => (S && S.settings && LANGS.includes(S.settings.lang)) ? S.settings.lang : pref;
+const FLAGS = {
+  es: '<svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#c60b1e"/><rect y="5" width="30" height="10" fill="#ffc400"/></svg>',
+  en: '<svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#fffef8"/><rect x="13" width="4" height="20" fill="#ce1124"/><rect y="8" width="30" height="4" fill="#ce1124"/></svg>'
+};
+const pl = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+const TX = {
+  es: {
+    leave: '← Salir', sound: 'Sonido', title: 'Bomba', name: 'Tu nombre', create: 'Crear sala', joinOpen: 'Unirse', solo: 'Individual', soloSub: 'tú contra la mecha',
+    code: 'Código de sala', enter: 'Entrar', back: '← Volver', enterTo: 'Entrar a', copy: 'Copiar enlace', copied: 'Copiado', share: 'Compartir', allRec: 'Ver todos los récords',
+    start: 'Empezar', settings: 'Ajustes', yourWord: 'Tu palabra', send: 'Enviar', records: 'Récords', mode: 'Modo', diff: 'Dificultad', lives: 'Vidas', again: 'Jugar de nuevo', exit: 'Salir',
+    diffs: ['Fácil', 'Normal', 'Difícil'], all: 'Todos', allF: 'Todas', byWord: 'Por palabra', rush: 'Contrarreloj',
+    livesN: n => pl(n, 'vida', 'vidas'), wordsN: n => pl(n, 'palabra', 'palabras'), words: 'palabras', perWord: n => n + ' s por palabra',
+    sylLen: n => n ? 'sílaba ' + n + ' letras' : 'sílaba mixta', minWord: n => 'palabra de ' + n + '+ letras', streak: n => 'racha ' + n,
+    noMatch: 'Ninguna marca con ese filtro.', noRec: 'Todavía no hay marcas. Juega una partida individual y aparecerán aquí.', playNow: 'Jugar ahora',
+    best: 'Tu mejor marca', playThese: 'Jugar con estos ajustes', others: 'Otras marcas',
+    e_notWord: 'Eso no es una palabra', e_minL: n => 'Mínimo ' + n + ' letras', e_missing: x => 'Falta «' + x.toUpperCase() + '»', e_used: 'Ya se ha usado', e_notDict: 'No está en el diccionario',
+    dictFail: 'No se pudo cargar el diccionario. Recarga la página.', noNet: 'Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.',
+    noRoom: 'No se encontró esa sala. Revisa el código.', full: 'La sala está llena.', lost: 'Se perdió la conexión con la sala.', closedBy: 'El anfitrión ha cerrado la sala.',
+    roomClosed: 'Sala cerrada', confirmLeave: 'Si sales, la sala se cierra para todos. ¿Salir?',
+    watching: 'viendo resultados', host: 'anfitrión', you: 'tú', kick: 'Echar', kickA: n => 'Echar a ' + n, rec: 'Récord', noMark: 'sin marca con estos ajustes',
+    loading: 'Cargando diccionario…', shareStart: 'Comparte el enlace para empezar.', waiting: 'Esperando al anfitrión…', tap: 'Toca para escribir',
+    newRec: 'Nuevo récord', end: 'Fin', bestStreak: 'mejor racha', recLow: 'récord', yourWords: 'Tus palabras', once: 'Otra vez', youWon: 'Has ganado', wins: n => 'Gana ' + n,
+    draw: 'Empate', unsolved: 'Sin resolver', rKey: 'R para repetir',
+    infoRush: (w, r) => `Palabras ${w} · Récord ${r}`, info: (w, s, r) => `Aciertos ${w} · Racha ${s} · Récord ${r}`, alive: n => n + ' en juego', spec: 'espera',
+    plusLife: ' (+1 vida)', out: n => n + ' eliminado', loses: n => n + ' pierde una vida', joins: n => n + ' entra', kicked: n => n + ' expulsado', left: n => n + ' se va',
+    typeName: 'Escribe tu nombre.', connecting: 'Conectando…', code4: 'El código tiene 4 letras.', copyPrompt: 'Copia el enlace:', youKicked: 'Te han expulsado de la sala.',
+    player: 'Jugador', me: 'Tú', game: 'Juego', less: 'Menos', more: 'Más',
+    shared: 'mecha compartida', perTurn: 'mecha por turno', orders: { ring: 'círculo', bounce: 'rebote', random: 'azar' }
+  },
+  en: {
+    leave: '← Leave', sound: 'Sound', title: 'Bomb', name: 'Your name', create: 'Create room', joinOpen: 'Join', solo: 'Solo', soloSub: 'you against the fuse',
+    code: 'Room code', enter: 'Join', back: '← Back', enterTo: 'Join', copy: 'Copy link', copied: 'Copied', share: 'Share', allRec: 'See all records',
+    start: 'Start', settings: 'Settings', yourWord: 'Your word', send: 'Send', records: 'Records', mode: 'Mode', diff: 'Difficulty', lives: 'Lives', again: 'Play again', exit: 'Exit',
+    diffs: ['Easy', 'Normal', 'Hard'], all: 'All', allF: 'All', byWord: 'Per word', rush: 'Time attack',
+    livesN: n => pl(n, 'life', 'lives'), wordsN: n => pl(n, 'word', 'words'), words: 'words', perWord: n => n + ' s per word',
+    sylLen: n => n ? n + '-letter syllable' : 'mixed syllable', minWord: n => n + '+ letter word', streak: n => 'streak ' + n,
+    noMatch: 'No records with that filter.', noRec: 'No records yet. Play a solo game and they will show up here.', playNow: 'Play now',
+    best: 'Your best', playThese: 'Play with these settings', others: 'Other records',
+    e_notWord: "That's not a word", e_minL: n => 'At least ' + n + ' letters', e_missing: x => 'Missing “' + x.toUpperCase() + '”', e_used: 'Already used', e_notDict: 'Not in the dictionary',
+    dictFail: "Couldn't load the dictionary. Reload the page.", noNet: "Can't reach the servers. Check your connection and try again.",
+    noRoom: "Couldn't find that room. Check the code.", full: 'The room is full.', lost: 'Lost the connection to the room.', closedBy: 'The host closed the room.',
+    roomClosed: 'Room closed', confirmLeave: 'If you leave, the room closes for everyone. Leave?',
+    watching: 'viewing results', host: 'host', you: 'you', kick: 'Kick', kickA: n => 'Kick ' + n, rec: 'Record', noMark: 'no record with these settings',
+    loading: 'Loading dictionary…', shareStart: 'Share the link to start.', waiting: 'Waiting for the host…', tap: 'Tap to type',
+    newRec: 'New record', end: 'Game over', bestStreak: 'best streak', recLow: 'record', yourWords: 'Your words', once: 'Again', youWon: 'You win', wins: n => n + ' wins',
+    draw: 'Draw', unsolved: 'Unsolved', rKey: 'R to replay',
+    infoRush: (w, r) => `Words ${w} · Record ${r}`, info: (w, s, r) => `Words ${w} · Streak ${s} · Record ${r}`, alive: n => n + ' left', spec: 'waiting',
+    plusLife: ' (+1 life)', out: n => n + ' is out', loses: n => n + ' loses a life', joins: n => n + ' joined', kicked: n => n + ' was kicked', left: n => n + ' left',
+    typeName: 'Type your name.', connecting: 'Connecting…', code4: 'The code has 4 letters.', copyPrompt: 'Copy the link:', youKicked: 'You were kicked from the room.',
+    player: 'Player', me: 'You', game: 'Game', less: 'Less', more: 'More',
+    shared: 'shared fuse', perTurn: 'fuse per turn', orders: { ring: 'circle', bounce: 'bounce', random: 'random' }
+  }
+};
+const tx = (k, ...a) => { const v = TX[lang()][k]; return typeof v === 'function' ? v(...a) : v; };
 // [fondo, texto]
 const COLORS = [['#ff5c8a','#17140f'],['#3b5bff','#fffef8'],['#2fd08a','#17140f'],['#ff8a3d','#17140f'],
                 ['#8b5cf6','#fffef8'],['#17140f','#ffd93d'],['#fffef8','#17140f'],['#22c3e6','#17140f']];
@@ -449,18 +521,27 @@ const SCHEMA = [
   { k: 'letters',           label: 'Vida extra con las 20 letras',   vals: [1, 0], labels: ['Sí', 'No'], hide: c => c.smode === 'rush' },
   { k: 'show',              label: 'Ver la mecha',                   vals: [0, 1], labels: ['No', 'Sí'] }
 ];
-const DEF = { lives: 2, diff: 0, len: 0, minWord: 2, mode: 'shared', min: 7, max: 14, bonusSec: 0, floor: 7, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 1, smode: 'word', total: 30 };
+const SCHEMA_EN = {
+  smode: ['Mode', ['Fuse per word', 'Time attack']], lives: ['Lives'], diff: ['Difficulty', ['Easy', 'Normal', 'Hard']], time: ['Time per word'], total: ['Total time'],
+  len: ['Syllable letters', ['Mixed', '2', '3']], minWord: ['Minimum word length'], mode: ['Fuse', ['Shared', 'Per turn']], min: ['Minimum time'], max: ['Maximum time'],
+  bonusSec: ['Extra seconds per word'], floor: ['Minimum when you get the bomb'], order: ['Passing order', ['Circle', 'Bounce', 'Random']],
+  after: ['After it explodes', ['Next player', 'Same player']], ramp: ['Harder with each player out', ['Yes', 'No']], letters: ['Extra life with the 20 letters', ['Yes', 'No']],
+  show: ['Show the fuse', ['No', 'Yes']]
+};
+const dLabel = d => lang() === 'en' && SCHEMA_EN[d.k] ? SCHEMA_EN[d.k][0] : d.label;
+const dLabels = d => lang() === 'en' && SCHEMA_EN[d.k] && SCHEMA_EN[d.k][1] ? SCHEMA_EN[d.k][1] : d.labels;
+const DEF = { lang: 'es', lives: 2, diff: 0, len: 0, minWord: 2, mode: 'shared', min: 7, max: 14, bonusSec: 0, floor: 7, order: 'ring', after: 'next', ramp: 1, letters: 1, show: 1, smode: 'word', total: 30 };
 const DEF_SOLO = { ...DEF, lives: 3, mode: 'turn', min: 10, max: 10, show: 1 };
 const getVal = (d, c) => d.k === 'time' ? c.min : c[d.k];
 
-const HOW = `<summary>Cómo se juega</summary><div class="body">
+const HOW_ES = `<summary>Cómo se juega</summary><div class="body">
 <h3>La partida</h3>
 <p>En cada turno aparece una sílaba de 2 o 3 letras. Quien tiene la bomba escribe una palabra en castellano que contenga esas letras seguidas, en cualquier posición: con <span class="ex">ent</span> valen <span class="ex">gente</span>, <span class="ex">entrada</span> o <span class="ex">cliente</span>.</p>
 <p>Las mayúsculas y las tildes dan igual, y una palabra no se puede repetir durante la partida. Si vale, la bomba pasa al siguiente. Si explota en tu turno, pierdes una vida y el siguiente recibe la bomba con la misma sílaba, salvo que ya la haya intentado: entonces sale otra; sin vidas quedas eliminado y gana quien se queda en pie. Con el ajuste «Más difícil con cada eliminado» (activado por defecto), cada jugador que cae hace que las sílabas sean un poco más difíciles, para que el final no se alargue.</p>
-<p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS].join(' ').toUpperCase()}</b>.</p>
+<p>Cada palabra que aciertas marca las letras que usa. Si completas estas 20 letras a lo largo de la partida ganas una vida (máximo 5) y vuelves a empezar: <b>${[...BONUS_BY.es].join(' ').toUpperCase()}</b>.</p>
 <p>El diccionario tiene unas 636.000 formas, con plurales y conjugaciones, aunque puede que alguna palabra falte.</p>
 <h3>Individual</h3>
-<p>Hay dos modos. <b>Mecha por palabra</b>: juegas solo contra la mecha, que se reinicia en cada palabra. Se cuentan los aciertos y la racha, que son las palabras seguidas sin que explote la bomba. La partida acaba al quedarte sin vidas. <b>Contrarreloj</b>: tienes un tiempo total (15 s, 30 s, 1 o 2 minutos) y la mecha no se reinicia; escribe todas las palabras que puedas antes de que explote. Aquí no hay vidas y el récord es el total de palabras. El récord se guarda en este navegador, por separado para cada combinación de ajustes (dificultad, vidas, tiempo y longitudes de sílaba y de palabra). En «Ver récords» salen todos, se pueden filtrar y desde ahí puedes jugar con la misma configuración.</p>
+<p>Hay dos modos. <b>Mecha por palabra</b>: juegas solo contra la mecha, que se reinicia en cada palabra. Se cuentan los aciertos y la racha, que son las palabras seguidas sin que explote la bomba. La partida acaba al quedarte sin vidas. <b>Contrarreloj</b>: tienes un tiempo total (15 s, 30 s, 1 o 2 minutos) y la mecha no se reinicia; escribe todas las palabras que puedas antes de que explote. Aquí no hay vidas y el récord es el total de palabras. El récord se guarda en este navegador, por separado para cada combinación de ajustes (dificultad, vidas, tiempo y longitudes de sílaba y de palabra) y para cada idioma. En «Ver récords» salen todos, se pueden filtrar y desde ahí puedes jugar con la misma configuración.</p>
 <h3>Dificultad</h3>
 <p>Las sílabas se sacan del propio diccionario y se agrupan por lo comunes que son, según en cuántas palabras aparecen. Una sílaba no se repite hasta que han salido otras 8.</p>
 <dl>
@@ -481,8 +562,39 @@ const HOW = `<summary>Cómo se juega</summary><div class="body">
 <dt>Vida extra con las 20 letras</dt><dd>Activa o desactiva el reto de las letras.</dd>
 <dt>Ver la mecha</dt><dd>Muestra una barra con el tiempo que queda. Sin ella solo ves cómo tiembla la bomba.</dd>
 </dl>
-<p>En una sala, solo el anfitrión cambia los ajustes y puede echar a jugadores; el resto los ve.</p>
+<p>La bandera de arriba cambia el idioma y el diccionario. En una sala, solo el anfitrión cambia el idioma y los ajustes y puede echar a jugadores; el resto los ve.</p>
 </div>`;
+const HOW_EN = `<summary>How to play</summary><div class="body">
+<h3>The game</h3>
+<p>Each turn shows a syllable of 2 or 3 letters. Whoever holds the bomb types an English word that contains those letters together, anywhere in the word: with <span class="ex">ent</span> you can play <span class="ex">gentle</span>, <span class="ex">enter</span> or <span class="ex">client</span>.</p>
+<p>Capital letters don't matter, and a word can't be repeated in the same game. If it's valid, the bomb goes to the next player. If it explodes on your turn, you lose a life and the next player gets the bomb with the same syllable, unless they have already tried it: then a new one comes up. With no lives left you're out, and the last one standing wins. With the setting “Harder with each player out” (on by default), every player who drops out makes the syllables a bit harder, so the end doesn't drag on.</p>
+<p>Every word you play marks the letters it uses. Complete these 20 letters during the game and you get an extra life (up to 5) and start over: <b>${[...BONUS_BY.en].join(' ').toUpperCase()}</b>.</p>
+<p>The dictionary has about 275,000 words, including plurals and verb forms, though some word may be missing.</p>
+<h3>Solo</h3>
+<p>There are two modes. <b>Fuse per word</b>: you play alone against the fuse, which resets on every word. Your score is your words and your streak, the words in a row without the bomb going off. The game ends when you run out of lives. <b>Time attack</b>: you get a total time (15 s, 30 s, 1 or 2 minutes) and the fuse doesn't reset; play as many words as you can before it blows. There are no lives here and the record is your total words. Records are saved in this browser, separately for each combination of settings (difficulty, lives, time, syllable and word length) and for each language. “See all records” lists them all, lets you filter them and play again with the same settings.</p>
+<h3>Difficulty</h3>
+<p>Syllables come from the dictionary itself and are grouped by how common they are, based on how many words contain them. A syllable doesn't come back until 8 others have appeared.</p>
+<dl>
+<dt>Easy</dt><dd>Only common syllables, found in 1,300 words or more: <span class="ex">er</span> <span class="ex">ing</span> <span class="ex">ent</span> <span class="ex">ous</span> <span class="ex">tr</span>.</dd>
+<dt>Normal</dt><dd>70 % common and 30 % medium, found in 450 to 1,300 words: <span class="ex">dge</span> <span class="ex">ump</span> <span class="ex">kn</span>.</dd>
+<dt>Hard</dt><dd>20 % common, 50 % medium and 30 % rare, found in 150 to 450 words: <span class="ex">abs</span> <span class="ex">oxy</span> <span class="ex">awn</span>.</dd>
+</dl>
+<h3>Settings</h3>
+<dl>
+<dt>Syllable letters</dt><dd>Mixed combines syllables of 2 and 3 letters. With only 2 they're shorter and usually easier; with only 3, more varied.</dd>
+<dt>Minimum word length</dt><dd>Shorter words don't count.</dd>
+<dt>Shared fuse</dt><dd>The bomb has a fuse of random length between the minimum and maximum time, and it doesn't reset when passed: whoever gets it inherits what's left. When it explodes a new one is lit.</dd>
+<dt>Fuse per turn</dt><dd>Each player gets a fresh fuse, random between the minimum and maximum. Set both to the same value and everyone has the same time.</dd>
+<dt>Extra seconds per word</dt><dd>With a shared fuse, adds those seconds to what's left when passing the bomb.</dd>
+<dt>Minimum when you get the bomb</dt><dd>With a shared fuse, whoever gets the bomb always has at least that many seconds (4 at least), even if the fuse was almost out.</dd>
+<dt>Passing order</dt><dd><b>Circle</b>: the bomb follows the room order and goes back to the first player. <b>Bounce</b>: it goes to the last player and bounces back, back and forth. <b>Random</b>: it goes to any other player still in the game.</dd>
+<dt>After it explodes</dt><dd>The bomb goes to the next player by the passing order, or stays with whoever lost the life if they're still in. Either way a new fuse is lit.</dd>
+<dt>Extra life with the 20 letters</dt><dd>Turns the letter challenge on or off.</dd>
+<dt>Show the fuse</dt><dd>Shows a bar with the time left. Without it you only see the bomb shaking.</dd>
+</dl>
+<p>The flag at the top changes the language and the dictionary. In a room, only the host changes the language and the settings and can kick players; everyone else sees them.</p>
+</div>`;
+const HOW = () => lang() === 'en' ? HOW_EN : HOW_ES;
 
 // Minúsculas sin acentos, conserva la ñ. Conserva la longitud para alinear el resaltado.
 function norm(s) {
@@ -497,18 +609,17 @@ const tok = (p, cls) => `<div class="tok ${cls || ''}" style="--bg:${COLORS[p.co
 const pairs = log => (log || []).map(([s, w]) => `<span class="pair"><span class="chip sm">${esc(s.toUpperCase())}</span>${esc(w)}</span>`).join('');
 
 // récords del modo individual (solo en este navegador)
-const REC_KEY = 'jt_solo_v1';
-const loadRec = () => { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } };
-const saveRec = r => { try { localStorage.setItem(REC_KEY, JSON.stringify(r)); } catch (e) {} };
+const recKey = l => l === 'en' ? 'jt_solo_v1_en' : 'jt_solo_v1';
+const loadRec = (l = lang()) => { try { return JSON.parse(localStorage.getItem(recKey(l))) || {}; } catch (e) { return {}; } };
+const saveRec = (r, l = lang()) => { try { localStorage.setItem(recKey(l), JSON.stringify(r)); } catch (e) {} };
 const isRush = c => c.smode === 'rush';
 const soloKey = c => isRush(c) ? ['r', c.diff, c.total, c.len, c.minWord].join('.') : [c.diff, c.lives, c.min, c.len, c.minWord].join('.');
 const cfgOfKey = k => {
   if (k[0] === 'r') { const [, diff, total, len, minWord] = k.split('.').map(Number); return { smode: 'rush', diff, total, lives: 1, len, minWord }; }
   const [diff, lives, min, len, minWord] = k.split('.').map(Number); return { smode: 'word', diff, lives, min, max: min, len, minWord };
 };
-const DIFFN = ['Fácil', 'Normal', 'Difícil'];
-const cfgTitle = c => isRush(c) ? `${DIFFN[c.diff]} · Contrarreloj ${c.total >= 60 ? c.total / 60 + ' min' : c.total + ' s'}` : `${DIFFN[c.diff]} · ${c.lives} ${c.lives === 1 ? 'vida' : 'vidas'} · ${c.min} s por palabra`;
-const cfgSub = c => `sílaba ${c.len ? c.len + ' letras' : 'mixta'} · palabra de ${c.minWord}+ letras`;
+const diffN = i => tx('diffs')[i];
+const cfgSub = c => tx('sylLen', c.len) + ' · ' + tx('minWord', c.minWord);
 
 // ---------- sonido (sintetizado, sin archivos) ----------
 const SND = { ctx: null, mute: false };
@@ -548,7 +659,7 @@ const sfx = {
   lose: () => [392, 330, 262].forEach((f, i) => tone(f, .26, { type: 'triangle', v: .15, at: i * .16 }))
 };
 const play = (n, a) => { try { sfx[n](a); } catch (e) {} };
-function paintSnd() { for (const b of document.querySelectorAll('.snd')) { b.textContent = 'Sonido'; b.setAttribute('aria-pressed', String(!SND.mute)); } }
+function paintSnd() { for (const b of document.querySelectorAll('.snd')) { b.textContent = tx('sound'); b.setAttribute('aria-pressed', String(!SND.mute)); } }
 
 // ---------- estado local ----------
 let isHost = false, solo = false, room = '', myId = null, myName = '';
@@ -557,7 +668,8 @@ let lastTurn = null, lastSyl = '', lastHeard = 0, gotState = false;
 const lastSeen = {};    // solo anfitrión: id -> última vez que se supo de él
 
 // ---------- estado del anfitrión ----------
-let H = null, DICT = null, SYL = null, EX = null, dictLoading = false;
+let H = null, DICT = null, SYL = null, EX = null;
+const DATA = {}, loading = {};
 function newH() {
   return { phase: 'lobby', players: [], turn: null, syl: '', fuseEnd: 0, fuseTotal: 1, used: new Set(), typing: '', recent: [], winner: null, tm: 0, dir: 1, v: 0,
            solo: false, fails: [], out: [], res: null, settings: { ...DEF } };
@@ -590,7 +702,7 @@ function setSetting(k, v) {
 }
 
 function addPlayer(id, name) {
-  name = (name || 'Jugador').trim().slice(0, 14) || 'Jugador';
+  name = (name || tx('player')).trim().slice(0, 14) || tx('player');
   let n = name, k = 2;
   while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
   const used = new Set(H.players.map(p => p.color));
@@ -616,6 +728,7 @@ function pickSyl() {
   if (!pool.length) pool = SYL.easy;
   // no se repite ninguna sílaba hasta haber salido todas las de su grupo; la memoria se guarda en este navegador,
   // así que tampoco se repiten entre partidas seguidas
+  const SEEN_KEY = SEEN_BASE + (c.lang === 'en' ? '_en' : '');
   let seen; try { seen = new Set(JSON.parse(localStorage.getItem(SEEN_KEY)) || []); } catch (e) { seen = new Set(); }
   for (const x of H.recent) seen.add(x);
   let free = pool.filter(x => !seen.has(x));
@@ -625,7 +738,7 @@ function pickSyl() {
   try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-1500))); } catch (e) {}
   return s;
 }
-const SEEN_KEY = 'pg_bomba_seen';
+const SEEN_BASE = 'pg_bomba_seen';
 
 // mecha
 function schedule() { clearTimeout(H.tm); H.tm = setTimeout(explode, Math.max(0, H.fuseEnd - now())); }
@@ -691,10 +804,10 @@ function buildRes() {
   for (const s of H.fails) { if (seen.has(s)) continue; seen.add(s); fails.push({ s, ex: examplesFor(s) }); if (fails.length >= 3) break; }
   const res = { rank, fails };
   if (H.solo) {
-    const p = H.players[0], rec = loadRec(), key = soloKey(H.settings), prev = rec[key] || { words: 0, streak: 0 };
+    const p = H.players[0], rec = loadRec(H.settings.lang), key = soloKey(H.settings), prev = rec[key] || { words: 0, streak: 0 };
     const rush = isRush(H.settings), bs = rush ? p.words : p.bestStreak;
     rec[key] = { words: Math.max(prev.words, p.words), streak: Math.max(prev.streak, bs) };
-    saveRec(rec);
+    saveRec(rec, H.settings.lang);
     res.rank = [{ id: p.id, words: p.words, log: p.log }];
     res.solo = { rush, words: p.words, streak: bs, recWords: rec[key].words, recStreak: rec[key].streak,
                  newWords: p.words > prev.words && p.words > 0, newStreak: !rush && bs > prev.streak && bs > 0 };
@@ -743,11 +856,11 @@ function submit(id, raw) {
   if (H.phase !== 'playing' || H.turn !== id) return;
   const c = H.settings, w = norm(String(raw).trim()), p = byId(id);
   let err = null;
-  if (!/^[a-zñ]{1,40}$/.test(w)) err = 'Eso no es una palabra';
-  else if (w.length < c.minWord) err = 'Mínimo ' + c.minWord + ' letras';
-  else if (!w.includes(H.syl)) err = 'Falta «' + H.syl.toUpperCase() + '»';
-  else if (H.used.has(w)) err = 'Ya se ha usado';
-  else if (!DICT.has(w)) err = 'No está en el diccionario';
+  if (!/^[a-zñ]{1,40}$/.test(w)) err = ['notWord'];
+  else if (w.length < c.minWord) err = ['minL', c.minWord];
+  else if (!w.includes(H.syl)) err = ['missing', H.syl];
+  else if (H.used.has(w)) err = ['used'];
+  else if (!DICT.has(w)) err = ['notDict'];
   if (err) { reply(id, { t: 'bad', m: err }); return; }
   H.used.add(w);
   const shown = String(raw).trim().toLowerCase().slice(0, 40);
@@ -755,6 +868,7 @@ function submit(id, raw) {
   p.log.push([H.syl, shown]);
   let bonus = false;
   if (c.letters && !(H.solo && isRush(c))) {
+    const BONUS = BONUS_BY[c.lang] || BONUS_BY.es;
     for (const ch of w) if (BONUS.includes(ch) && !p.letters.includes(ch)) p.letters += ch;
     if (p.letters.length >= BONUS.length) { p.letters = ''; if (p.lives < MAX_LIVES) { p.lives++; bonus = true; } }
   }
@@ -793,31 +907,42 @@ function hostRecv(m, f) {
   } else if (m.t === 'bye') hostLeft(f);
   else if (byId(f)) fromPlayer(f, m);
 }
-async function loadData() {
-  if (DICT || dictLoading) return; dictLoading = true; renderLobby();
-  try {
-    const [t, j, ex] = await Promise.all([
-      fetch('words.txt').then(r => r.text()),
-      fetch('syllables.json').then(r => r.json()),
-      fetch('examples.json').then(r => r.json()).catch(() => null)
-    ]);
-    DICT = new Set(t.split('\n')); SYL = j; EX = ex;
-    // sílabas de dos letras que salen como «normal» por número de palabras pero que son fáciles de resolver
-    const EXTRA = ['ye', 'yo', 'yu', 'oy', 'ño', 'ñe', 'ñi', 'iñ', 'uñ', 'zu', 'oz', 'uz', 'ji', 'eu', 'oh', 'ae'];
-    SYL.easy = [...new Set([...SYL.easy, ...EXTRA])]; SYL.normal = SYL.normal.filter(x => !EXTRA.includes(x));
-  } catch (e) { $('#lobbyHint').textContent = 'No se pudo cargar el diccionario. Recarga la página.'; }
-  dictLoading = false; renderLobby();
+// diccionario, sílabas y ejemplos de cada idioma (español en la carpeta del juego, inglés en «en/»); se cargan una vez y se guardan
+function useData() { const d = H && DATA[H.settings.lang]; DICT = d ? d.dict : null; SYL = d ? d.syl : null; EX = d ? d.ex : null; }
+function loadData() {
+  const l = H ? H.settings.lang : pref;
+  useData();
+  if (DATA[l]) { renderLobby(); return Promise.resolve(); }
+  if (!loading[l]) loading[l] = (async () => {
+    const dir = l === 'es' ? '' : l + '/';
+    try {
+      const [t, j, ex] = await Promise.all([
+        fetch(dir + 'words.txt').then(r => { if (!r.ok) throw 0; return r.text(); }),
+        fetch(dir + 'syllables.json').then(r => r.json()),
+        fetch(dir + 'examples.json').then(r => r.json()).catch(() => null)
+      ]);
+      if (l === 'es') {
+        // sílabas de dos letras que salen como «normal» por número de palabras pero que son fáciles de resolver
+        const EXTRA = ['ye', 'yo', 'yu', 'oy', 'ño', 'ñe', 'ñi', 'iñ', 'uñ', 'zu', 'oz', 'uz', 'ji', 'eu', 'oh', 'ae'];
+        j.easy = [...new Set([...j.easy, ...EXTRA])]; j.normal = j.normal.filter(x => !EXTRA.includes(x));
+      }
+      DATA[l] = { dict: new Set(t.split('\n')), syl: j, ex };
+    } catch (e) { $('#lobbyHint').textContent = tx('dictFail'); }
+    loading[l] = null;
+  })();
+  renderLobby();
+  return loading[l].then(() => { useData(); renderLobby(); });
 }
 
 // ---------- conexión ----------
 function setHome(text, kind) { const m = $('#homeMsg'); m.textContent = text || ''; m.className = kind || ''; }
-function fail(msg) { if (/Sin conexión/.test(msg)) PGT.ev('net_fail'); netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
+function fail(msg) { if (msg === tx('noNet')) PGT.ev('net_fail'); netClose(); setHome(msg, 'bad'); show('home'); for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = false; }
 
 async function createRoom(code) {
   room = code || randCode(); myId = 'host'; isHost = true; solo = false;
   net.onMsg = hostRecv;
-  try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; } PGT.room = room;
-  H = newH(); addPlayer('host', myName);
+  try { await netOpen('host'); } catch (e) { isHost = false; fail(tx('noNet')); return; } PGT.room = room;
+  H = newH(); H.settings.lang = pref; addPlayer('host', myName);
   PGT.ev('room_create');
   history.replaceState(null, '', '?sala=' + room);
   net.timers.push(setInterval(() => {
@@ -829,10 +954,10 @@ async function createRoom(code) {
 }
 
 async function startSolo(cfg, auto) {
-  myName = nameIn.value.trim() || 'Tú';
+  myName = nameIn.value.trim() || tx('me');
   if (nameIn.value.trim()) localStorage.setItem('jt_name', myName);
   solo = true; isHost = true; myId = 'host'; room = ''; PGT.room = '';
-  H = newH(); H.solo = true; H.settings = { ...DEF_SOLO, ...(cfg || {}) };
+  H = newH(); H.solo = true; H.settings = { ...DEF_SOLO, ...(cfg || {}), lang: pref };
   addPlayer('host', myName);
   history.replaceState(null, '', location.pathname);
   push();
@@ -844,72 +969,72 @@ async function startSolo(cfg, auto) {
 const recF = { mode: '', diff: -1, lives: 0 };
 function renderRecords() {
   const seg = (id, key, vals, labels) => { $(id).innerHTML = vals.map((v, i) => `<button type="button" data-f="${key}" data-v="${v}" class="${recF[key] === v ? 'on' : ''}" aria-pressed="${recF[key] === v}">${labels[i]}</button>`).join(''); };
-  seg('#recMode', 'mode', ['', 'word', 'rush'], ['Todos', 'Por palabra', 'Contrarreloj']);
-  seg('#recDiff', 'diff', [-1, 0, 1, 2], ['Todas', ...DIFFN]);
-  seg('#recLives', 'lives', [0, 1, 2, 3, 4, 5], ['Todas', '1', '2', '3', '4', '5']);
+  seg('#recMode', 'mode', ['', 'word', 'rush'], [tx('all'), tx('byWord'), tx('rush')]);
+  seg('#recDiff', 'diff', [-1, 0, 1, 2], [tx('allF'), ...tx('diffs')]);
+  seg('#recLives', 'lives', [0, 1, 2, 3, 4, 5], [tx('allF'), '1', '2', '3', '4', '5']);
   const all = Object.entries(loadRec()).filter(([k, r]) => r && r.words > 0).map(([k, r]) => ({ k, c: cfgOfKey(k), r }));
   const rows = all.filter(x => (!recF.mode || x.c.smode === recF.mode) && (recF.diff < 0 || x.c.diff === recF.diff) && (!recF.lives || (!isRush(x.c) && x.c.lives === recF.lives)))
     .sort((a, b) => b.r.words - a.r.words || b.r.streak - a.r.streak);
   const pill = (t, c) => `<span class="pill ${c || ''}">${esc(t)}</span>`;
-  const pills = c => pill(DIFFN[c.diff], ['e', 'n', 'h'][c.diff]) + (isRush(c)
-    ? pill('Contrarreloj ' + (c.total >= 60 ? c.total / 60 + ' min' : c.total + ' s'), 'b')
-    : pill(c.lives + (c.lives === 1 ? ' vida' : ' vidas')) + pill(c.min + ' s por palabra'));
-  const meta = x => `${isRush(x.c) ? '' : 'racha ' + x.r.streak + ' · '}${cfgSub(x.c)}`;
+  const pills = c => pill(diffN(c.diff), ['e', 'n', 'h'][c.diff]) + (isRush(c)
+    ? pill(tx('rush') + ' ' + (c.total >= 60 ? c.total / 60 + ' min' : c.total + ' s'), 'b')
+    : pill(tx('livesN', c.lives)) + pill(tx('perWord', c.min)));
+  const meta = x => `${isRush(x.c) ? '' : tx('streak', x.r.streak) + ' · '}${cfgSub(x.c)}`;
   const playIcon = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
   if (!rows.length) {
-    $('#recList').innerHTML = `<div class="rempty"><p>${all.length ? 'Ninguna marca con ese filtro.' : 'Todavía no hay marcas. Juega una partida individual y aparecerán aquí.'}</p>` +
-      (all.length ? '' : '<button type="button" id="recGo">Jugar ahora</button>') + '</div>';
+    $('#recList').innerHTML = `<div class="rempty"><p>${all.length ? tx('noMatch') : tx('noRec')}</p>` +
+      (all.length ? '' : `<button type="button" id="recGo">${tx('playNow')}</button>`) + '</div>';
     return;
   }
   const top = rows[0];
   $('#recList').innerHTML =
-    `<div class="rbest"><div class="k">Tu mejor marca</div><div class="v"><b>${top.r.words}</b><span>palabras</span></div>` +
+    `<div class="rbest"><div class="k">${tx('best')}</div><div class="v"><b>${top.r.words}</b><span>${tx('words')}</span></div>` +
     `<div class="pills">${pills(top.c)}</div><small>${esc(meta(top))}</small>` +
-    `<button type="button" class="go" data-play="${esc(top.k)}">Jugar con estos ajustes</button></div>` +
-    (rows.length > 1 ? '<div class="rhead">Otras marcas</div><div class="rlist">' + rows.slice(1).map(x =>
-      `<div class="rcard"><div class="rv"><b>${x.r.words}</b><small>palabras</small></div>` +
+    `<button type="button" class="go" data-play="${esc(top.k)}">${tx('playThese')}</button></div>` +
+    (rows.length > 1 ? `<div class="rhead">${tx('others')}</div><div class="rlist">` + rows.slice(1).map(x =>
+      `<div class="rcard"><div class="rv"><b>${x.r.words}</b><small>${tx('words')}</small></div>` +
       `<div class="rm"><div class="pills">${pills(x.c)}</div><small>${esc(meta(x))}</small></div>` +
-      `<button type="button" class="play" data-play="${esc(x.k)}" aria-label="Jugar con estos ajustes">${playIcon}</button></div>`).join('') + '</div>' : '');
+      `<button type="button" class="play" data-play="${esc(x.k)}" aria-label="${tx('playThese')}">${playIcon}</button></div>`).join('') + '</div>' : '');
 }
 function openRecords() { show('records'); renderRecords(); }
 
 async function joinRoom(code) {
   room = code; isHost = false; solo = false; PGT.room = code; myId = uid(10); lastV = -1; gotState = false;
   net.onMsg = onMsg;
-  try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
+  try { await netOpen('guest'); } catch (e) { fail(tx('noNet')); return; }
   lastHeard = now();
   const hello = () => netPub('host', { t: 'hello', name: myName, pv: PGT.vid || '' });
   hello(); let tries = 0;
   const h = setInterval(() => {
     // se sigue saludando hasta aparecer en la sala (al cambiar de juego, el estado puede llegar antes de que el anfitrión nos haya oído)
     if (gotState && S && S.players && S.players.some(p => p.id === myId)) { clearInterval(h); return; }
-    if (!gotState && ++tries > (autoJoin ? 14 : 6)) { clearInterval(h); fail('No se encontró esa sala. Revisa el código.'); return; }
+    if (!gotState && ++tries > (autoJoin ? 14 : 6)) { clearInterval(h); fail(tx('noRoom')); return; }
     hello();
   }, 1500);
   net.timers.push(h);
   net.timers.push(setInterval(() => {
     netPub('host', { t: 'ping' });
-    if (gotState && now() - lastHeard > DEAD) hostGone('Se perdió la conexión con la sala.');
+    if (gotState && now() - lastHeard > DEAD) hostGone(tx('lost'));
   }, BEAT));
 }
 function hostGone(why) {
   if (isHost) return;
   netClose(); S = null;
   $('#rank').innerHTML = ''; $('#fails').innerHTML = ''; $('#soloStats').hidden = true; $('#btnSettings').hidden = true; $('#btnExit').hidden = true;
-  $('#over').hidden = false; $('#overTitle').textContent = 'Sala cerrada'; $('#overHint').textContent = why || '';
-  const b = $('#btnAgain'); b.textContent = 'Salir'; b.onclick = goHome;
+  $('#over').hidden = false; $('#overTitle').textContent = tx('roomClosed'); $('#overHint').textContent = why || '';
+  const b = $('#btnAgain'); b.textContent = tx('exit'); b.onclick = goHome;
 }
 function goHome() { location.href = location.pathname; }
 // ---------- cambiar de juego sin salir de la sala ----------
 // El anfitrión avisa a todos con «goto»; cada uno abre el otro juego con el mismo código y vuelve a entrar solo.
-const GAMES_SW = [['bomba', 'Bomba'], ['tutti', 'Tutti frutti'], ['teclazo', 'Teclazo'], ['pistas', 'Pistas']];
+const GAMES_SW = [['bomba', ''], ['tutti', 'Tutti frutti'], ['teclazo', 'Teclazo'], ['pistas', 'Pistas']];
 const THIS_GAME = TOPIC.split(':')[1];
 let switching = false, autoJoin = false;
 function renderSwitch(on) {
   const el = $('#gameSw'); if (!el) return;
   el.hidden = !on; if (!on) return;
   const cc = $('#codecard'); if (cc && cc.nextElementSibling !== el) cc.after(el);
-  el.innerHTML = `<span class="lbl">Juego</span><div class="fchips">${GAMES_SW.map(([k, n]) => `<button type="button" data-g="${k}" class="${k === THIS_GAME ? 'on' : ''}" aria-pressed="${k === THIS_GAME}">${n}</button>`).join('')}</div>`;
+  el.innerHTML = `<span class="lbl">${tx('game')}</span><div class="fchips">${GAMES_SW.map(([k, n]) => `<button type="button" data-g="${k}" class="${k === THIS_GAME ? 'on' : ''}" aria-pressed="${k === THIS_GAME}">${n || tx('title')}</button>`).join('')}</div>`;
 }
 function switchGame(g) {
   if (!isHost || solo || !room || switching || g === THIS_GAME || !GAMES_SW.some(x => x[0] === g)) return;
@@ -918,7 +1043,7 @@ function switchGame(g) {
 }
 
 function leave() {
-  if (isHost && !solo && H && H.players.some(p => p.on && p.id !== 'host') && !confirm('Si sales, la sala se cierra para todos. ¿Salir?')) return;
+  if (isHost && !solo && H && H.players.some(p => p.on && p.id !== 'host') && !confirm(tx('confirmLeave'))) return;
   if (net.clients.length) netPub(isHost ? 'all' : 'host', { t: isHost ? 'closed' : 'bye' });
   setTimeout(goHome, 150);
 }
@@ -932,16 +1057,47 @@ function onMsg(m) {
     lastV = m.s.v; if (!gotState) PGT.ev('room_join'); gotState = true; applyState(m.s);
   } else if (m.t === 'typing') { if (!S || S.turn !== myId) setTyped(m.text); }
   else if (m.t === 'evt') showEvent(m.e);
-  else if (m.t === 'bad') badInput(m.m);
-  else if (m.t === 'full') fail('La sala está llena.');
+  else if (m.t === 'bad') badInput(Array.isArray(m.m) ? tx('e_' + m.m[0], m.m[1]) : String(m.m || ''));
+  else if (m.t === 'full') fail(tx('full'));
   else if (m.t === 'kicked') { netClose(); location.href = location.pathname + '?e=k'; }
-  else if (m.t === 'closed') hostGone('El anfitrión ha cerrado la sala.');
+  else if (m.t === 'closed') hostGone(tx('closedBy'));
 }
 function act(m) { if (isHost) fromPlayer('host', m); else netPub('host', m); }
 
 // ---------- UI ----------
 function show(id) { for (const s of ['home', 'lobby', 'game', 'records']) $('#' + s).hidden = s !== id; $('#bar').hidden = id === 'home' || id === 'records'; }
-function link() { const u = new URL(location.href); u.search = '?sala=' + room; u.hash = ''; return u.toString(); }
+function link() { const u = new URL(location.href); u.search = '?sala=' + room + (lang() === 'es' ? '' : '&lang=' + lang()); u.hash = ''; return u.toString(); }
+
+// textos fijos de la página y banderas; se repintan al cambiar de idioma
+let painted = '';
+function paintStatic() {
+  const l = lang(), canSwitch = !S || (isHost && S.phase !== 'playing');
+  for (const el of document.querySelectorAll('.langs')) {
+    el.innerHTML = LANGS.map(k => `<button type="button" class="flag ${k === l ? 'on' : ''}" data-lang="${k}" aria-pressed="${k === l}" aria-label="${k === 'es' ? 'Español' : 'English'}" ${canSwitch ? '' : 'disabled'}>${FLAGS[k]}</button>`).join('');
+  }
+  if (painted === l) return;
+  painted = l;
+  document.documentElement.lang = l;
+  document.title = tx('title') + ' · pg games';
+  for (const el of document.querySelectorAll('[data-t]')) el.textContent = tx(el.dataset.t);
+  for (const el of document.querySelectorAll('[data-tp]')) el.placeholder = tx(el.dataset.tp);
+  for (const el of document.querySelectorAll('[data-ta]')) el.setAttribute('aria-label', tx(el.dataset.ta));
+  for (const id of ['#howHome', '#howLobby']) $(id).innerHTML = HOW();
+  paintSnd();
+  if (!$('#records').hidden) renderRecords();
+}
+function setLang(l) {
+  if (!LANGS.includes(l)) return;
+  if (S && !(isHost && S.phase !== 'playing')) return;   // en una sala, solo el anfitrión y fuera de la partida
+  pref = l;
+  try { localStorage.setItem('pg_bomba_lang', l); } catch (e) {}
+  if (S && H) {
+    const onRec = !$('#records').hidden;
+    H.settings.lang = l; useData(); push(); loadData();
+    if (onRec) openRecords();
+  }
+  paintStatic();
+}
 
 function applyState(s) {
   const prevPhase = S ? S.phase : null;
@@ -953,21 +1109,22 @@ function applyState(s) {
   const me = s.players.find(p => p.id === myId);
   const inLobby = s.phase === 'lobby' || (s.phase === 'ended' && me && me.back);
   if (s.phase !== 'playing') { lastTurn = null; lastSyl = ''; }
+  paintStatic();
   if (inLobby) { show('lobby'); $('#over').hidden = true; renderLobby(); }
   else { show('game'); renderGame(); }
 }
 function setTyped(t) { typed = t || ''; renderTyped(); }
 
 function ctl(d, val) {
-  if (d.vals) return `<div class="seg" role="group" aria-label="${esc(d.label)}">` +
-    d.vals.map((v, i) => `<button type="button" data-k="${d.k}" data-i="${i}" class="${v === val ? 'on' : ''}" ${isHost ? '' : 'disabled'} aria-pressed="${v === val}">${esc(d.labels[i])}</button>`).join('') + '</div>';
-  return `<div class="stepper"><button type="button" data-k="${d.k}" data-d="-1" ${isHost && val > d.min ? '' : 'disabled'} aria-label="Menos">−</button>` +
-    `<b>${val} s</b><button type="button" data-k="${d.k}" data-d="1" ${isHost && val < d.max ? '' : 'disabled'} aria-label="Más">+</button></div>`;
+  if (d.vals) return `<div class="seg" role="group" aria-label="${esc(dLabel(d))}">` +
+    d.vals.map((v, i) => `<button type="button" data-k="${d.k}" data-i="${i}" class="${v === val ? 'on' : ''}" ${isHost ? '' : 'disabled'} aria-pressed="${v === val}">${esc(dLabels(d)[i])}</button>`).join('') + '</div>';
+  return `<div class="stepper"><button type="button" data-k="${d.k}" data-d="-1" ${isHost && val > d.min ? '' : 'disabled'} aria-label="${tx('less')}">−</button>` +
+    `<b>${val} s</b><button type="button" data-k="${d.k}" data-d="1" ${isHost && val < d.max ? '' : 'disabled'} aria-label="${tx('more')}">+</button></div>`;
 }
 function cfgHtml(top) {
   const c = S.settings, ctx = S.solo ? 'solo' : 'multi';
   return SCHEMA.filter(d => !!d.top === top && (!d.ctx || d.ctx === ctx) && !(d.hide && d.hide(c))).map(d =>
-    `<div class="set ${d.off && d.off(c) ? 'off' : ''}"><span class="lbl">${esc(d.label)}</span>${ctl(d, getVal(d, c))}</div>`).join('');
+    `<div class="set ${d.off && d.off(c) ? 'off' : ''}"><span class="lbl">${esc(dLabel(d))}</span>${ctl(d, getVal(d, c))}</div>`).join('');
 }
 function cfgClick(e) {
   const b = e.target.closest('button[data-k]'); if (!b || !isHost) return;
@@ -977,9 +1134,9 @@ function cfgClick(e) {
 }
 
 function cfgSummary(s) {
-  const c = s.settings, pl = n => n + (n === 1 ? ' vida' : ' vidas'), p = [DIFFN[c.diff]];
-  if (s.solo) { if (isRush(c)) p.push(c.total >= 60 ? c.total / 60 + ' min' : c.total + ' s'); else p.push(pl(c.lives), c.min + ' s por palabra'); }
-  else p.push(pl(c.lives), c.mode === 'shared' ? 'mecha compartida' : 'mecha por turno', { ring: 'círculo', bounce: 'rebote', random: 'azar' }[c.order]);
+  const c = s.settings, p = [diffN(c.diff)];
+  if (s.solo) { if (isRush(c)) p.push(c.total >= 60 ? c.total / 60 + ' min' : c.total + ' s'); else p.push(tx('livesN', c.lives), tx('perWord', c.min)); }
+  else p.push(tx('livesN', c.lives), tx(c.mode === 'shared' ? 'shared' : 'perTurn'), tx('orders')[c.order]);
   return p.join(' · ');
 }
 function renderLobby() {
@@ -990,8 +1147,8 @@ function renderLobby() {
   $('#codecard').hidden = sl; $('#plist').hidden = sl; $('#soloRec').hidden = !sl; $('#btnRecLobby').hidden = !sl;
   $('#plist').innerHTML = S.players.filter(p => p.on || !ended).map(p => {
     const wait = ended && !p.back;
-    const tag = wait ? 'viendo resultados' : p.id === 'host' ? 'anfitrión' : (p.id === myId ? 'tú' : '');
-    const kick = isHost && p.id !== 'host' ? `<button type="button" class="kick" data-kick="${esc(p.id)}" aria-label="Echar a ${esc(p.name)}">Echar</button>` : '';
+    const tag = wait ? tx('watching') : p.id === 'host' ? tx('host') : (p.id === myId ? tx('you') : '');
+    const kick = isHost && p.id !== 'host' ? `<button type="button" class="kick" data-kick="${esc(p.id)}" aria-label="${esc(tx('kickA', p.name))}">${tx('kick')}</button>` : '';
     return `<div class="prow ${wait ? 'wait' : ''}">${tok(p)}<span>${esc(p.name)}</span><span class="tag">${tag}</span>${kick}</div>`;
   }).join('');
   $('#cfgBasic').innerHTML = cfgHtml(true);
@@ -1000,15 +1157,15 @@ function renderLobby() {
   if (sl) {
     const r = loadRec()[soloKey(S.settings)];
     $('#soloRec').innerHTML = r
-      ? `<div class="recline"><span class="tg">Récord</span><b>${r.words}</b><small>${r.words === 1 ? 'palabra' : 'palabras'}${isRush(S.settings) ? '' : ' · racha ' + r.streak}</small></div>`
-      : `<div class="recline"><span class="tg">Récord</span><small>sin marca con estos ajustes</small></div>`;
+      ? `<div class="recline"><span class="tg">${tx('rec')}</span><b>${r.words}</b><small>${tx('wordsN', r.words).replace(/^\d+ /, '')}${isRush(S.settings) ? '' : ' · ' + tx('streak', r.streak)}</small></div>`
+      : `<div class="recline"><span class="tg">${tx('rec')}</span><small>${tx('noMark')}</small></div>`;
   }
   $('#btnStart').hidden = !isHost;
   if (isHost) {
     const need = sl ? 1 : 2, count = S.players.filter(p => p.on).length;
     $('#btnStart').disabled = !DICT || count < need;
-    $('#lobbyHint').textContent = dictLoading ? 'Cargando diccionario…' : (!DICT || sl) ? '' : count < 2 ? 'Comparte el enlace para empezar.' : '';
-  } else $('#lobbyHint').textContent = 'Esperando al anfitrión…';
+    $('#lobbyHint').textContent = H && loading[H.settings.lang] ? tx('loading') : (!DICT || sl) ? '' : count < 2 ? tx('shareStart') : '';
+  } else $('#lobbyHint').textContent = tx('waiting');
 }
 
 function renderTyped() {
@@ -1016,37 +1173,37 @@ function renderTyped() {
   const playing = S.phase === 'playing', n = norm(typed), i = playing ? n.indexOf(S.syl) : -1;
   let h = '';
   for (let k = 0; k < typed.length; k++) h += `<span class="t${i >= 0 && k >= i && k < i + S.syl.length ? ' s' : ''}">${esc(typed[k])}</span>`;
-  if (playing && S.turn === myId) h += (!typed && document.activeElement !== $('#word')) ? '<span class="hint">Toca para escribir</span>' : '<span class="caret"></span>';
+  if (playing && S.turn === myId) h += (!typed && document.activeElement !== $('#word')) ? `<span class="hint">${tx('tap')}</span>` : '<span class="caret"></span>';
   const el = $('#tiles'); el.innerHTML = h; el.style.setProperty('--n', Math.max(7, typed.length + 1));
 }
 
 function renderResults(s) {
   const r = s.res || { rank: [], fails: [] }, soloBox = $('#soloStats');
-  let again = 'Jugar de nuevo';
+  let again = tx('again');
   if (s.solo && r.solo) {
     const k = r.solo;
-    $('#overTitle').textContent = (k.newWords || k.newStreak) ? 'Nuevo récord' : 'Fin';
+    $('#overTitle').textContent = (k.newWords || k.newStreak) ? tx('newRec') : tx('end');
     soloBox.hidden = false;
     soloBox.style.gridTemplateColumns = k.rush ? 'repeat(2,1fr)' : '';
-    soloBox.innerHTML = `<div class="${k.newWords ? 'new' : ''}"><b>${k.words}</b><small>palabras</small></div>` +
-      (k.rush ? '' : `<div class="${k.newStreak ? 'new' : ''}"><b>${k.streak}</b><small>mejor racha</small></div>`) +
-      `<div><b>${k.recWords}</b><small>récord</small></div>`;
+    soloBox.innerHTML = `<div class="${k.newWords ? 'new' : ''}"><b>${k.words}</b><small>${tx('words')}</small></div>` +
+      (k.rush ? '' : `<div class="${k.newStreak ? 'new' : ''}"><b>${k.streak}</b><small>${tx('bestStreak')}</small></div>`) +
+      `<div><b>${k.recWords}</b><small>${tx('recLow')}</small></div>`;
     const log = (r.rank[0] || {}).log || [];
-    $('#rank').innerHTML = log.length ? `<li><details class="who"><summary><div><b>Tus palabras</b><small>${log.length}</small></div></summary><div class="log" style="margin-left:0">${pairs(log)}</div></details></li>` : '';
-    again = 'Otra vez';
+    $('#rank').innerHTML = log.length ? `<li><details class="who"><summary><div><b>${tx('yourWords')}</b><small>${log.length}</small></div></summary><div class="log" style="margin-left:0">${pairs(log)}</div></details></li>` : '';
+    again = tx('once');
   } else {
     soloBox.hidden = true;
     const wn = s.players.find(p => p.id === s.winner);
-    $('#overTitle').textContent = wn ? (wn.id === myId ? 'Has ganado' : 'Gana ' + wn.name) : 'Empate';
+    $('#overTitle').textContent = wn ? (wn.id === myId ? tx('youWon') : tx('wins', wn.name)) : tx('draw');
     $('#rank').innerHTML = r.rank.map((x, i) => {
       const p = s.players.find(q => q.id === x.id); if (!p) return '';
-      const sub = `${x.words} ${x.words === 1 ? 'palabra' : 'palabras'}`;
+      const sub = tx('wordsN', x.words);
       const head = `<span class="n">${i + 1}</span>${tok(p, 'sm')}<div><b>${esc(p.name)}</b><small>${sub}</small></div>`;
       return x.words ? `<li><details class="who"><summary>${head}</summary><div class="log">${pairs(x.log)}</div></details></li>`
                      : `<li><div class="who plain">${head}</div></li>`;
     }).join('');
   }
-  $('#fails').innerHTML = r.fails.length ? '<h4>Sin resolver</h4>' + r.fails.map(f =>
+  $('#fails').innerHTML = r.fails.length ? `<h4>${tx('unsolved')}</h4>` + r.fails.map(f =>
     `<div class="fail"><span class="chip">${esc(f.s.toUpperCase())}</span><span>${f.ex.length ? esc(f.ex.join(', ')) : ''}</span></div>`).join('') : '';
   const b = $('#btnAgain'); b.textContent = again;
   b.onclick = () => {
@@ -1057,24 +1214,24 @@ function renderResults(s) {
   const st = $('#btnSettings'); st.hidden = !s.solo;
   st.onclick = () => { const p = byId('host'); if (p) { p.back = true; push(); } };
   $('#btnExit').hidden = false;
-  $('#overHint').textContent = s.solo && window.matchMedia && matchMedia('(hover: hover)').matches ? 'R para repetir' : '';
+  $('#overHint').textContent = s.solo && window.matchMedia && matchMedia('(hover: hover)').matches ? tx('rKey') : '';
 }
 
 function renderGame() {
   const s = S, n = s.players.length;
   const me = s.players.find(p => p.id === myId);
-  $('#gCode').textContent = s.solo ? 'Individual' : room;
+  $('#gCode').textContent = s.solo ? tx('solo') : room;
   if (s.solo && me) {
     const rec = (loadRec()[soloKey(s.settings)] || { words: 0 }).words;
-    $('#gInfo').textContent = isRush(s.settings) ? `Palabras ${me.words} · Récord ${Math.max(rec, me.words)}` : `Aciertos ${me.words} · Racha ${me.streak} · Récord ${Math.max(rec, me.words)}`;
-  } else $('#gInfo').textContent = s.phase === 'playing' ? s.players.filter(p => p.alive).length + ' en juego' : '';
+    $('#gInfo').textContent = isRush(s.settings) ? tx('infoRush', me.words, Math.max(rec, me.words)) : tx('info', me.words, me.streak, Math.max(rec, me.words));
+  } else $('#gInfo').textContent = s.phase === 'playing' ? tx('alive', s.players.filter(p => p.alive).length) : '';
   const sylEl = $('#syl'), nsyl = s.phase === 'playing' ? s.syl : '';
   sylEl.textContent = nsyl;
   if (nsyl && nsyl !== lastSyl) { sylEl.classList.remove('pop'); void sylEl.offsetWidth; sylEl.classList.add('pop'); }
   lastSyl = nsyl;
   $('#players').className = n > 12 ? 'many lots' : n > 5 ? 'many' : '';
   $('#players').innerHTML = s.players.map(p => {
-    const hp = p.alive ? '<i></i>'.repeat(p.lives) : (p.spec ? 'espera' : '');
+    const hp = p.alive ? '<i></i>'.repeat(p.lives) : (p.spec ? tx('spec') : '');
     return `<div class="pl ${p.id === s.turn ? 'turn' : ''} ${!p.alive && !p.spec ? 'out' : ''} ${!p.on ? 'off' : ''}" data-id="${esc(p.id)}">` +
       `${tok(p)}<div class="nm">${esc(p.name)}</div><div class="dots">${hp}</div></div>`;
   }).join('');
@@ -1091,7 +1248,7 @@ function renderGame() {
   }
   renderTyped();
   const L = me ? me.letters : '';
-  $('#letters').innerHTML = s.settings.letters && !(s.solo && isRush(s.settings)) && me && me.alive && s.phase === 'playing' ? [...BONUS].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
+  $('#letters').innerHTML = s.settings.letters && !(s.solo && isRush(s.settings)) && me && me.alive && s.phase === 'playing' ? [...(BONUS_BY[s.settings.lang] || BONUS_BY.es)].map(c => `<span class="${L.includes(c) ? 'on' : ''}">${c}</span>`).join('') : '';
   const over = $('#over');
   if (s.phase === 'ended') { over.hidden = false; renderResults(s); }
   else over.hidden = true;
@@ -1102,16 +1259,16 @@ function say(text, cls) { const m = $('#msg'); m.textContent = text; m.className
 function showEvent(e) {
   if (e.k === 'ok') {
     play(e.bonus ? 'bonus' : 'ok');
-    say(e.name + ': ' + e.w + (e.bonus ? ' (+1 vida)' : ''), 'ok');
+    say(e.name + ': ' + e.w + (e.bonus ? tx('plusLife') : ''), 'ok');
     if (e.id === myId) { $('#word').value = ''; typed = ''; }
   } else if (e.k === 'boom') {
     play('boom');
-    say(e.out ? e.name + ' eliminado' : e.name + ' pierde una vida', 'bad');
+    say(e.out ? tx('out', e.name) : tx('loses', e.name), 'bad');
     const f = $('#flash'), b = $('#bomb');
     f.classList.remove('go'); b.classList.remove('boom'); void f.offsetWidth; f.classList.add('go'); b.classList.add('boom');
     setTimeout(() => { const el = document.querySelector('.pl[data-id="' + CSS.escape(String(e.id)) + '"]'); if (el) el.classList.add('hit'); }, 30);
-  } else if (e.k === 'join') { play('join'); say(e.name + ' entra'); }
-  else if (e.k === 'left') { play('left'); say(e.name + (e.kicked ? ' expulsado' : ' se va')); }
+  } else if (e.k === 'join') { play('join'); say(tx('joins', e.name)); }
+  else if (e.k === 'left') { play('left'); say(tx(e.kicked ? 'kicked' : 'left', e.name)); }
 }
 function badInput(m) {
   play('bad'); say(m, 'bad'); const st = $('#stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake'); $('#word').select();
@@ -1140,21 +1297,22 @@ let bx = null, by = 0, nextTick = 0;
 })();
 
 // ---------- eventos de la interfaz ----------
-for (const id of ['#howHome', '#howLobby']) $(id).innerHTML = HOW;
+document.addEventListener('click', e => { const b = e.target.closest('.flag[data-lang]'); if (b && !b.disabled) { unlock(); setLang(b.dataset.lang); } });
+paintStatic();
 const nameIn = $('#name');
 nameIn.value = localStorage.getItem('jt_name') || '';
 const params = new URLSearchParams(location.search);
 const inviteCode = (params.get('sala') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
 if (inviteCode.length === 4) { $('#homeCreate').hidden = true; $('#homeInvite').hidden = false; $('#inviteCode').textContent = inviteCode; }
 $('#gameSw').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (b) switchGame(b.dataset.g); });
-if (params.get('e') === 'k') setHome('Te han expulsado de la sala.', 'bad');
+if (params.get('e') === 'k') setHome(tx('youKicked'), 'bad');
 
 function getName() {
   const n = nameIn.value.trim();
-  if (!n) { setHome('Escribe tu nombre.', 'bad'); nameIn.focus(); return null; }
+  if (!n) { setHome(tx('typeName'), 'bad'); nameIn.focus(); return null; }
   localStorage.setItem('jt_name', n); myName = n; setHome(''); return n;
 }
-function busy() { for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome('Conectando…'); }
+function busy() { for (const b of ['#btnCreate', '#btnSolo', '#btnJoin', '#btnJoinInvite']) $(b).disabled = true; setHome(tx('connecting')); }
 $('#btnCreate').onclick = () => { if (getName()) { busy(); createRoom(); } };
 $('#btnSolo').onclick = () => startSolo();
 $('#btnJoinOpen').onclick = () => { $('#homeCreate').hidden = true; $('#homeJoin').hidden = false; setHome(''); $('#codeIn').focus(); };
@@ -1177,16 +1335,16 @@ addEventListener('keydown', unlock, true);
 paintSnd();
 $('#btnJoin').onclick = () => {
   const c = $('#codeIn').value.toUpperCase().replace(/[^A-Z]/g, '');
-  if (c.length !== 4) { setHome('El código tiene 4 letras.', 'bad'); return; }
+  if (c.length !== 4) { setHome(tx('code4'), 'bad'); return; }
   if (getName()) { busy(); joinRoom(c); }
 };
 $('#btnJoinInvite').onclick = () => { if (getName()) { busy(); joinRoom(inviteCode); } };
 $('#btnCopy').onclick = async () => {
   const b = $('#btnCopy');
-  try { await navigator.clipboard.writeText(link()); b.textContent = 'Copiado'; } catch (e) { prompt('Copia el enlace:', link()); }
-  setTimeout(() => b.textContent = 'Copiar enlace', 1500);
+  try { await navigator.clipboard.writeText(link()); b.textContent = tx('copied'); } catch (e) { prompt(tx('copyPrompt'), link()); }
+  setTimeout(() => b.textContent = tx('copy'), 1500);
 };
-if (navigator.share) { $('#btnShare').hidden = false; $('#btnShare').onclick = () => navigator.share({ title: 'Bomba', url: link() }).catch(() => {}); }
+if (navigator.share) { $('#btnShare').hidden = false; $('#btnShare').onclick = () => navigator.share({ title: tx('title'), url: link() }).catch(() => {}); }
 $('#btnStart').onclick = startGame;
 $('#btnLeave').onclick = leave;
 $('#btnExit').onclick = leave;
