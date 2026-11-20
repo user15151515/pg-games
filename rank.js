@@ -21,11 +21,25 @@
 
   const ov = document.createElement('div');
   ov.className = 'rankov'; ov.hidden = true;
-  ov.innerHTML = '<div class="rankcard" role="dialog" aria-modal="true" aria-label="Ranking"><div class="rankhd"><b class="display">Ranking</b><span class="rku"></span></div><ol class="ranklist"></ol></div>';
+  ov.innerHTML = '<div class="rankcard" role="dialog" aria-modal="true" aria-label="Ranking"><div class="rankhd"><b class="display">Ranking</b><span class="rku"></span></div><div class="rktabs" hidden><button type="button" data-s="0"></button><button type="button" data-s="1"></button></div><ol class="ranklist"></ol></div>';
   document.body.appendChild(ov);
   const list = ov.querySelector('.ranklist');
+  // Bomba: ranking separado de sala e individual (en sala cada uno hace menos palabras)
+  const tabs = ov.querySelector('.rktabs');
+  const split = game === 'bomba';
+  let tab = '0';
+  if (split) { tabs.hidden = false; try { tab = localStorage.getItem('pg_rank_tab_' + game) === '1' ? '1' : '0'; } catch (e) {} }
+  const paintTabs = () => tabs.querySelectorAll('button').forEach(b => {
+    b.textContent = b.dataset.s === '1' ? (en() ? 'Solo' : 'Individual') : (en() ? 'Room' : 'Sala');
+    b.classList.toggle('on', b.dataset.s === tab);
+  });
+  tabs.onclick = e => {
+    const b = e.target.closest('button'); if (!b || b.dataset.s === tab) return;
+    tab = b.dataset.s; try { localStorage.setItem('pg_rank_tab_' + game, tab); } catch (e) {}
+    paintTabs(); load();
+  };
 
-  let cache = null, at = 0;
+  const cache = {}, at = {};
   const paint = data => {
     const me = (() => { try { return (localStorage.getItem('jt_name') || '').trim().toLowerCase(); } catch (e) { return ''; } })();
     // en Pistas el nombre es el equipo: «A|B|C» → «A, B y C»
@@ -40,20 +54,24 @@
     list.innerHTML = rows.join('');
   };
   const load = async () => {
-    if (cache && Date.now() - at < 60000) { paint(cache); return; }
+    const k = split ? tab : 'all';
+    if (cache[k] && Date.now() - at[k] < 60000) { paint(cache[k]); return; }
     paint(null);
+    const body = { p_game: game }; if (split) body.p_solo = tab === '1';
+    let d;
     try {
-      const r = await fetch(URL + '/rest/v1/rpc/pg_top', { method: 'POST', headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY }, body: JSON.stringify({ p_game: game }) });
-      const d = await r.json();
-      cache = Array.isArray(d) ? d : []; at = Date.now();
-    } catch (e) { cache = null; paint([]); return; }
-    paint(cache);
+      const r = await fetch(URL + '/rest/v1/rpc/pg_top', { method: 'POST', headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY }, body: JSON.stringify(body) });
+      d = await r.json();
+    } catch (e) { d = null; }
+    if ((split ? tab : 'all') !== k) return;   // se ha cambiado de pestaña mientras cargaba
+    if (!Array.isArray(d)) { paint([]); return; }
+    cache[k] = d; at[k] = Date.now(); paint(d);
   };
   const close = () => { ov.hidden = true; document.removeEventListener('keydown', key); };
   const key = e => { if (e.key === 'Escape') close(); };
   row.querySelector('button').onclick = () => {
     dot.hidden = true; try { localStorage.setItem(SEEN, '1'); } catch (e) {}
-    ov.querySelector('.rku').textContent = unit();
+    ov.querySelector('.rku').textContent = unit(); if (split) paintTabs();
     ov.hidden = false; document.addEventListener('keydown', key); load();
   };
   ov.onclick = e => { if (e.target === ov) close(); };

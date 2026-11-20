@@ -479,9 +479,10 @@ end $$;
 revoke all on function public.admin_unmerge(text) from public, anon;
 grant execute on function public.admin_unmerge(text) to authenticated;
 
--- Ranking público: top 5 por juego, el mejor resultado de cada cuenta (todas las dificultades y modos juntos).
+-- Ranking público: top 5 por juego (p_solo: solo individual, solo sala o, si es null, todo junto), el mejor resultado de cada cuenta (todas las dificultades y modos juntos).
 -- Bomba: más palabras en una partida. Teclazo: más ppm en una carrera terminada. Sin los dispositivos ocultos.
-create or replace function public.pg_top(p_game text)
+drop function if exists public.pg_top(text);
+create or replace function public.pg_top(p_game text, p_solo boolean default null)
 returns jsonb language sql stable security definer set search_path = public as $$
   with r as (
     select coalesce(nullif(public._acct(p ->> 'pv'), ''), 'n:' || lower(p ->> 'nm')) as k,
@@ -489,7 +490,7 @@ returns jsonb language sql stable security definer set search_path = public as $
            case when p_game = 'bomba' then (p ->> 'w')::numeric else round((p ->> 'wpm')::numeric) end as v,
            g.ts
     from game_logs g, jsonb_array_elements(g.d -> 'pl') p
-    where g.game = p_game and p_game in ('bomba', 'teclazo')
+    where g.game = p_game and p_game in ('bomba', 'teclazo') and (p_solo is null or g.solo = p_solo)
       and coalesce(p ->> 'pv', '') not in (select vid from hidden_vids)
       and btrim(coalesce(p ->> 'nm', '')) <> ''
       and case when p_game = 'bomba' then coalesce(p ->> 'w', '') ~ '^[0-9]{1,4}$'
@@ -523,5 +524,5 @@ returns jsonb language sql stable security definer set search_path = public as $
   select coalesce(jsonb_agg(jsonb_build_object('n', nm, 'v', v) order by v desc, ts), '[]'::jsonb)
   from (select * from z order by v desc, ts limit 5) t;
 $$;
-revoke all on function public.pg_top(text) from public;
-grant execute on function public.pg_top(text) to anon, authenticated;
+revoke all on function public.pg_top(text, boolean) from public;
+grant execute on function public.pg_top(text, boolean) to anon, authenticated;
