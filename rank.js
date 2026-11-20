@@ -11,8 +11,12 @@
 
   const row = document.createElement('div');
   row.className = 'subrow';
-  row.innerHTML = '<button type="button" class="linkbtn rankbtn">Ranking</button>';
+  row.innerHTML = '<button type="button" class="rankbtn"><svg viewBox="0 0 26 22" aria-hidden="true"><path d="M9.5 3.5h7v17h-7zM2.5 9.5h7v11h-7zM16.5 12.5h7v8h-7z" fill="currentColor" stroke="#17140f" stroke-width="2.4" stroke-linejoin="round"/></svg>Ranking<i class="rkdot" hidden></i></button>';
   solo.after(row);
+  // burbuja de novedad hasta que se abre por primera vez en este dispositivo
+  const SEEN = 'pg_rank_seen_' + game;
+  const dot = row.querySelector('.rkdot');
+  try { dot.hidden = localStorage.getItem(SEEN) === '1'; } catch (e) {}
 
   const ov = document.createElement('div');
   ov.className = 'rankov'; ov.hidden = true;
@@ -44,6 +48,7 @@
   const close = () => { ov.hidden = true; document.removeEventListener('keydown', key); };
   const key = e => { if (e.key === 'Escape') close(); };
   row.querySelector('button').onclick = () => {
+    dot.hidden = true; try { localStorage.setItem(SEEN, '1'); } catch (e) {}
     ov.querySelector('.rku').textContent = unit();
     ov.hidden = false; document.addEventListener('keydown', key); load();
   };

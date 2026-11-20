@@ -73,7 +73,11 @@ button.big{width:100%;font-size:22px;padding:16px 20px}
 .recline small{font-size:13px;font-weight:600;opacity:.8}
 
 /* ranking (rank.js) */
-.rankbtn{font-size:16px}
+.rankbtn{position:relative;display:inline-flex;align-items:center;gap:9px;margin-top:8px;padding:10px 20px 10px 15px;font-size:19px;
+  background:var(--white);color:var(--ink);border-radius:99px;transform:rotate(.6deg)}
+.rankbtn svg{width:24px;height:20px;color:var(--pink)}
+.rkdot{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:#ff2d2d;border:3px solid var(--ink);animation:rkpulse 1.6s ease-in-out infinite}
+@keyframes rkpulse{50%{transform:scale(1.18)}}
 .rankov{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:#17140f99;animation:rkin .15s ease-out}
 .rankcard{width:min(380px,100%);background:var(--ink);color:var(--paper);border-radius:26px;padding:20px 22px 14px;box-shadow:7px 7px 0 var(--pink);transform:rotate(-.8deg);animation:rkup .22s cubic-bezier(.2,1.4,.4,1)}
 .rankhd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
