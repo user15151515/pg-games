@@ -1,12 +1,13 @@
-// Ranking público (top 5) de Bomba y Teclazo: añade el botón «Ranking» bajo «Individual» en la portada del juego
-// y muestra el mejor resultado de cada jugador (función pg_top del proyecto Supabase de pg games).
+// Ranking público (top 5) de Bomba, Teclazo y Pistas: añade el botón «Ranking» en la portada del juego
+// y muestra el mejor resultado de cada jugador, o de cada pareja en Pistas (función pg_top del proyecto Supabase de pg games).
 (() => {
   const URL = 'https://acsrnjowxvjamiybsjkx.supabase.co';
   const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
-  const game = (location.pathname.match(/\/(bomba|teclazo)(\/|$)/) || [])[1];
-  const solo = document.getElementById('btnSolo');
+  const game = (location.pathname.match(/\/(bomba|teclazo|pistas)(\/|$)/) || [])[1];
+  const solo = document.getElementById('btnSolo') || document.querySelector('#homeCreate .cta');
   if (!game || !solo) return;
-  const unit = () => game === 'teclazo' ? (document.documentElement.lang === 'en' ? 'wpm' : 'ppm') : (document.documentElement.lang === 'en' ? 'words' : 'palabras');
+  const en = () => document.documentElement.lang === 'en';
+  const unit = () => game === 'pistas' ? 'puntos' : game === 'teclazo' ? (document.documentElement.lang === 'en' ? 'wpm' : 'ppm') : (document.documentElement.lang === 'en' ? 'words' : 'palabras');
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
   const row = document.createElement('div');
@@ -27,10 +28,13 @@
   let cache = null, at = 0;
   const paint = data => {
     const me = (() => { try { return (localStorage.getItem('jt_name') || '').trim().toLowerCase(); } catch (e) { return ''; } })();
+    // en Pistas el nombre es el equipo: «A|B|C» → «A, B y C»
+    const names = n => String(n).split('|').filter(Boolean);
+    const join = a => a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + (en() ? ' & ' : ' y ') + a[a.length - 1];
     const rows = [];
     for (let i = 0; i < 5; i++) {
       const r = data && data[i];
-      rows.push(r ? `<li${r.n.trim().toLowerCase() === me ? ' class="me"' : ''}><i>${i + 1}</i><span>${esc(r.n)}</span><b>${r.v}</b></li>`
+      rows.push(r ? `<li${me && names(r.n).some(x => x.trim().toLowerCase() === me) ? ' class="me"' : ''}><i>${i + 1}</i><span>${esc(join(names(r.n)))}</span><b>${r.v}</b></li>`
                   : `<li class="nil"><i>${i + 1}</i><span>${data ? '—' : ''}</span><b></b></li>`);
     }
     list.innerHTML = rows.join('');

@@ -78,20 +78,20 @@ button.big{width:100%;font-size:22px;padding:16px 20px}
 .rankbtn svg{width:24px;height:20px;color:var(--pink)}
 .rkdot{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:#ff2d2d;border:3px solid var(--ink);animation:rkpulse 1.6s ease-in-out infinite}
 @keyframes rkpulse{50%{transform:scale(1.18)}}
-.rankov{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:#17140f99;animation:rkin .15s ease-out}
-.rankcard{width:min(380px,100%);background:var(--ink);color:var(--paper);border-radius:26px;padding:20px 22px 14px;box-shadow:7px 7px 0 var(--pink);transform:rotate(-.8deg);animation:rkup .22s cubic-bezier(.2,1.4,.4,1)}
+.rankov{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:#17140f80;animation:rkin .15s ease-out}
+.rankcard{width:min(380px,100%);background:var(--paper);color:var(--ink);border:var(--line);border-radius:26px;padding:20px 22px 12px;box-shadow:6px 6px 0 var(--ink);transform:rotate(-.8deg);animation:rkup .22s cubic-bezier(.2,1.4,.4,1)}
 .rankhd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .rankhd b{font-size:46px}
-.rku{font-size:14px;font-weight:700;opacity:.65}
+.rku{font-size:14px;font-weight:700;opacity:.6}
 .ranklist{list-style:none;margin:0;padding:0}
-.ranklist li{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:baseline;padding:10px 0;border-top:2px solid #ffd93d26}
+.ranklist li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:baseline;padding:10px 0;border-top:2px solid #17140f1f}
 .ranklist li:first-child{border-top:0}
-.ranklist i{font-style:normal;font-weight:800;font-size:15px;opacity:.5}
-.ranklist span{font-weight:700;font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ranklist i{font-style:normal;font-weight:800;font-size:15px;opacity:.45}
+.ranklist span{font-weight:700;font-size:20px;line-height:1.2;overflow-wrap:anywhere}
 .ranklist b{font-size:32px;font-weight:800;font-stretch:75%;line-height:1}
-.ranklist li:first-child b{color:var(--pink);font-size:42px}
-.ranklist li.me span{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px}
-.ranklist li.nil span{opacity:.35}
+.ranklist li:first-child b{font-size:44px}
+.ranklist li.me span{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px;text-decoration-color:var(--pink)}
+.ranklist li.nil span{opacity:.3}
 .ranklist li.nil:not(:has(span:not(:empty))){min-height:49px}
 @keyframes rkin{from{opacity:0}}
 @keyframes rkup{from{transform:rotate(-.8deg) translateY(16px) scale(.96);opacity:0}}

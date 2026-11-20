@@ -499,9 +499,29 @@ returns jsonb language sql stable security definer set search_path = public as $
   ), c as (
     -- un mismo nombre solo aparece una vez aunque juegue desde varios dispositivos
     select distinct on (lower(btrim(nm))) nm, v, ts from b order by lower(btrim(nm)), v desc, ts
+  ),
+  -- Pistas: por equipos (parejas); los mismos nombres cuentan como el mismo equipo. Nombres separados por «|».
+  tm as (
+    select g.id, g.ts, t.i - 1 as i, (t.t ->> 'sc')::numeric as v
+    from game_logs g, jsonb_array_elements(g.d -> 'teams') with ordinality t(t, i)
+    where p_game = 'pistas' and g.game = 'pistas' and jsonb_typeof(g.d -> 'teams') = 'array'
+      and coalesce(t.t ->> 'sc', '') ~ '^[0-9]{1,5}$'
+  ), tp as (
+    select tm.ts, tm.v,
+           string_agg(left(regexp_replace(p ->> 'nm', '[[:cntrl:]<>|]', '', 'g'), 14), '|' order by lower(p ->> 'nm')) as nm,
+           string_agg(lower(btrim(p ->> 'nm')), '|' order by lower(btrim(p ->> 'nm'))) as k,
+           bool_or(h.vid is not null) as hid
+    from tm join game_logs g on g.id = tm.id cross join lateral jsonb_array_elements(g.d -> 'pl') p
+         left join hidden_vids h on h.vid = p ->> 'pv'
+    where coalesce(p ->> 'tm', '') = tm.i::text and btrim(coalesce(p ->> 'nm', '')) <> ''
+    group by tm.id, tm.i, tm.ts, tm.v
+  ), tb as (
+    select distinct on (k) nm, v, ts from tp where v > 0 and not hid order by k, v desc, ts
+  ), z as (
+    select nm, v, ts from c where p_game <> 'pistas' union all select nm, v, ts from tb
   )
   select coalesce(jsonb_agg(jsonb_build_object('n', nm, 'v', v) order by v desc, ts), '[]'::jsonb)
-  from (select * from c order by v desc, ts limit 5) t;
+  from (select * from z order by v desc, ts limit 5) t;
 $$;
 revoke all on function public.pg_top(text) from public;
 grant execute on function public.pg_top(text) to anon, authenticated;
