@@ -568,7 +568,8 @@ function setSetting(k, v) {
 function addPlayer(id, name) {
   name = (name || 'Jugador').trim().slice(0, 14) || 'Jugador';
   let n = name, k = 2;
-  while (H.players.some(p => p.name === n)) n = name + ' ' + k++;
+  // solo choca con quien sigue en la sala: si el del mismo nombre ya se fue, puede volver con su nombre
+  while (H.players.some(p => p.on && p.name === n)) n = name + ' ' + k++;
   const used = new Set(H.players.map(p => p.color));
   let color = 0; while (used.has(color) && color < COLORS.length) color++;
   if (color >= COLORS.length) color = H.players.length % COLORS.length;
@@ -679,10 +680,10 @@ function endRace() {
   } catch (e) {}
   H.phase = 'ended'; H.res = res; push();
 }
-function hostLeft(id, kicked) {
+function hostLeft(id, kicked, quiet) {
   delete lastSeen[id]; netDrop(id);
   const p = byId(id); if (!p) return;
-  evt({ k: 'left', name: p.name, kicked: !!kicked });
+  if (!quiet) evt({ k: 'left', name: p.name, kicked: !!kicked });
   if (H.phase === 'lobby' || H.phase === 'ended') { H.players = H.players.filter(x => x.id !== id); push(); return; }
   p.on = false;
   if (!H.players.some(x => x.on)) { endRace(); return; }
@@ -701,7 +702,11 @@ function hostRecv(m, f) {
     const p = byId(f);
     if (p) { netPub('to/' + f, { t: 'state', s: pub() }); return; }
     if (H.phase === 'count' || H.phase === 'race') { netPub('to/' + f, { t: 'started' }); return; }
+    const pvIn = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : '';
+    const ghost = pvIn && H.players.find(x => x.id !== 'host' && x.id !== f && x.on && x.pv === pvIn);
+    if (ghost) ghost.on = false; // su conexión vieja aún no había caducado: libera el nombre
     addPlayer(f, m.name); byId(f).pv = /^[a-z0-9]{8,24}$/.test(m.pv || '') ? m.pv : ''; evt({ k: 'join', name: byId(f).name }); push();
+    if (ghost) hostLeft(ghost.id, false, true);
   } else if (m.t === 'bye') hostLeft(f);
   else fromPlayer(f, m);
 }
