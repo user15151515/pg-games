@@ -212,7 +212,7 @@ details.panel summary:focus-visible{outline:3px solid var(--blue);outline-offset
 #over .big+.big{margin-top:12px}
 #overHint{text-align:center;font-weight:600;margin:12px 0 0}
 </style>
-<script>window.PGT={ev(){},start(){},end(){},game(){},vid:''}</script>
+<script>window.PGT={q:[],ev(k,p){if(this.q.length<20)this.q.push([k,p])},start(){},end(){},game(){},vid:''}</script>
 <script src="../pg.js" defer></script>
 <script src="../rank.js" defer></script>
 </head>
@@ -970,7 +970,11 @@ async function createRoom(code) {
   room = code || randCode(); myId = 'host'; isHost = true;
   net.onMsg = hostRecv;
   loadWords();
-  try { await netOpen('host'); } catch (e) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; } PGT.room = room;
+  for (let i = 0; ; i++) {
+    try { await netOpen('host'); break; }
+    catch (e) { if (i >= 2) { isHost = false; fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; } await new Promise(r => setTimeout(r, 800 + Math.random() * 1500)); }
+  }
+  PGT.room = room;
   H = newH(); addPlayer('host', myName); byId('host').seen = new Set(seenMine);
   PGT.ev('room_create');
   history.replaceState(null, '', '?sala=' + room);
@@ -984,7 +988,10 @@ async function createRoom(code) {
 async function joinRoom(code) {
   room = code; isHost = false; PGT.room = code; myId = uid(10); lastV = -1; gotState = false;
   net.onMsg = onMsg;
-  try { await netOpen('guest'); } catch (e) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; }
+  for (let i = 0; ; i++) {
+    try { await netOpen('guest'); break; }
+    catch (e) { if (i >= 2) { fail('Sin conexión con los servidores. Revisa tu internet y prueba de nuevo.'); return; } await new Promise(r => setTimeout(r, 800 + Math.random() * 1500)); }
+  }
   lastHeard = now();
   const hello = () => netPub('host', { t: 'hello', name: myName, pv: PGT.vid || '', seen: seenMine });
   hello(); let tries = 0;

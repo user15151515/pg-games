@@ -14,7 +14,10 @@
   try { const q = new URLSearchParams(location.search).get('notrack'); if (q === '1') localStorage.setItem(NT, '1'); else if (q === '0') localStorage.removeItem(NT); } catch (e) {}
   let off = /^(localhost|127\.|\[::1\])/.test(location.hostname) || navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true;
   try { if (localStorage.getItem(NT) === '1') off = true; } catch (e) {}
-  if (off) { window.PGT = noop; return; }
+  // pg.js se carga con defer: lo que el juego ya hizo con el PGT provisional (sala y eventos en cola) se conserva
+  const pre = window.PGT || {};
+  const preRoom = /^[A-Z]{4}$/.test(pre.room || '') ? pre.room : '';
+  if (off) { window.PGT = Object.assign(noop, { room: preRoom }); return; }
 
   const game = (location.pathname.match(/\/(bomba|tutti|teclazo|pistas)(\/|$)/) || [])[1] || '';
   const rnd = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
@@ -59,7 +62,7 @@
     } catch (e) {}
   };
   window.PGT = {
-    vid, game: game_, room: '',
+    vid, game: game_, room: preRoom,
     ev: send,
     start(n, solo) { t0 = Date.now(); gid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); send('game_start', { n, solo: !!solo }); },
     end(n, solo, m) {
@@ -69,4 +72,5 @@
     }
   };
   send('view', first ? { dev, src: source() } : { dev });
+  for (const [k, p] of Array.isArray(pre.q) ? pre.q : []) send(k, p);
 })();
