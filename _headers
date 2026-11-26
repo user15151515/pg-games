@@ -6,3 +6,6 @@
 /puente/*
   ! X-Frame-Options
   Content-Security-Policy: frame-ancestors https://pgfantasy.cat
+
+/sw.js
+  Cache-Control: no-cache
