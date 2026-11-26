@@ -55,7 +55,7 @@ tools/build-words-en.py genera los del inglés
 
 ## Publicación
 
-Sitio estático sin build: se sirve tal cual desde la raíz del repo, con rutas relativas. Destino: `https://games.pgfantasy.cat`, como proyecto de Cloudflare Pages propio conectado solo a este repo (sin build command; cabeceras en `_headers`). No comparte repo, proyecto, base de datos ni claves con ningún otro producto; del dominio raíz solo usa el subdominio. Los datos locales viven en `localStorage` del propio origen; las únicas cookies son las de Google AdSense (ver Publicidad).
+Sitio estático sin build: se sirve tal cual desde la raíz del repo, con rutas relativas. Destino: `https://pgfantasy.cat` (dominio raíz desde noviembre de 2026, cuando terminó PG Fantasy), como proyecto de Cloudflare Pages propio conectado solo a este repo (sin build command; cabeceras en `_headers`). El DNS de pgfantasy.cat está en Cloudflare; `games.pgfantasy.cat` y `www.pgfantasy.cat` redirigen (301, conservando ruta) a la raíz mediante reglas de redirección de la zona. No comparte repo, proyecto, base de datos ni claves con ningún otro producto. Los datos locales viven en `localStorage` del propio origen; las únicas cookies son las de Google AdSense (ver Publicidad).
 
 ## Estadísticas y panel de administración
 
@@ -69,6 +69,6 @@ En el lobby, el anfitrión puede elegir otro juego. Envía `goto` a todos; cada 
 
 ## Publicidad
 
-Google AdSense, cuenta `ca-pub-6948133442454798`. El script va en el `<head>` de las páginas públicas (portada, juegos, reglas, sobre y privacidad), nunca en `/admin/` ni en `404.html`. El `ads.txt` está en la raíz del dominio (`pgfantasy.cat/ads.txt`, repo de PG Fantasy), porque AdSense solo admite el dominio raíz como sitio; es lo único que toca ese proyecto. El consentimiento RGPD lo gestiona el mensaje de "Privacidad y mensajes" de AdSense. Los anuncios automáticos deben quedar desactivados (o sin formatos superpuestos) para que no aparezcan durante las partidas; los bloques manuales irán en portada, lobby y resultados.
+Google AdSense, cuenta `ca-pub-6948133442454798`. El script va en el `<head>` de las páginas públicas (portada, juegos, reglas, sobre y privacidad), nunca en `/admin/` ni en `404.html`. El `ads.txt` está en la raíz de este repo y se sirve en `pgfantasy.cat/ads.txt` (AdSense solo admite el dominio raíz como sitio); no lo borres. El consentimiento RGPD lo gestiona el mensaje de "Privacidad y mensajes" de AdSense. Los anuncios automáticos deben quedar desactivados (o sin formatos superpuestos) para que no aparezcan durante las partidas; los bloques manuales irán en portada, lobby y resultados.
 
 Páginas de texto (para AdSense y buscadores, enlazadas discretamente desde el pie de la portada): `sobre/`, `privacidad/` y `<juego>/reglas/`, con estilos en `doc.css`. Las reglas se generaron a partir de la constante `HOW` de cada juego: si cambian las reglas, actualiza también su página. `sitemap.xml` las lista todas.
