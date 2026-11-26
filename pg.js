@@ -6,71 +6,121 @@
 (() => {
   const URL = 'https://acsrnjowxvjamiybsjkx.supabase.co';
   const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjc3Juam93eHZqYW1peWJzamt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTU3MzMsImV4cCI6MjEwODE5MTczM30.PeKiaUjeBjdpK0B-zziQNjUfluIfmuuajZMj0Mb_Pzw';
-  const noop = { ev() {}, start() {}, end() {}, game() {}, vid: '' };
-  // Para ignorar un dispositivo: abrir la web una vez con ?notrack=1 (y ?notrack=0 para volver a contar).
-  // la clave lleva versión: al cambiarla se reactivan de golpe todos los dispositivos marcados antes
-  const NT = 'pg_notrack2';
-  try { localStorage.removeItem('pg_notrack'); } catch (e) {}
-  try { const q = new URLSearchParams(location.search).get('notrack'); if (q === '1') localStorage.setItem(NT, '1'); else if (q === '0') localStorage.removeItem(NT); } catch (e) {}
-  let off = /^(localhost|127\.|\[::1\])/.test(location.hostname) || navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true;
-  try { if (localStorage.getItem(NT) === '1') off = true; } catch (e) {}
-  // pg.js se carga con defer: lo que el juego ya hizo con el PGT provisional (sala y eventos en cola) se conserva
-  const pre = window.PGT || {};
-  const preRoom = /^[A-Z]{4}$/.test(pre.room || '') ? pre.room : '';
-  if (off) { window.PGT = Object.assign(noop, { room: preRoom }); return; }
+  const VID_RE = /^[a-z0-9]{8,24}$/;
 
-  const game = (location.pathname.match(/\/(bomba|tutti|teclazo|pistas)(\/|$)/) || [])[1] || '';
-  const rnd = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
-  let vid = '';
-  try { vid = localStorage.getItem('pg_vid') || ''; if (!/^[a-z0-9]{8,24}$/.test(vid)) { vid = rnd(16); localStorage.setItem('pg_vid', vid); } } catch (e) { vid = rnd(16); }
-  let sid = '', first = false;
-  try { sid = sessionStorage.getItem('pg_sid') || ''; if (!/^[a-z0-9]{6,24}$/.test(sid)) { sid = rnd(12); sessionStorage.setItem('pg_sid', sid); first = true; } } catch (e) { sid = rnd(12); first = true; }
-
-  const alias = () => { try { return (localStorage.getItem('jt_name') || '').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 14); } catch (e) { return ''; } };
-  const send = (kind, props) => {
+  // Paso del dominio antiguo (games.pgfantasy.cat) a pgfantasy.cat (26/11/2026). El navegador guarda los datos por dominio,
+  // así que la primera vez que alguien abre pgfantasy.cat se recupera, con un iframe invisible a games.pgfantasy.cat/puente/,
+  // lo que tenía guardado allí: el mismo pg_vid (sigue siendo el mismo jugador y dispositivo en el panel), nombre y ajustes.
+  // Si en pgfantasy.cat ya se había creado otro pg_vid, se une a la cuenta del antiguo con pg_link.
+  // Si el puente no responde, no se marca como hecho y se reintenta en la siguiente visita.
+  const MIGR = 'pg_puente1';
+  const migrate = done => {
+    let finished = false, fr = null;
+    const finish = () => { if (finished) return; finished = true; window.removeEventListener('message', onMsg); try { fr && fr.remove(); } catch (e) {} done(); };
+    const onMsg = e => {
+      if (e.origin !== 'https://games.pgfantasy.cat' || !e.data || e.data.pgPuente !== 1) return;
+      try {
+        const items = e.data.items && typeof e.data.items === 'object' ? e.data.items : {};
+        const oldVid = typeof items.pg_vid === 'string' && VID_RE.test(items.pg_vid) ? items.pg_vid : '';
+        const curVid = localStorage.getItem('pg_vid') || '';
+        for (const k of Object.keys(items)) {
+          if (k === 'pg_vid' || typeof items[k] !== 'string') continue;
+          if (localStorage.getItem(k) === null) localStorage.setItem(k, items[k]);
+        }
+        if (oldVid) {
+          localStorage.setItem('pg_vid', oldVid);
+          if (VID_RE.test(curVid) && curVid !== oldVid) {
+            fetch(URL + '/rest/v1/rpc/pg_link', { method: 'POST', keepalive: true,
+              headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY },
+              body: JSON.stringify({ p_old: oldVid, p_new: curVid }) }).catch(() => {});
+          }
+        }
+        localStorage.setItem(MIGR, '1');
+      } catch (err) {}
+      finish();
+    };
+    window.addEventListener('message', onMsg);
     try {
-      if (kind !== 'view' && kind !== 'net_fail') { const nm = alias(); if (nm) props = Object.assign({}, props, { name: nm }); }
-      if (kind !== 'view' && window.PGT && /^[A-Z]{4}$/.test(window.PGT.room || '')) props = Object.assign({}, props, { room: window.PGT.room });
-      fetch(URL + '/rest/v1/rpc/pg_log', {
-        method: 'POST', keepalive: true,
-        headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY },
-        body: JSON.stringify({ p_kind: kind, p_game: game, p_vid: vid, p_sid: sid, p_props: props || {} })
-      }).catch(() => {});
-    } catch (e) {}
+      fr = document.createElement('iframe');
+      fr.src = 'https://games.pgfantasy.cat/puente/';
+      fr.setAttribute('aria-hidden', 'true'); fr.tabIndex = -1;
+      fr.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden';
+      (document.body || document.documentElement).appendChild(fr);
+    } catch (e) { finish(); return; }
+    setTimeout(finish, 4000);
   };
-  const source = () => {
-    let h = ''; try { h = new URL(document.referrer).hostname.replace(/^www\./, ''); } catch (e) {}
-    const s = (new URLSearchParams(location.search).get('utm_source') || h).toLowerCase();
-    if (!s || h === location.hostname) return 'directo';
-    for (const [k, v] of [['whatsapp', 'whatsapp'], ['wa.me', 'whatsapp'], ['telegram', 'telegram'], ['t.me', 'telegram'], ['instagram', 'instagram'], ['facebook', 'facebook'], ['tiktok', 'tiktok'], ['google', 'google'], ['bing', 'bing'], ['duckduckgo', 'duckduckgo'], ['twitter', 'x'], ['t.co', 'x'], ['x.com', 'x'], ['reddit', 'reddit'], ['discord', 'discord'], ['youtube', 'youtube']]) if (s.includes(k)) return v;
-    return 'otros';
-  };
-  const coarse = window.matchMedia && matchMedia('(pointer:coarse)').matches;
-  const dev = coarse ? (Math.min(screen.width, screen.height) < 700 ? 'm' : 't') : 'd';
 
-  let t0 = 0, lastDur = null, gid = '';
-  // gid identifica la partida: los guardados parciales (por ronda) y el final van a la misma fila
-  const game_ = d => {
-    try {
-      if (d && d.dur == null) { if (t0) d.dur = Math.round((Date.now() - t0) / 1000); else if (lastDur != null) d.dur = lastDur; }
-      if (d && gid) d.gid = gid;
-      if (d && !d.solo && /^[A-Z]{4}$/.test(window.PGT.room || '')) d.room = window.PGT.room;
-      let body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d });
-      if (body.length > 60000) { for (const p of d.pl || []) delete p.log; body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d }); }
-      if (body.length > 60000) return;
-      fetch(URL + '/rest/v1/rpc/pg_game', { method: 'POST', keepalive: body.length < 60000, headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY }, body }).catch(() => {});
-    } catch (e) {}
-  };
-  window.PGT = {
-    vid, game: game_, room: preRoom,
-    ev: send,
-    start(n, solo) { t0 = Date.now(); gid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); send('game_start', { n, solo: !!solo }); },
-    end(n, solo, m) {
-      if (!t0) return;
-      const dur = Math.round((Date.now() - t0) / 1000); t0 = 0; lastDur = dur;
-      send('game_end', Object.assign({ n, solo: !!solo, dur }, m != null && isFinite(m) ? { m } : {}));
-    }
-  };
-  send('view', first ? { dev, src: source() } : { dev });
-  for (const [k, p] of Array.isArray(pre.q) ? pre.q : []) send(k, p);
+  let needMigr = false;
+  try { needMigr = location.hostname === 'pgfantasy.cat' && localStorage.getItem(MIGR) !== '1'; } catch (e) {}
+  if (needMigr) migrate(init); else init();
+
+  function init() {
+    const noop = { ev() {}, start() {}, end() {}, game() {}, vid: '' };
+    // Para ignorar un dispositivo: abrir la web una vez con ?notrack=1 (y ?notrack=0 para volver a contar).
+    // la clave lleva versión: al cambiarla se reactivan de golpe todos los dispositivos marcados antes
+    const NT = 'pg_notrack2';
+    try { localStorage.removeItem('pg_notrack'); } catch (e) {}
+    try { const q = new URLSearchParams(location.search).get('notrack'); if (q === '1') localStorage.setItem(NT, '1'); else if (q === '0') localStorage.removeItem(NT); } catch (e) {}
+    let off = /^(localhost|127\.|\[::1\])/.test(location.hostname) || navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true;
+    try { if (localStorage.getItem(NT) === '1') off = true; } catch (e) {}
+    // pg.js se carga con defer: lo que el juego ya hizo con el PGT provisional (sala y eventos en cola) se conserva
+    const pre = window.PGT || {};
+    const preRoom = /^[A-Z]{4}$/.test(pre.room || '') ? pre.room : '';
+    if (off) { window.PGT = Object.assign(noop, { room: preRoom }); return; }
+
+    const game = (location.pathname.match(/\/(bomba|tutti|teclazo|pistas)(\/|$)/) || [])[1] || '';
+    const rnd = n => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.random() * a.length | 0]; return s; };
+    let vid = '';
+    try { vid = localStorage.getItem('pg_vid') || ''; if (!/^[a-z0-9]{8,24}$/.test(vid)) { vid = rnd(16); localStorage.setItem('pg_vid', vid); } } catch (e) { vid = rnd(16); }
+    let sid = '', first = false;
+    try { sid = sessionStorage.getItem('pg_sid') || ''; if (!/^[a-z0-9]{6,24}$/.test(sid)) { sid = rnd(12); sessionStorage.setItem('pg_sid', sid); first = true; } } catch (e) { sid = rnd(12); first = true; }
+
+    const alias = () => { try { return (localStorage.getItem('jt_name') || '').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 14); } catch (e) { return ''; } };
+    const send = (kind, props) => {
+      try {
+        if (kind !== 'view' && kind !== 'net_fail') { const nm = alias(); if (nm) props = Object.assign({}, props, { name: nm }); }
+        if (kind !== 'view' && window.PGT && /^[A-Z]{4}$/.test(window.PGT.room || '')) props = Object.assign({}, props, { room: window.PGT.room });
+        fetch(URL + '/rest/v1/rpc/pg_log', {
+          method: 'POST', keepalive: true,
+          headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY },
+          body: JSON.stringify({ p_kind: kind, p_game: game, p_vid: vid, p_sid: sid, p_props: props || {} })
+        }).catch(() => {});
+      } catch (e) {}
+    };
+    const source = () => {
+      let h = ''; try { h = new URL(document.referrer).hostname.replace(/^www\./, ''); } catch (e) {}
+      const s = (new URLSearchParams(location.search).get('utm_source') || h).toLowerCase();
+      if (!s || h === location.hostname) return 'directo';
+      for (const [k, v] of [['whatsapp', 'whatsapp'], ['wa.me', 'whatsapp'], ['telegram', 'telegram'], ['t.me', 'telegram'], ['instagram', 'instagram'], ['facebook', 'facebook'], ['tiktok', 'tiktok'], ['google', 'google'], ['bing', 'bing'], ['duckduckgo', 'duckduckgo'], ['twitter', 'x'], ['t.co', 'x'], ['x.com', 'x'], ['reddit', 'reddit'], ['discord', 'discord'], ['youtube', 'youtube']]) if (s.includes(k)) return v;
+      return 'otros';
+    };
+    const coarse = window.matchMedia && matchMedia('(pointer:coarse)').matches;
+    const dev = coarse ? (Math.min(screen.width, screen.height) < 700 ? 'm' : 't') : 'd';
+
+    let t0 = 0, lastDur = null, gid = '';
+    // gid identifica la partida: los guardados parciales (por ronda) y el final van a la misma fila
+    const game_ = d => {
+      try {
+        if (d && d.dur == null) { if (t0) d.dur = Math.round((Date.now() - t0) / 1000); else if (lastDur != null) d.dur = lastDur; }
+        if (d && gid) d.gid = gid;
+        if (d && !d.solo && /^[A-Z]{4}$/.test(window.PGT.room || '')) d.room = window.PGT.room;
+        let body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d });
+        if (body.length > 60000) { for (const p of d.pl || []) delete p.log; body = JSON.stringify({ p_game: game, p_vid: vid, p_detail: d }); }
+        if (body.length > 60000) return;
+        fetch(URL + '/rest/v1/rpc/pg_game', { method: 'POST', keepalive: body.length < 60000, headers: { 'content-type': 'application/json', apikey: KEY, authorization: 'Bearer ' + KEY }, body }).catch(() => {});
+      } catch (e) {}
+    };
+    window.PGT = {
+      vid, game: game_, room: preRoom,
+      ev: send,
+      start(n, solo) { t0 = Date.now(); gid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); send('game_start', { n, solo: !!solo }); },
+      end(n, solo, m) {
+        if (!t0) return;
+        const dur = Math.round((Date.now() - t0) / 1000); t0 = 0; lastDur = dur;
+        send('game_end', Object.assign({ n, solo: !!solo, dur }, m != null && isFinite(m) ? { m } : {}));
+      }
+    };
+    send('view', first ? { dev, src: source() } : { dev });
+    for (const [k, p] of Array.isArray(pre.q) ? pre.q : []) send(k, p);
+  }
 })();

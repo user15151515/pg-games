@@ -479,6 +479,29 @@ end $$;
 revoke all on function public.admin_unmerge(text) from public, anon;
 grant execute on function public.admin_unmerge(text) to authenticated;
 
+-- Paso de games.pgfantasy.cat a pgfantasy.cat (26/11/2026): si un navegador ya había creado un pg_vid nuevo en pgfantasy.cat
+-- antes de recuperar el antiguo, pg.js llama a pg_link para unir el nuevo a la cuenta del antiguo (como «Unir otro dispositivo»).
+-- Solo acepta dispositivos nuevos (vistos por primera vez tras el cambio), sin otros dispositivos unidos y no unidos ya,
+-- y antiguos que ya existían antes del cambio. Si la cuenta antigua está oculta, el nuevo también se oculta.
+create or replace function public.pg_link(p_old text, p_new text)
+returns void language plpgsql security definer set search_path = public as $$
+declare a text; t_cut constant timestamptz := '2026-11-26 21:15:00+00';
+begin
+  if p_old is null or p_new is null or p_old !~ '^[a-z0-9]{8,24}$' or p_new !~ '^[a-z0-9]{8,24}$' or p_old = p_new then return; end if;
+  if not exists (select 1 from events where vid = p_old and ts < t_cut)
+     and not exists (select 1 from players where vid = p_old and first_seen < t_cut) then return; end if;
+  if exists (select 1 from events where vid = p_new and ts < t_cut) then return; end if;
+  if exists (select 1 from merges where vid = p_new or main = p_new) then return; end if;
+  if (select count(*) from merges where ts > now() - interval '1 minute') >= 30 then return; end if;
+  a := public._acct(p_old);
+  insert into merges (vid, main) values (p_new, a) on conflict (vid) do nothing;
+  if exists (select 1 from hidden_vids where vid = any(public._members(a)) and vid <> p_new) then
+    insert into hidden_vids (vid) values (p_new) on conflict (vid) do nothing;
+  end if;
+end $$;
+revoke all on function public.pg_link(text, text) from public;
+grant execute on function public.pg_link(text, text) to anon, authenticated;
+
 -- Ranking público: top 5 por juego (p_solo: solo individual, solo sala o, si es null, todo junto), el mejor resultado de cada cuenta (todas las dificultades y modos juntos).
 -- Bomba: más palabras en una partida. Teclazo: más ppm en una carrera terminada. Sin los dispositivos ocultos.
 drop function if exists public.pg_top(text);

@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>pg games</title></head>
+<body><script>
+// Puente del dominio antiguo (games.pgfantasy.cat). pgfantasy.cat lo abre una vez, invisible, para recuperar
+// lo que el jugador tenía guardado aquí (identificador de dispositivo, nombre, ajustes) y seguir siendo el mismo jugador.
+// Solo responde a pgfantasy.cat. No lo borres mientras quede gente con datos en el dominio antiguo.
+(function () {
+  if (window.parent === window) return;
+  var items = {};
+  try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); items[k] = localStorage.getItem(k); } } catch (e) {}
+  window.parent.postMessage({ pgPuente: 1, items: items }, 'https://pgfantasy.cat');
+})();
+</script></body></html>
